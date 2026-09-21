@@ -25,7 +25,7 @@ In **Settings → Environment Variables**, set these for Production:
 
 Verify a domain you own in [Resend](https://resend.com/docs/send-with-nodejs), including its DNS records, before using it in `EMAIL_FROM`. Vercel's shared `vercel.app` domain is not a domain you can verify for email. Resend's test sender is restricted to your own approved recipient and is not appropriate for public registration. You can change `src/lib/email.ts` to another transactional email service if preferred.
 
-Email verification is required. Password recovery is included. **Do not set `EMAIL_MODE=console` in production**: it only works in development. Missing email configuration disables accounts instead of creating users who can never verify their addresses. Vercel background tasks keep email delivery alive after the response. Auth rate limiting uses PostgreSQL, so it works across function instances.
+Accounts support both a six-digit email code and email/password. A code verifies the mailbox and creates or signs into the account in one step. Password signup immediately creates a session and sends a verification email; unverified users can use their own workspace, with a verification reminder. Password recovery is included. Codes expire after 10 minutes, allow five attempts, are single-use and are hashed in the database. **Do not set `EMAIL_MODE=console` in production**: it only works in development. Missing email configuration disables accounts instead of creating users who can never verify their addresses. Vercel background tasks keep email delivery alive after the response. Auth rate limiting uses PostgreSQL, so it works across function instances.
 
 Use the exact canonical domain above when signing in to Production. For Preview, configure a separate database branch, secret and email settings. The app automatically trusts the exact `VERCEL_URL` and `VERCEL_BRANCH_URL` supplied to that preview deployment, overriding any inherited production `BETTER_AUTH_URL`. Signup, verification/reset links and saving data work on both preview URLs; no per-deployment URL edits are needed. Other deployments and arbitrary `*.vercel.app` origins are not trusted.
 
@@ -54,11 +54,13 @@ Push the reviewed changes to the branch Vercel deploys, or deploy them through y
 Verify these flows on the production domain:
 
 - Anonymous page starts with empty consumption and no sample tariffs.
-- Create account → receive email → verify → sign in.
+- Create account with a password → arrive signed in → receive verification email.
+- Choose email code → receive a code → enter it → arrive signed in; test both new and existing accounts.
 - Add a tariff, mark it as current, enter consumption and click **Guardar cambios**.
 - Reload: the data remains. A second account starts empty.
 - Change current prices and inspect **Mis tarifas**.
-- Add a paid bill under **Mis facturas**, save and reload.
+- From the comparator, use **Guardar este periodo como factura**. Check the period dates, reporting month and real amounts; **Guardar factura** persists immediately. Reload and check the stacked chart and breakdown.
+- Add or edit a bill under **Mis facturas** and reload without clicking **Guardar cambios**.
 - Request a password reset; confirm delivery and successful reset.
 
 ## Local development
@@ -103,4 +105,4 @@ The last command exercises real authentication and account-owned persistence aga
 
 Auth uses its standard relational tables. Each account has one validated JSONB workspace (profile, offers, tariff snapshots and bills), with a foreign key to its user. Every read/write derives ownership from the server session; request data cannot select a different user. Versioned saves reject stale tabs with HTTP 409. Workspaces are limited to 1 MB, 100 offers, 500 historical changes and 1,200 bills.
 
-Data is saved only when **Guardar cambios** succeeds. Network failures retain the visible draft. Navigation warns about unsaved changes. Export downloads a JSON copy for personal backups, including unsaved edits; it does not include passwords or sessions. This version does not import backups or automatically discover offers. Guest data is in memory and clears on refresh.
+Tariff and comparison edits are saved with **Guardar cambios**. Explicit price-review confirmations save immediately for signed-in users. Creating, editing or deleting a bill saves immediately; the editor waits for server confirmation and retains the draft on failure. These saves also persist the current comparison workspace. Network failures retain the visible draft. Navigation warns about unsaved changes. Export downloads a JSON copy for personal backups, including unsaved edits; it does not include passwords or sessions. This version does not import backups or automatically discover offers. Guest data is in memory and clears on refresh.

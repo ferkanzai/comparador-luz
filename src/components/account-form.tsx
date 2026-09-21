@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -24,6 +24,11 @@ export default function AccountForm({
           ? "forgot"
           : "signin",
   );
+  const [method, setMethod] = useState<"otp" | "password">("otp");
+  const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [name, setName] = useState("");
+  const codeInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(
@@ -34,6 +39,8 @@ export default function AccountForm({
   const [email, setEmail] = useState("");
   function switchMode(next: string) {
     setMode(next);
+    setSent(false);
+    setOtp("");
     setMessage("");
     setError("");
   }
@@ -46,10 +53,37 @@ export default function AccountForm({
     const password = String(data.get("password") ?? "");
     const callbackURL = `${window.location.origin}/`;
     try {
+      if (method === "otp" && (mode === "signup" || mode === "signin")) {
+        const result = sent
+          ? await authClient.signIn.emailOtp({
+              email,
+              otp,
+              name: name || undefined,
+            })
+          : await authClient.emailOtp.sendVerificationOtp({
+              email,
+              type: "sign-in",
+            });
+        if (result.error)
+          throw new Error(
+            result.error.status === 429
+              ? "Demasiados intentos. Espera un minuto y vuelve a probar."
+              : sent
+                ? "El código no es válido o ha caducado. Revísalo o solicita otro."
+                : "No hemos podido enviar el código. Revisa el correo e inténtalo de nuevo.",
+          );
+        if (sent) window.location.assign("/");
+        else {
+          setSent(true);
+          setMessage("Código enviado. Revisa también la carpeta de spam.");
+          requestAnimationFrame(() => codeInput.current?.focus());
+        }
+        return;
+      }
       const result =
         mode === "signup"
           ? await authClient.signUp.email({
-              name: String(data.get("name")),
+              name,
               email,
               password,
               callbackURL,
@@ -77,11 +111,7 @@ export default function AccountForm({
                 : "No se ha podido completar la solicitud. Revisa tus datos o solicita un enlace nuevo.",
         );
       }
-      if (mode === "signin") window.location.assign("/");
-      else if (mode === "signup")
-        setMessage(
-          "Revisa tu correo para verificar tu cuenta. Si ya tienes una cuenta, inicia sesión.",
-        );
+      if (mode === "signin" || mode === "signup") window.location.assign("/");
       else if (mode === "forgot")
         setMessage(
           "Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña.",
@@ -114,11 +144,11 @@ export default function AccountForm({
         <Brand />
         <div>
           <span className="eyebrow">TU CUADERNO DE ELECTRICIDAD</span>
-          <h1>
+          <h2>
             Un poco de claridad.
             <br />
             <em>Un buen ahorro.</em>
-          </h1>
+          </h2>
           <p>
             Tus precios de hoy, las alternativas de mañana y todo lo que has
             pagado. Por fin, juntos.
@@ -146,7 +176,7 @@ export default function AccountForm({
         </Link>
         <div className="account-card">
           <span className="eyebrow">LUZ EN CLARO / TU CUENTA</span>
-          <h2>{title}</h2>
+          <h1>{title}</h1>
           <p>
             {mode === "signup"
               ? "Crea tu cuenta y guarda lo que importa."
@@ -160,14 +190,50 @@ export default function AccountForm({
               Puedes usar el comparador sin registrarte.
             </div>
           )}
+          {(mode === "signup" || mode === "signin") && (
+            <div className="segmented auth-method" aria-label="Forma de acceso">
+              <button
+                type="button"
+                disabled={busy}
+                aria-pressed={method === "otp"}
+                className={method === "otp" ? "selected" : ""}
+                onClick={() => {
+                  setMethod("otp");
+                  switchMode(mode);
+                }}
+              >
+                Código por correo
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                aria-pressed={method === "password"}
+                className={method === "password" ? "selected" : ""}
+                onClick={() => {
+                  setMethod("password");
+                  switchMode(mode);
+                }}
+              >
+                Contraseña
+              </button>
+            </div>
+          )}
+          {method === "otp" && (mode === "signup" || mode === "signin") && (
+            <p className="small muted">
+              Un código y estás dentro. Si es tu primera vez, crearemos tu
+              cuenta al verificarlo.
+            </p>
+          )}
           <form onSubmit={submit}>
             <fieldset disabled={!configured || busy}>
-              {mode === "signup" && (
+              {mode === "signup" && !sent && (
                 <label className="auth-label">
                   Tu nombre
                   <input
                     name="name"
-                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={method === "password"}
                     autoComplete="name"
                     maxLength={100}
                   />
@@ -180,6 +246,9 @@ export default function AccountForm({
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    readOnly={sent}
+                    spellCheck={false}
+                    autoCapitalize="none"
                     type="email"
                     required
                     autoComplete="email"
@@ -187,27 +256,50 @@ export default function AccountForm({
                   />
                 </label>
               )}
-              {mode !== "forgot" && (
+              {sent && method === "otp" && (
                 <label className="auth-label">
-                  {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
+                  Código de 6 dígitos
                   <input
-                    name="password"
-                    type="password"
+                    ref={codeInput}
+                    name="otp"
+                    className="otp-input"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\s/g, ""))}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]{6}"
+                    minLength={6}
+                    maxLength={6}
                     required
-                    minLength={mode === "signin" ? 1 : 12}
-                    maxLength={128}
-                    autoComplete={
-                      mode === "signin" ? "current-password" : "new-password"
-                    }
+                    aria-describedby="otp-hint"
                   />
-                  {mode !== "signin" && (
-                    <small>
-                      Al menos 12 caracteres. Puedes usar una frase.
-                    </small>
-                  )}
+                  <small id="otp-hint">
+                    Enviado a {email}. Caduca en 10 minutos.
+                  </small>
                 </label>
               )}
-              {mode === "signin" && (
+              {(method === "password" || mode === "reset") &&
+                mode !== "forgot" && (
+                  <label className="auth-label">
+                    {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
+                    <input
+                      name="password"
+                      type="password"
+                      required
+                      minLength={mode === "signin" ? 1 : 12}
+                      maxLength={128}
+                      autoComplete={
+                        mode === "signin" ? "current-password" : "new-password"
+                      }
+                    />
+                    {mode !== "signin" && (
+                      <small>
+                        Al menos 12 caracteres. Puedes usar una frase.
+                      </small>
+                    )}
+                  </label>
+                )}
+              {mode === "signin" && method === "password" && (
                 <button
                   type="button"
                   className="link-button forgot"
@@ -219,15 +311,35 @@ export default function AccountForm({
               <button className="button primary full" type="submit">
                 {busy
                   ? "Un momento…"
-                  : mode === "signup"
-                    ? "Crear mi cuenta"
-                    : mode === "forgot"
-                      ? "Enviar enlace"
-                      : mode === "reset"
-                        ? "Guardar contraseña"
-                        : "Entrar en mi cuenta"}
+                  : method === "otp" && (mode === "signup" || mode === "signin")
+                    ? sent
+                      ? "Verificar y entrar"
+                      : "Enviar código"
+                    : mode === "signup"
+                      ? "Crear mi cuenta"
+                      : mode === "forgot"
+                        ? "Enviar enlace"
+                        : mode === "reset"
+                          ? "Guardar contraseña"
+                          : "Entrar en mi cuenta"}
                 <ArrowRight size={17} />
               </button>
+              {sent && method === "otp" && (
+                <div className="otp-actions">
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => {
+                      setSent(false);
+                      setOtp("");
+                      setMessage("");
+                      setError("");
+                    }}
+                  >
+                    Cambiar correo o pedir otro código
+                  </button>
+                </div>
+              )}
             </fieldset>
           </form>
           {error && (
@@ -246,6 +358,7 @@ export default function AccountForm({
               : "¿Ya tienes cuenta?"}{" "}
             <button
               className="link-button"
+              disabled={busy}
               onClick={() =>
                 switchMode(mode === "signin" ? "signup" : "signin")
               }

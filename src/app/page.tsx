@@ -11,7 +11,12 @@ export default async function Home({
   if ((await searchParams).error)
     redirect("/cuenta?error=invalid-verification");
   const configured = authConfigured();
-  let user: { id: string; name: string } | null = null;
+  let user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+  } | null = null;
   let unavailable = false;
   if (configured) {
     try {

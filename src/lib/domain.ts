@@ -37,9 +37,11 @@ export const tariffSchema = z.object({
   energyValley: decimal(100),
   powerPeak: decimal(1000),
   powerValley: decimal(1000),
+  powerKind: z.enum(["periods", "same", "combined"]).default("periods"),
   powerUnit: z.enum(["day", "year"]),
   meterDay: decimal(100),
   socialDay: decimal(100),
+  socialInElectricityTax: z.boolean().default(true),
   servicesMonth: decimal(10000),
   url: z
     .union([z.url({ protocol: /^https?$/ }), z.literal("")])
@@ -54,15 +56,49 @@ export const historySchema = z
     (v) => v.end >= v.start,
     "La fecha final debe ser posterior al inicio.",
   );
-export const billSchema = z.object({
-  id: z.uuid(),
-  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-  provider: z.string().trim().min(1).max(100),
-  paid: decimal(1_000_000).refine((s) => s !== ""),
-  kwh: decimal(),
-  notes: z.string().max(2000),
-  tariff: tariffSchema.nullable(),
+const billedAmount = decimal().refine(
+  (s) => s !== "",
+  "Introduce un importe o 0.",
+);
+export const billBreakdownSchema = z.object({
+  energy: billedAmount,
+  power: billedAmount,
+  social: billedAmount,
+  meter: billedAmount,
+  services: billedAmount,
+  electricityTax: billedAmount,
+  vat: billedAmount,
+  servicesVat: billedAmount,
 });
+export const billSchema = z
+  .object({
+    id: z.uuid(),
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    periodStart: optionalDate.default(""),
+    periodEnd: optionalDate.default(""),
+    provider: z.string().trim().min(1).max(100),
+    paid: decimal(1_000_000).refine((s) => s !== ""),
+    kwh: decimal(),
+    notes: z.string().max(2000),
+    tariff: tariffSchema.nullable(),
+    profile: profileSchema.nullable().default(null),
+    breakdown: billBreakdownSchema.nullable().default(null),
+  })
+  .refine(
+    (b) =>
+      (!b.periodStart && !b.periodEnd) ||
+      (!!b.periodStart && !!b.periodEnd && b.periodEnd > b.periodStart),
+    "Indica las dos fechas del periodo; la fecha final debe ser posterior a la inicial.",
+  )
+  .refine(
+    (b) =>
+      !b.breakdown ||
+      Math.abs(
+        Object.values(b.breakdown).reduce((sum, v) => sum + numberOf(v), 0) -
+          numberOf(b.paid),
+      ) < 0.005,
+    "El desglose debe sumar el total pagado. Revisa los importes o guarda solo el total.",
+  );
 export const workspaceSchema = z
   .object({
     profile: profileSchema,
@@ -118,9 +154,11 @@ export const newTariff = (): Tariff => ({
   energyValley: "",
   powerPeak: "",
   powerValley: "",
+  powerKind: "periods",
   powerUnit: "day",
   meterDay: "",
   socialDay: "",
+  socialInElectricityTax: true,
   servicesMonth: "",
   url: "",
   checkedOn: "",
@@ -177,3 +215,14 @@ export const shortDate = (s: string) =>
         timeZone: "UTC",
       }).format(new Date(s))
     : "Sin fecha";
+
+export function powerDescription(t: Tariff) {
+  const unit = t.powerUnit === "year" ? "€/kW/año" : "€/kW/día";
+  const peak = t.powerPeak.replace(".", ",") || "—";
+  const valley = t.powerValley.replace(".", ",") || "—";
+  return t.powerKind === "combined"
+    ? `${peak} ${unit} · P1 + P2 combinados`
+    : t.powerKind === "same"
+      ? `${peak} ${unit} en cada periodo`
+      : `P1 ${peak} · P2 ${valley} ${unit}`;
+}

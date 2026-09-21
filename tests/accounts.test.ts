@@ -94,7 +94,13 @@ test(
         const unverified = await auth.handler(
           request("/api/auth/sign-in/email", { email, password }),
         );
-        assert.equal(unverified.status, 403);
+        assert.equal(unverified.status, 200);
+        assert.ok(cookieOf(signup).includes("session_token"));
+        assert.equal(
+          (await GET(request("/api/workspace", undefined, cookieOf(signup))))
+            .status,
+          200,
+        );
         const verified = await auth.handler(
           new Request(emailURL(), { headers: { origin: base } }),
         );
@@ -114,11 +120,15 @@ test(
       w.bills.push({
         id: crypto.randomUUID(),
         month: "2026-01",
+        periodStart: "",
+        periodEnd: "",
         provider: "Private provider",
         paid: "65,42",
         kwh: "300",
         notes: "",
         tariff: structuredClone(tariff),
+        profile: null,
+        breakdown: null,
       });
       const put = (cookie: string, version: number, origin = base) =>
         PUT(
@@ -200,6 +210,83 @@ test(
         (await GET(request("/api/workspace", undefined, bobCookie))).status,
         401,
       );
+      // Email codes create verified sessions, cannot be reused, and retain an existing account's workspace.
+      await getPool().query('DELETE FROM "rateLimit"');
+      const otpEmail = `otp-${randomBytes(4).toString("hex")}@example.com`;
+      users.push(otpEmail);
+      const sendCode = async (email: string) => {
+        const sent = await auth.handler(
+          request("/api/auth/email-otp/send-verification-otp", {
+            email,
+            type: "sign-in",
+          }),
+        );
+        assert.equal(sent.status, 200);
+        const code = emails.at(-1)?.match(/: (\d{6})/)?.[1];
+        assert.ok(code, "Email delivery contains a six-digit code");
+        return code;
+      };
+      const code = await sendCode(otpEmail);
+      const records = await getPool().query(
+        "SELECT value FROM verification WHERE identifier LIKE $1",
+        [`%${otpEmail}%`],
+      );
+      assert.ok(records.rows.length);
+      assert.ok(
+        records.rows.every(
+          (row: { value: string }) => !row.value.includes(code),
+        ),
+        "OTP must be hashed in storage",
+      );
+      const wrongCode = code === "000000" ? "111111" : "000000";
+      assert.equal(
+        (
+          await auth.handler(
+            request("/api/auth/sign-in/email-otp", {
+              email: otpEmail,
+              otp: wrongCode,
+            }),
+          )
+        ).status,
+        400,
+      );
+      const otpSession = await auth.handler(
+        request("/api/auth/sign-in/email-otp", {
+          email: otpEmail,
+          otp: code,
+          name: "OTP account",
+        }),
+      );
+      assert.equal(otpSession.status, 200);
+      assert.equal((await otpSession.json()).user.emailVerified, true);
+      assert.equal(
+        (await GET(request("/api/workspace", undefined, cookieOf(otpSession))))
+          .status,
+        200,
+      );
+      assert.equal(
+        (
+          await auth.handler(
+            request("/api/auth/sign-in/email-otp", {
+              email: otpEmail,
+              otp: code,
+            }),
+          )
+        ).status,
+        400,
+      );
+      const aliceCode = await sendCode(users[0]);
+      const aliceOTP = await auth.handler(
+        request("/api/auth/sign-in/email-otp", {
+          email: users[0],
+          otp: aliceCode,
+        }),
+      );
+      assert.equal(aliceOTP.status, 200);
+      const retained = await (
+        await GET(request("/api/workspace", undefined, cookieOf(aliceOTP)))
+      ).json();
+      assert.equal(retained.data.bills[0].paid, "65,42");
     } finally {
       console.info = originalLog;
       await getPool().query('DELETE FROM "user" WHERE email = ANY($1)', [

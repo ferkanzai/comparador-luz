@@ -46,6 +46,7 @@ export function Field({
       <div className={`input-wrap ${invalid ? "invalid" : ""}`}>
         <input
           id={id}
+          name={id}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -55,10 +56,23 @@ export function Field({
           maxLength={maxLength}
           placeholder={placeholder ?? (decimal ? "0,00" : undefined)}
           aria-invalid={invalid || undefined}
-          aria-describedby={hint ? `${id}-hint` : undefined}
+          aria-describedby={
+            [
+              unit ? `${id}-unit` : "",
+              hint ? `${id}-hint` : "",
+              invalid ? `${id}-error` : "",
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
         />
-        {unit && <span>{unit}</span>}
+        {unit && <span id={`${id}-unit`}>{unit}</span>}
       </div>
+      {invalid && (
+        <small id={`${id}-error`} className="field-error">
+          Usa un número positivo, con coma o punto decimal.
+        </small>
+      )}
       {hint && <small id={`${id}-hint`}>{hint}</small>}
     </div>
   );
@@ -86,7 +100,10 @@ export function Modal({
       ref={ref}
       className={`modal ${wide ? "wide" : ""}`}
       aria-labelledby={id}
-      onCancel={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
     >
       <div className="modal-head">
         <h2 id={id}>{title}</h2>

@@ -3,11 +3,11 @@
 A Spanish electricity comparison dashboard for a weekly manual review of your household tariff.
 
 - Guest comparison with empty forms, no sample prices, and no account requirement.
-- Better Auth email/password accounts with email verification and password recovery.
+- Better Auth email-code login or email/password with immediate signup sessions, email verification and password recovery.
 - PostgreSQL persistence, available through Neon's free Vercel Marketplace plan.
 - Saved consumption, current tariff, manually entered offers, review dates and offer expiry.
 - Historical price snapshots when changing providers or updating current prices.
-- Monthly paid bills, annual totals, charts and JSON export.
+- Bills with actual date ranges, consumption snapshots, editable breakdowns, immediate saving, monthly stacked charts and JSON export.
 - Optional IVA and IEE, social-bonus financing, meter rental and maintenance services, with visible breakdowns.
 - Spanish number formatting, decimal commas, keyboard-accessible dialogs and responsive layouts.
 
@@ -24,9 +24,9 @@ Vercel deployments automatically run database migrations before building through
 
 ## Daily workflow
 
-Enter the consumption and power from a real invoice, add your current tariff and mark it as the reference. Add an offer to compare it. In your account, click **Guardar cambios** to persist your work. For weekly checks, review the suppliers' current conditions, update each offer's review/expiry dates, and mark your review complete.
+Start with your current tariff or your consumption. The tariff editor includes consumption, taxes and a live breakdown; the first tariff can become your reference immediately. Add an offer to compare it. In your account, click **Guardar cambios** to persist your work. For weekly checks, review the suppliers' current conditions, then use **Confirmar precios de hoy** per tariff or **He comprobado todos los precios**. For signed-in users these review dates save immediately.
 
-**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts rather than calculated estimates. No provider switching, automatic offer scraping or email reminders are performed.
+**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este periodo como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. No provider switching, automatic offer scraping or email reminders are performed.
 
 ## Stack
 

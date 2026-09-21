@@ -158,3 +158,92 @@ test("workspace rejects unsafe URLs, invalid dates, duplicate ids, and broken cu
     false,
   );
 });
+test("unified power prices distinguish per-period prices from a combined charge", () => {
+  assert.equal(
+    calculate(
+      { ...tariff, powerKind: "same", powerPeak: "0.05", powerValley: "" },
+      profile,
+    )!.power,
+    12,
+  );
+  assert.equal(
+    calculate(
+      { ...tariff, powerKind: "combined", powerPeak: "0.1", powerValley: "" },
+      profile,
+    )!.power,
+    12,
+  );
+  assert.equal(
+    calculate(
+      { ...tariff, powerKind: "combined", powerPeak: "0.1" },
+      { ...profile, valleyKw: "5" },
+    ),
+    null,
+  );
+  assert.equal(
+    calculate(
+      {
+        ...tariff,
+        powerKind: "combined",
+        powerPeak: "36.5",
+        powerUnit: "year",
+      },
+      profile,
+    )!.power,
+    12,
+  );
+});
+test("reported invoice can be reproduced from billed amounts without inventing a rounding adjustment", () => {
+  const p = {
+    ...profile,
+    days: "29",
+    peakKwh: "10",
+    flatKwh: "10",
+    valleyKwh: "23",
+    taxes: true,
+    vat: "21",
+    electricityTax: "5.11269632",
+  };
+  const printed = {
+    ...tariff,
+    energyPeak: "0.192",
+    energyFlat: "0.113",
+    energyValley: "0.082",
+    powerPeak: "0.097",
+    powerValley: "0.027",
+    socialDay: "0.025",
+    meterDay: "0.027",
+  };
+  assert.equal(calculate(printed, p)!.total, 26.45);
+  const effective = (amount: number, quantity: number) =>
+    String(Number((amount / quantity).toFixed(12)));
+  const fromBill = {
+    ...printed,
+    energyPeak: effective(1.91, 10),
+    energyFlat: effective(1.13, 10),
+    energyValley: effective(1.88, 23),
+    powerPeak: effective(11.25, 4 * 29),
+    powerValley: effective(3.13, 4 * 29),
+    socialDay: effective(0.72, 29),
+    meterDay: effective(0.77, 29),
+    socialInElectricityTax: false,
+  };
+  const got = calculate(fromBill, p)!;
+  assert.deepEqual(
+    [
+      got.power,
+      got.energy,
+      got.social,
+      got.meter,
+      got.electricityTax,
+      got.vat,
+      got.total,
+    ],
+    [14.38, 4.92, 0.72, 0.77, 0.99, 4.57, 26.35],
+  );
+  assert.equal(
+    calculate({ ...fromBill, socialInElectricityTax: true }, p)!.electricityTax,
+    1.02,
+  );
+  assert.equal(calculate(fromBill, { ...p, taxes: false })!.total, 20.79);
+});

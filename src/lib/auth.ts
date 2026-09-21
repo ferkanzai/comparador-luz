@@ -1,7 +1,8 @@
+import { emailOTP } from "better-auth/plugins/email-otp";
 import { betterAuth } from "better-auth";
 import { waitUntil } from "@vercel/functions";
 import { getPool } from "./db";
-import { sendAccountEmail } from "./email";
+import { sendAccountEmail, sendAccountOTP } from "./email";
 import { authOrigins } from "./auth-origins";
 
 export function authConfigured() {
@@ -25,9 +26,21 @@ function createAuth() {
           ipAddress: { ipAddressHeaders: ["x-vercel-forwarded-for"] },
         }
       : undefined,
+    plugins: [
+      emailOTP({
+        otpLength: 6,
+        expiresIn: 600,
+        allowedAttempts: 5,
+        storeOTP: "hashed",
+        async sendVerificationOTP({ email, otp, type }) {
+          await sendAccountOTP(email, otp, type);
+        },
+      }),
+    ],
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: true,
+      requireEmailVerification: false,
+      autoSignIn: true,
       minPasswordLength: 12,
       maxPasswordLength: 128,
       revokeSessionsOnPasswordReset: true,
@@ -55,6 +68,8 @@ function createAuth() {
         "/sign-up/email": { window: 60, max: 3 },
         "/request-password-reset": { window: 60, max: 3 },
         "/send-verification-email": { window: 60, max: 3 },
+        "/email-otp/send-verification-otp": { window: 60, max: 3 },
+        "/sign-in/email-otp": { window: 60, max: 5 },
       },
     },
   });

@@ -1,70 +1,72 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Plus, Receipt, Pencil, Trash2 } from "lucide-react";
 import {
-  billSchema,
   money,
-  shortDate,
   today,
+  numberOf,
+  shortDate,
   type Bill,
   type Workspace,
 } from "@/lib/domain";
-import { Field, Modal, Empty } from "./ui";
+import { billBuckets, billLines } from "@/lib/bill-data";
+import { Empty } from "./ui";
+import BillForm from "./bill-form";
+const groups = [
+  ["energy", "Energía"],
+  ["power", "Potencia"],
+  ["other", "Otros cargos"],
+  ["taxes", "Impuestos"],
+  ["unknown", "Sin desglose"],
+] as const;
 export default function Bills({
   workspace: w,
   update,
 }: {
   workspace: Workspace;
-  update: (w: Workspace) => void;
+  update: (w: Workspace) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState<Bill | null>(null);
   const [year, setYear] = useState(today().slice(0, 4));
-  const [error, setError] = useState("");
   const bills = w.bills
     .filter((b) => b.month.startsWith(year))
     .sort((a, b) => b.month.localeCompare(a.month));
   const months = Array.from({ length: 12 }, (_, index) => {
     const month = `${year}-${String(index + 1).padStart(2, "0")}`;
     const entries = bills.filter((b) => b.month === month);
+    const totals = { energy: 0, power: 0, other: 0, taxes: 0, unknown: 0 };
+    for (const entry of entries) {
+      const amounts = billBuckets(entry);
+      for (const [key] of groups) totals[key] += amounts[key];
+    }
     return {
+      month,
       label: new Intl.DateTimeFormat("es-ES", {
         month: "short",
         timeZone: "UTC",
       }).format(new Date(`${month}-01`)),
-      amount: entries.reduce(
-        (sum, b) => sum + Number(b.paid.replace(",", ".")),
-        0,
-      ),
+      amount: entries.reduce((sum, b) => sum + numberOf(b.paid), 0),
       count: entries.length,
+      totals,
     };
   });
   const total = months.reduce((sum, m) => sum + m.amount, 0);
   const max = Math.max(...months.map((m) => m.amount), 1);
   function create() {
     const current = w.tariffs.find((t) => t.id === w.currentId);
-    setError("");
     setEditing({
       id: crypto.randomUUID(),
       month: today().slice(0, 7),
       provider: current?.provider || current?.name || "",
+      periodStart: "",
+      periodEnd: "",
       paid: "",
       kwh: "",
       notes: "",
       tariff: current ? structuredClone(current) : null,
+      profile: null,
+      breakdown: null,
     });
-  }
-  function save(e: FormEvent) {
-    e.preventDefault();
-    const result = billSchema.safeParse(editing);
-    if (!result.success) {
-      setError(result.error.issues[0].message);
-      return;
-    }
-    update({
-      ...w,
-      bills: [...w.bills.filter((b) => b.id !== result.data.id), result.data],
-    });
-    setEditing(null);
   }
   return (
     <>
@@ -105,26 +107,95 @@ export default function Bills({
             </select>
           </label>
         </div>
-        <div
-          className="chart"
-          role="img"
-          aria-label={`Gasto mensual de ${year}. Total ${money(total)}. Los importes se detallan en la lista inferior.`}
-        >
-          {months.map((m) => (
-            <div className="chart-column" key={m.label}>
-              <span className="chart-value">
-                {m.count ? money(m.amount) : "—"}
-              </span>
-              <div
-                className={`chart-bar ${m.count ? "" : "no-data"}`}
-                style={{
-                  height: `${m.count ? Math.max((m.amount / max) * 135, 3) : 3}px`,
-                }}
-              />
-              <span>{m.label}</span>
-            </div>
+        <ul className="chart-legend" aria-label="Conceptos del gráfico">
+          {groups.map(([key, label]) => (
+            <li key={key}>
+              <span className={`swatch stack-${key}`} />
+              {label}
+            </li>
           ))}
+        </ul>
+        <div
+          className="chart-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Gráfico mensual. Desplázate horizontalmente para ver todos los meses."
+        >
+          <div
+            className="chart stacked-chart"
+            role="img"
+            aria-label={`Gasto mensual de ${year}, desglosado por conceptos. Total ${money(total)}. Consulta los mismos datos en la tabla de desglose mensual.`}
+          >
+            {months.map((m) => (
+              <div className="chart-column" key={m.month}>
+                <span className="chart-value">
+                  {m.count ? money(m.amount) : "—"}
+                </span>
+                <div
+                  className={`chart-bar ${m.count ? "" : "no-data"}`}
+                  style={{
+                    height: `${m.count ? Math.max((m.amount / max) * 200, 3) : 3}px`,
+                  }}
+                >
+                  {groups.map(
+                    ([key, label]) =>
+                      m.totals[key] > 0 && (
+                        <span
+                          key={key}
+                          className={`stack-${key}`}
+                          style={{
+                            height: `${(m.totals[key] / m.amount) * 100}%`,
+                          }}
+                          title={`${m.label} · ${label}: ${money(m.totals[key])}`}
+                        />
+                      ),
+                  )}
+                </div>
+                <span>{m.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
+        <p className="small muted">
+          Cada factura se agrupa en el mes elegido (por defecto, el mes de fin
+          del periodo), sin prorratearla. Otros cargos: bono social, alquiler y
+          servicios. Las facturas antiguas sin conceptos aparecen como «Sin
+          desglose»; los meses sin facturas, como «—».
+        </p>
+        <details className="form-section">
+          <summary>Ver desglose mensual en tabla</summary>
+          <div
+            className="table-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Desglose mensual"
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Mes</th>
+                  {groups.map(([key, label]) => (
+                    <th scope="col" key={key}>
+                      {label}
+                    </th>
+                  ))}
+                  <th scope="col">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {months.map((m) => (
+                  <tr key={m.month}>
+                    <th scope="row">{m.label}</th>
+                    {groups.map(([key]) => (
+                      <td key={key}>{m.count ? money(m.totals[key]) : "—"}</td>
+                    ))}
+                    <td>{m.count ? money(m.amount) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       </div>
       {!bills.length ? (
         <div className="panel">
@@ -137,20 +208,25 @@ export default function Bills({
               </button>
             }
           >
-            Añade el importe real que has pagado. Aquí verás cómo cambia tu
-            gasto a lo largo del año.
+            Añade el importe real o guarda tu cálculo como factura desde el
+            comparador.
           </Empty>
         </div>
       ) : (
-        <div className="panel table-scroll">
+        <div
+          className="panel table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Facturas registradas"
+        >
           <table>
             <thead>
               <tr>
-                <th>Mes</th>
-                <th>Comercializadora</th>
-                <th>Consumo</th>
-                <th>Pagado</th>
-                <th>
+                <th scope="col">Periodo</th>
+                <th scope="col">Comercializadora</th>
+                <th scope="col">Consumo</th>
+                <th scope="col">Pagado</th>
+                <th scope="col">
                   <span className="sr-only">Acciones</span>
                 </th>
               </tr>
@@ -164,6 +240,11 @@ export default function Bills({
                       year: "numeric",
                       timeZone: "UTC",
                     }).format(new Date(`${b.month}-01`))}
+                    {b.periodStart && b.periodEnd && (
+                      <small className="block muted">
+                        {shortDate(b.periodStart)} – {shortDate(b.periodEnd)}
+                      </small>
+                    )}
                   </td>
                   <td>
                     <strong>{b.provider}</strong>
@@ -173,22 +254,30 @@ export default function Bills({
                     {b.notes && (
                       <small className="block muted">{b.notes}</small>
                     )}
+                    {b.breakdown && (
+                      <details>
+                        <summary>Ver conceptos</summary>
+                        <dl className="bill-breakdown">
+                          {billLines.map(([key, label]) => (
+                            <div key={key}>
+                              <dt>{label}</dt>
+                              <dd>{money(numberOf(b.breakdown![key]))}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </details>
+                    )}
                   </td>
                   <td>
                     {b.kwh || "—"} {b.kwh && "kWh"}
                   </td>
-                  <td className="amount">
-                    {money(Number(b.paid.replace(",", ".")))}
-                  </td>
+                  <td className="amount">{money(numberOf(b.paid))}</td>
                   <td>
                     <div className="row-actions">
                       <button
                         className="icon-button"
                         aria-label={`Editar factura ${b.month}`}
-                        onClick={() => {
-                          setEditing(b);
-                          setError("");
-                        }}
+                        onClick={() => setEditing(b)}
                       >
                         <Pencil size={16} />
                       </button>
@@ -214,118 +303,23 @@ export default function Bills({
         </div>
       )}
       {editing && (
-        <Modal
-          title={
-            w.bills.some((b) => b.id === editing.id)
-              ? "Editar factura"
-              : "Registrar una factura"
-          }
+        <BillForm
+          initial={editing}
+          workspace={w}
           onClose={() => setEditing(null)}
-        >
-          <form className="modal-body" onSubmit={save}>
-            <p className="muted">
-              Introduce el total real, con impuestos. No es una estimación del
-              comparador.
-            </p>
-            <div className="form-grid two">
-              <Field
-                label="Mes de la factura"
-                type="month"
-                required
-                value={editing.month}
-                onChange={(v) => setEditing({ ...editing, month: v })}
-              />
-              <Field
-                label="Total pagado"
-                required
-                decimal
-                unit="€"
-                value={editing.paid}
-                onChange={(v) => setEditing({ ...editing, paid: v })}
-              />
-            </div>
-            <Field
-              label="Comercializadora"
-              required
-              value={editing.provider}
-              onChange={(v) => setEditing({ ...editing, provider: v })}
-            />
-            <Field
-              label="Consumo total (opcional)"
-              decimal
-              unit="kWh"
-              value={editing.kwh}
-              onChange={(v) => setEditing({ ...editing, kwh: v })}
-            />
-            <label className="auth-label">
-              Tarifa de esta factura
-              <select
-                value={editing.tariff ? "snapshot" : ""}
-                onChange={(e) =>
-                  setEditing({
-                    ...editing,
-                    tariff:
-                      e.target.value === "snapshot"
-                        ? editing.tariff
-                        : structuredClone(
-                            w.tariffs.find(
-                              (t) => `live:${t.id}` === e.target.value,
-                            ) ??
-                              w.history.find(
-                                (h) => `history:${h.id}` === e.target.value,
-                              )?.tariff ??
-                              null,
-                          ),
-                  })
-                }
-              >
-                <option value="">Sin vincular</option>
-                {editing.tariff && (
-                  <option value="snapshot">
-                    {editing.tariff.name} · conservar esta copia
-                  </option>
-                )}
-                {w.tariffs.map((t) => (
-                  <option key={t.id} value={`live:${t.id}`}>
-                    {t.name}
-                  </option>
-                ))}
-                {w.history.map((h) => (
-                  <option key={h.id} value={`history:${h.id}`}>
-                    {h.tariff.name} · {shortDate(h.start)} a {shortDate(h.end)}
-                  </option>
-                ))}
-              </select>
-              <small>
-                Se guarda una copia de los precios; los cambios futuros no
-                alteran esta factura.
-              </small>
-            </label>
-            <Field
-              label="Notas (opcional)"
-              value={editing.notes}
-              onChange={(v) => setEditing({ ...editing, notes: v })}
-              maxLength={2000}
-            />
-            {error && (
-              <p role="alert" className="notice error">
-                {error}
-              </p>
-            )}
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => setEditing(null)}
-              >
-                Cancelar
-              </button>
-              <button type="submit" className="button primary">
-                Aplicar factura
-              </button>
-            </div>
-          </form>
-        </Modal>
+          onSave={async (bill) => {
+            const saved = await update({
+              ...w,
+              bills: [...w.bills.filter((b) => b.id !== bill.id), bill],
+            });
+            if (!saved)
+              throw new Error(
+                "No se ha guardado la factura. Reinténtalo; tus datos siguen aquí.",
+              );
+            setYear(bill.month.slice(0, 4));
+            setEditing(null);
+          }}
+        />
       )}
     </>
   );

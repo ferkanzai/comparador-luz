@@ -13,7 +13,7 @@ const json = (body: unknown, status = 200) =>
 async function user(request: Request) {
   if (!authConfigured()) return null;
   const session = await getAuth().api.getSession({ headers: request.headers });
-  return session?.user.emailVerified ? session.user.id : null;
+  return session?.user.id ?? null;
 }
 export async function GET(request: Request) {
   try {

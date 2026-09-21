@@ -6,7 +6,23 @@ export async function sendAccountEmail(
   const subject = reset
     ? "Cambia tu contraseña · Luz en claro"
     : "Verifica tu correo · Luz en claro";
-  const text = `${reset ? "Cambia tu contraseña" : "Verifica tu correo para guardar tus tarifas"}: ${url}\n\nSi no has solicitado este correo, puedes ignorarlo.`;
+  const text = `${reset ? "Cambia tu contraseña" : "Confirma el correo de tu cuenta"}: ${url}\n\nSi no has solicitado este correo, puedes ignorarlo.`;
+  return deliverEmail(to, subject, text);
+}
+export function sendAccountOTP(to: string, otp: string, type: string) {
+  const action =
+    type === "forget-password"
+      ? "cambiar tu contraseña"
+      : type === "email-verification"
+        ? "verificar tu correo"
+        : "entrar en Luz en claro";
+  return deliverEmail(
+    to,
+    "Tu código de acceso · Luz en claro",
+    `Tu código para ${action}: ${otp}\n\nCaduca en 10 minutos y solo se puede usar una vez. No lo compartas. Si no lo has solicitado, puedes ignorar este correo.`,
+  );
+}
+async function deliverEmail(to: string, subject: string, text: string) {
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.EMAIL_MODE === "console"

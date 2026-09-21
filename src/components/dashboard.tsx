@@ -30,23 +30,33 @@ import {
   emptyWorkspace,
   money,
   newTariff,
+  powerDescription,
   shortDate,
   today,
   workspaceSchema,
+  type Bill,
   type Profile,
   type Tariff,
   type Workspace,
 } from "@/lib/domain";
 import { Brand, Empty, Field, Modal } from "./ui";
 import TariffForm from "./tariff-form";
+import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
+import BillForm from "./bill-form";
+import { billFromCalculation } from "@/lib/bill-data";
 
 type Tab = "compare" | "history" | "bills";
 export default function Dashboard({
   user,
   accountsAvailable,
 }: {
-  user: { id: string; name: string } | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+  } | null;
   accountsAvailable: boolean;
 }) {
   const [w, setWorkspace] = useState<Workspace>(emptyWorkspace);
@@ -59,6 +69,7 @@ export default function Dashboard({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("compare");
+  const [billDraft, setBillDraft] = useState<Bill | null>(null);
   const [editing, setEditing] = useState<Tariff | null>(null);
   const [switchTo, setSwitchTo] = useState<string | null>(null);
   const [switchDate, setSwitchDate] = useState(today);
@@ -124,15 +135,12 @@ export default function Dashboard({
     setMessage("");
     setError("");
   }
-  function profile(key: keyof Profile, value: string | boolean) {
-    update({ ...w, profile: { ...w.profile, [key]: value } });
-  }
-  async function save() {
+  async function save(next = w) {
     setBusy(true);
     setError("");
     setMessage("");
     try {
-      const parsed = workspaceSchema.safeParse(w);
+      const parsed = workspaceSchema.safeParse(next);
       if (!parsed.success)
         throw new Error(`Revisa los datos: ${parsed.error.issues[0].message}`);
       const response = await fetch("/api/workspace", {
@@ -143,20 +151,28 @@ export default function Dashboard({
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
+      setWorkspace(parsed.data);
       setVersion(body.version);
       setDirty(false);
       setMessage("Todo guardado en tu cuenta.");
+      return true;
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
           : "No se ha podido guardar. Tus cambios siguen aquí.",
       );
+      return false;
     } finally {
       setBusy(false);
     }
   }
-  function saveTariff(tariff: Tariff, since: string) {
+  function saveTariff(
+    tariff: Tariff,
+    since: string,
+    nextProfile: Profile,
+    makeCurrent: boolean,
+  ) {
     const old = w.tariffs.find((t) => t.id === tariff.id);
     const isCurrent = old && old.id === w.currentId;
     update({
@@ -175,9 +191,32 @@ export default function Dashboard({
             },
           ]
         : w.history,
-      currentSince: isCurrent ? since : w.currentSince,
+      profile: nextProfile,
+      currentId: makeCurrent && !w.currentId ? tariff.id : w.currentId,
+      currentSince:
+        isCurrent || (makeCurrent && !w.currentId) ? since : w.currentSince,
     });
     setEditing(null);
+    setMessage(
+      "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
+    );
+  }
+  async function confirmPrices(id?: string) {
+    const next = {
+      ...w,
+      reviewedOn: id ? w.reviewedOn : today(),
+      tariffs: w.tariffs.map((t) =>
+        !id || t.id === id ? { ...t, checkedOn: today() } : t,
+      ),
+    };
+    if (user) {
+      if (!(await save(next))) return;
+    } else update(next);
+    setMessage(
+      id
+        ? "Precios confirmados hoy."
+        : "Todos los precios confirmados hoy. La revisión está guardada.",
+    );
   }
   function exportData() {
     const blob = new Blob(
@@ -205,26 +244,6 @@ export default function Dashboard({
   const best = results[0];
   const saving =
     baseline && best ? Math.max(0, baseline.cost.total - best.cost.total) : 0;
-  const fields: [keyof Profile, string, string][] = [
-    ["peakKwh", "P1 · Punta", "kWh"],
-    ["flatKwh", "P2 · Llano", "kWh"],
-    ["valleyKwh", "P3 · Valle", "kWh"],
-  ];
-  const powerFields: [keyof Profile, string, string][] = [
-    ["peakKw", "P1 · Punta", "kW"],
-    ["valleyKw", "P2 · Valle", "kW"],
-    ["days", "Días del periodo", "días"],
-  ];
-  const input = ([key, label, unit]: [keyof Profile, string, string]) => (
-    <Field
-      key={key}
-      label={label}
-      unit={unit}
-      value={String(w.profile[key])}
-      onChange={(v) => profile(key, v)}
-      decimal
-    />
-  );
   return (
     <>
       <a href="#main" className="skip-link">
@@ -238,7 +257,7 @@ export default function Dashboard({
             {user ? (
               <>
                 <span className="user-name">
-                  Hola, {user.name.split(" ")[0]}
+                  Hola{user.name ? `, ${user.name.split(" ")[0]}` : ""}
                 </span>
                 <button
                   className="icon-button"
@@ -292,8 +311,7 @@ export default function Dashboard({
               <span className="live-dot" /> TU ENERGÍA. TUS NÚMEROS.
             </div>
             <h1>
-              Que tu próxima factura
-              <br />
+              Que tu próxima factura <br />
               traiga <span>una buena noticia.</span>
             </h1>
             <p>
@@ -322,6 +340,7 @@ export default function Dashboard({
         <div className="workspace-bar">
           <nav aria-label="Secciones del comparador">
             <button
+              aria-current={tab === "compare" ? "page" : undefined}
               className={tab === "compare" ? "active" : ""}
               onClick={() => setTab("compare")}
             >
@@ -329,6 +348,7 @@ export default function Dashboard({
               Comparador
             </button>
             <button
+              aria-current={tab === "history" ? "page" : undefined}
               className={tab === "history" ? "active" : ""}
               onClick={() => setTab("history")}
             >
@@ -336,6 +356,7 @@ export default function Dashboard({
               Mis tarifas
             </button>
             <button
+              aria-current={tab === "bills" ? "page" : undefined}
               className={tab === "bills" ? "active" : ""}
               onClick={() => setTab("bills")}
             >
@@ -369,15 +390,55 @@ export default function Dashboard({
                 <Download size={15} />
                 Exportar
               </button>
-              <button
-                className="button primary small-button"
-                onClick={save}
-                disabled={!loaded || busy || !dirty}
-              >
-                <Save size={15} />
-                {busy ? "Guardando…" : "Guardar cambios"}
-              </button>
+              {tab !== "bills" ? (
+                <button
+                  className="button primary small-button"
+                  onClick={() => save()}
+                  disabled={!loaded || busy || !dirty}
+                >
+                  <Save size={15} />
+                  {busy ? "Guardando…" : "Guardar cambios"}
+                </button>
+              ) : (
+                <span className="small muted">
+                  Las facturas se guardan al confirmar.
+                </span>
+              )}
             </div>
+          </div>
+        )}
+        {user && !user.emailVerified && (
+          <div className="notice verification-banner">
+            <span>
+              Ya estás dentro. Te hemos enviado un correo para confirmar tu
+              dirección.
+            </span>
+            <button
+              type="button"
+              className="link-button"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  const result = await authClient.sendVerificationEmail({
+                    email: user.email,
+                    callbackURL: `${window.location.origin}/`,
+                  });
+                  if (result.error) throw new Error();
+                  setMessage(
+                    "Correo enviado. Revisa también la carpeta de spam.",
+                  );
+                } catch {
+                  setError(
+                    "No se ha podido enviar el correo. Espera un minuto y vuelve a intentarlo.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Reenviar correo
+            </button>
           </div>
         )}
         {message && (
@@ -415,32 +476,19 @@ export default function Dashboard({
                     <section className="panel consumption">
                       <div className="panel-heading">
                         <div>
-                          <span className="step-number">01</span>
-                          <h2>Tu punto de partida</h2>
+                          <SlidersHorizontal size={20} aria-hidden="true" />
+                          <h2>Tu consumo y tus impuestos</h2>
                         </div>
                         <span className="pill neutral">2.0TD · Hogar</span>
                       </div>
                       <p className="muted">
-                        Usaremos el mismo consumo para todas las tarifas.
+                        Usaremos estos datos para todas las tarifas. También
+                        puedes completarlos al añadir tu tarifa actual.
                       </p>
-                      <div className="input-section">
-                        <div className="input-section-title">
-                          <span>Consumo de tu factura</span>
-                          <span className="small muted">Por periodos</span>
-                        </div>
-                        <div className="form-grid three energy-inputs">
-                          {fields.map(input)}
-                        </div>
-                      </div>
-                      <div className="input-section">
-                        <div className="input-section-title">
-                          <span>Potencia y duración</span>
-                          <span className="small muted">Hasta 15 kW</span>
-                        </div>
-                        <div className="form-grid three">
-                          {powerFields.map(input)}
-                        </div>
-                      </div>
+                      <ProfileFields
+                        value={w.profile}
+                        onChange={(profile) => update({ ...w, profile })}
+                      />
                       <button
                         className="tax-toggle"
                         onClick={() => setTaxesOpen(!taxesOpen)}
@@ -464,67 +512,10 @@ export default function Dashboard({
                       </button>
                       {taxesOpen && (
                         <div className="tax-panel">
-                          <label className="checkbox">
-                            <input
-                              type="checkbox"
-                              checked={w.profile.taxes}
-                              onChange={(e) =>
-                                profile("taxes", e.target.checked)
-                              }
-                            />
-                            Incluir IVA e impuesto eléctrico
-                          </label>
-                          {w.profile.taxes && (
-                            <>
-                              <div className="form-grid two">
-                                <Field
-                                  label="IVA del suministro"
-                                  value={w.profile.vat}
-                                  onChange={(v) => profile("vat", v)}
-                                  decimal
-                                  unit="%"
-                                />
-                                <Field
-                                  label="Impuesto eléctrico (IEE)"
-                                  value={w.profile.electricityTax}
-                                  onChange={(v) => profile("electricityTax", v)}
-                                  decimal
-                                  unit="%"
-                                />
-                              </div>
-                              <button
-                                className="link-button"
-                                onClick={() =>
-                                  update({
-                                    ...w,
-                                    profile: {
-                                      ...w.profile,
-                                      vat: "21",
-                                      electricityTax: "5.11269632",
-                                    },
-                                  })
-                                }
-                              >
-                                Usar tipos generales: 21 % y 5,11269632 %
-                              </button>
-                              <label className="checkbox small">
-                                <input
-                                  type="checkbox"
-                                  checked={w.profile.minimumTax}
-                                  onChange={(e) =>
-                                    profile("minimumTax", e.target.checked)
-                                  }
-                                />
-                                Aplicar mínimo doméstico IEE (0,001 €/kWh)
-                              </label>
-                            </>
-                          )}
-                          <p className="small muted">
-                            Península y Baleares. Revisa los tipos de tu
-                            factura: pueden cambiar según el devengo. No calcula
-                            IGIC ni IPSI. El alquiler y otros cargos se indican
-                            en cada tarifa.
-                          </p>
+                          <TaxFields
+                            value={w.profile}
+                            onChange={(profile) => update({ ...w, profile })}
+                          />
                           <button
                             className="text-link"
                             onClick={() => setTaxHelp(true)}
@@ -534,11 +525,37 @@ export default function Dashboard({
                           </button>
                         </div>
                       )}
+                      {user && (
+                        <div className="consumption-bill-action">
+                          <button
+                            className="button secondary full"
+                            disabled={!baseline}
+                            onClick={() => {
+                              if (baseline)
+                                setBillDraft(
+                                  billFromCalculation(
+                                    baseline.tariff,
+                                    w.profile,
+                                    baseline.cost,
+                                  ),
+                                );
+                            }}
+                          >
+                            <Receipt size={17} /> Guardar este periodo como
+                            factura
+                          </button>
+                          <p className="small muted">
+                            {baseline
+                              ? "Revisa el total real antes de añadirlo a tu historial."
+                              : "Añade tu tarifa actual y completa los datos para copiar el consumo y el desglose."}
+                          </p>
+                        </div>
+                      )}
                     </section>
                     <section className="tariffs-section">
                       <div className="section-heading compact">
                         <div className="heading-number">
-                          <span className="step-number">02</span>
+                          <Zap size={20} aria-hidden="true" />
                           <h2>Tus tarifas, frente a frente</h2>
                         </div>
                         <button
@@ -576,6 +593,7 @@ export default function Dashboard({
                               tariff={tariff}
                               current={tariff.id === w.currentId}
                               index={i}
+                              onReview={() => confirmPrices(tariff.id)}
                               onEdit={() => setEditing(tariff)}
                               onSelect={() => {
                                 setSwitchTo(tariff.id);
@@ -653,6 +671,22 @@ export default function Dashboard({
                                 : best.tariff.name}
                             </span>
                           </div>
+                          {user && baseline && (
+                            <button
+                              className="button bill-save full"
+                              onClick={() =>
+                                setBillDraft(
+                                  billFromCalculation(
+                                    baseline.tariff,
+                                    w.profile,
+                                    baseline.cost,
+                                  ),
+                                )
+                              }
+                            >
+                              <Receipt size={18} /> Guardar como factura
+                            </button>
+                          )}
                           {results.map((r, i) => (
                             <ResultRow
                               key={r.tariff.id}
@@ -709,7 +743,8 @@ export default function Dashboard({
                       <h3>¿Hay algo mejor ahí fuera?</h3>
                       <p>
                         Busca una oferta, copia sus precios y comprueba si te
-                        compensa con tu consumo.
+                        compensa con tu consumo. Confirma la fecha cuando hayas
+                        comprobado que los precios siguen vigentes.
                       </p>
                       <a
                         className="text-link"
@@ -723,10 +758,18 @@ export default function Dashboard({
                       {user && (
                         <button
                           className="button secondary full small-button"
-                          onClick={() => update({ ...w, reviewedOn: today() })}
+                          disabled={
+                            !w.tariffs.length ||
+                            (w.reviewedOn === today() &&
+                              w.tariffs.every((t) => t.checkedOn === today()))
+                          }
+                          onClick={() => confirmPrices()}
                         >
                           <Check size={15} />
-                          Marcar revisión de hoy
+                          {w.reviewedOn === today() &&
+                          w.tariffs.every((t) => t.checkedOn === today())
+                            ? "Revisión de hoy guardada"
+                            : "He comprobado todos los precios"}
                         </button>
                       )}
                     </div>
@@ -778,7 +821,7 @@ export default function Dashboard({
                 </Empty>
               </div>
             ) : tab === "bills" ? (
-              <Bills workspace={w} update={update} />
+              <Bills workspace={w} update={save} />
             ) : (
               <>
                 <div className="section-heading">
@@ -839,9 +882,7 @@ export default function Dashboard({
                               Ver todos los precios
                             </summary>
                             <p className="small">
-                              Potencia P1: {h.tariff.powerPeak} · P2:{" "}
-                              {h.tariff.powerValley} €/kW/
-                              {h.tariff.powerUnit === "day" ? "día" : "año"}
+                              Potencia: {powerDescription(h.tariff)}
                               <br />
                               Alquiler: {h.tariff.meterDay || "0"} €/día · Bono
                               social: {h.tariff.socialDay || "0"} €/día ·
@@ -872,9 +913,29 @@ export default function Dashboard({
           </div>
         </footer>
       </main>
+      {billDraft && (
+        <BillForm
+          initial={billDraft}
+          workspace={w}
+          onClose={() => setBillDraft(null)}
+          onSave={async (bill) => {
+            if (!(await save({ ...w, bills: [...w.bills, bill] })))
+              throw new Error(
+                "No se ha guardado la factura. Tus datos siguen aquí; vuelve a intentarlo.",
+              );
+            setBillDraft(null);
+            setTab("bills");
+            setMessage(
+              "Factura guardada en tu cuenta, con su consumo y desglose.",
+            );
+          }}
+        />
+      )}
       {editing && (
         <TariffForm
           initial={editing}
+          initialProfile={w.profile}
+          firstTariff={!w.currentId}
           isCurrent={editing.id === w.currentId}
           currentSince={w.currentSince}
           onSave={saveTariff}
@@ -948,14 +1009,15 @@ export default function Dashboard({
               </li>
               <li>
                 <strong>Financiación del bono social:</strong> cargo diario de
-                tu contrato. Se incluye en la base del IEE; no es el descuento
-                para beneficiarios del bono social.
+                tu contrato. Por defecto se incluye en la base del IEE; puedes
+                ajustar este tratamiento por tarifa para reproducir tu factura.
+                No es el descuento para beneficiarios del bono social.
               </li>
               <li>
                 <strong>IEE:</strong> (energía + potencia + financiación bono
-                social) × tipo indicado, con mínimo doméstico opcional de 0,001
-                €/kWh. El alquiler del contador y los servicios no forman parte
-                de esta base.
+                social, si está incluida en esta tarifa) × tipo indicado, con
+                mínimo doméstico opcional de 0,001 €/kWh. El alquiler del
+                contador y los servicios no forman parte de esta base.
               </li>
               <li>
                 <strong>IVA:</strong> se aplica al suministro, incluido el IEE y
@@ -965,8 +1027,10 @@ export default function Dashboard({
             </ol>
             <p>
               Los costes mensuales de servicios se prorratean a 12 × días / 365.
-              Los importes se redondean a céntimos por concepto; tu factura
-              puede tener diferencias de redondeo.
+              Los importes se redondean a céntimos por concepto. Si tu factura
+              muestra precios redondeados, usa «Calcular precios desde los
+              importes» al editar la tarifa. Tu factura puede tener diferencias
+              de redondeo.
             </p>
             <p>
               Tipos generales de referencia: IVA 21 % e IEE 5,11269632 %.
@@ -1023,6 +1087,7 @@ function TariffCard({
   current,
   index,
   onEdit,
+  onReview,
   onSelect,
   onRemove,
 }: {
@@ -1030,16 +1095,11 @@ function TariffCard({
   current: boolean;
   index: number;
   onEdit: () => void;
+  onReview: () => void;
   onSelect: () => void;
   onRemove: () => void;
 }) {
   const expired = t.validUntil && t.validUntil < today();
-  const stale =
-    !t.checkedOn ||
-    (Date.parse(`${today()}T00:00:00Z`) -
-      Date.parse(`${t.checkedOn}T00:00:00Z`)) /
-      86400000 >
-      7;
   return (
     <article className={`panel tariff-card ${current ? "is-current" : ""}`}>
       <div className="tariff-top">
@@ -1088,13 +1148,16 @@ function TariffCard({
           </div>
         ))}
       </div>
+      <p className="small muted tariff-power">
+        Potencia: {powerDescription(t)}
+      </p>
       <div className="tariff-bottom">
         <span>
           {expired
             ? "Oferta caducada"
-            : stale
-              ? "Pendiente de revisar"
-              : `Revisada ${shortDate(t.checkedOn)}`}
+            : t.checkedOn
+              ? `Precios comprobados: ${shortDate(t.checkedOn)}`
+              : "Precios aún sin comprobar"}
         </span>
         <div>
           {t.url && (
@@ -1116,6 +1179,17 @@ function TariffCard({
           )}
         </div>
       </div>
+      <button
+        type="button"
+        className="link-button tariff-review"
+        onClick={onReview}
+        disabled={t.checkedOn === today()}
+      >
+        <Check size={16} />
+        {t.checkedOn === today()
+          ? "Precios confirmados hoy"
+          : "Confirmar precios de hoy"}
+      </button>
       {t.notes && <p className="tariff-notes small muted">{t.notes}</p>}
     </article>
   );

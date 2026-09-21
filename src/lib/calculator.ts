@@ -19,8 +19,8 @@ export function calculate(t: Tariff, p: Profile) {
     p.valleyKw,
     t.energyPeak,
     t.powerPeak,
-    t.powerValley,
   ];
+  if (!t.powerKind || t.powerKind === "periods") required.push(t.powerValley);
   if (t.kind === "periods") required.push(t.energyFlat, t.energyValley);
   if (p.taxes) required.push(p.vat, p.electricityTax);
   if (
@@ -30,6 +30,7 @@ export function calculate(t: Tariff, p: Profile) {
   )
     return null;
   const days = n(p.days);
+  if (t.powerKind === "combined" && n(p.peakKw) !== n(p.valleyKw)) return null;
   const kwh = n(p.peakKwh) + n(p.flatKwh) + n(p.valleyKwh);
   const energy = cents(
     t.kind === "fixed"
@@ -39,13 +40,20 @@ export function calculate(t: Tariff, p: Profile) {
           n(p.valleyKwh) * n(t.energyValley),
   );
   const power = cents(
-    ((n(p.peakKw) * n(t.powerPeak) + n(p.valleyKw) * n(t.powerValley)) * days) /
+    ((n(p.peakKw) * n(t.powerPeak) +
+      (t.powerKind === "combined"
+        ? 0
+        : n(p.valleyKw) *
+          n(t.powerKind === "same" ? t.powerPeak : t.powerValley))) *
+      days) /
       (t.powerUnit === "year" ? 365 : 1),
   );
   const social = cents(n(t.socialDay) * days);
   const meter = cents(n(t.meterDay) * days);
   const services = cents((n(t.servicesMonth) * 12 * days) / 365);
-  const electricityBase = cents(energy + power + social);
+  const electricityBase = cents(
+    energy + power + (t.socialInElectricityTax === false ? 0 : social),
+  );
   const electricityTax = p.taxes
     ? cents(
         Math.max(
@@ -54,7 +62,7 @@ export function calculate(t: Tariff, p: Profile) {
         ),
       )
     : 0;
-  const vatBase = cents(electricityBase + electricityTax + meter);
+  const vatBase = cents(energy + power + social + electricityTax + meter);
   const vat = p.taxes ? cents((vatBase * n(p.vat)) / 100) : 0;
   // Separate maintenance services remain at the general IVA rate, even when supply IVA is reduced.
   const servicesVat = p.taxes ? cents(services * 0.21) : 0;
