@@ -15,13 +15,25 @@ test(
     );
     process.env.DATABASE_URL = testUrl.toString();
     process.env.BETTER_AUTH_SECRET = randomBytes(32).toString("base64");
-    process.env.BETTER_AUTH_URL = "http://localhost:3000";
+    const preview = process.env.TEST_VERCEL_PREVIEW;
+    process.env.BETTER_AUTH_URL = preview
+      ? "https://comparador-luz-gilt.vercel.app"
+      : "http://localhost:3000";
+    // Simulate Preview inheriting Production's canonical URL.
+    process.env.VERCEL_ENV = preview ? "preview" : "development";
+    process.env.VERCEL_URL = "comparador-deployment-test.vercel.app";
+    process.env.VERCEL_BRANCH_URL = "comparador-branch-test.vercel.app";
+    delete process.env.VERCEL;
     process.env.EMAIL_MODE = "console";
     const { getAuth } = await import("../src/lib/auth");
     const { getPool } = await import("../src/lib/db");
     const { GET, PUT } = await import("../src/app/api/workspace/route");
+    // The guarded disposable database also stores rate limits between test runs.
+    await getPool().query('DELETE FROM "rateLimit"');
     const auth = getAuth();
-    const base = "http://localhost:3000";
+    const base = preview
+      ? `https://${preview === "branch" ? process.env.VERCEL_BRANCH_URL : process.env.VERCEL_URL}`
+      : "http://localhost:3000";
     const emails: string[] = [];
     const originalLog = console.info;
     console.info = (...args: unknown[]) => {
@@ -47,6 +59,19 @@ test(
       return emails.at(-1)!.match(/https?:\/\/\S+/)![0];
     };
     try {
+      const foreignOrigin = await auth.handler(
+        new Request(`${base}/api/auth/sign-out`, {
+          method: "POST",
+          headers: {
+            origin: "https://unrelated-preview.vercel.app",
+            "content-type": "application/json",
+            cookie: "unrelated=1",
+          },
+          body: "{}",
+        }),
+      );
+      assert.equal(foreignOrigin.status, 403);
+      assert.equal((await foreignOrigin.json()).code, "INVALID_ORIGIN");
       assert.equal((await GET(request("/api/workspace"))).status, 401);
       let aliceCookie = "";
       let bobCookie = "";
@@ -61,7 +86,11 @@ test(
             callbackURL: `${base}/`,
           }),
         );
+        if (signup.status !== 200) {
+          assert.fail(`Signup failed: ${signup.status} ${await signup.text()}`);
+        }
         assert.equal(signup.status, 200);
+        assert.equal(new URL(emailURL()).origin, base);
         const unverified = await auth.handler(
           request("/api/auth/sign-in/email", { email, password }),
         );
@@ -138,6 +167,7 @@ test(
       );
       assert.equal(reset.status, 200);
       const url = new URL(emailURL());
+      assert.equal(url.origin, base);
       const token = url.pathname.split("/").at(-1)!;
       const changed = await auth.handler(
         request("/api/auth/reset-password", {

@@ -2,11 +2,12 @@ import { betterAuth } from "better-auth";
 import { waitUntil } from "@vercel/functions";
 import { getPool } from "./db";
 import { sendAccountEmail } from "./email";
+import { authOrigins } from "./auth-origins";
 
 export function authConfigured() {
   return Boolean(
     process.env.DATABASE_URL &&
-    process.env.BETTER_AUTH_URL &&
+    authOrigins().baseURL &&
     (process.env.BETTER_AUTH_SECRET?.length ?? 0) >= 32 &&
     ((process.env.RESEND_API_KEY && process.env.EMAIL_FROM) ||
       (process.env.NODE_ENV !== "production" &&
@@ -16,6 +17,7 @@ export function authConfigured() {
 function createAuth() {
   return betterAuth({
     appName: "Luz en claro",
+    baseURL: authOrigins().baseURL,
     database: getPool(),
     advanced: process.env.VERCEL
       ? {

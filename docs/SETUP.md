@@ -27,7 +27,9 @@ Verify a domain you own in [Resend](https://resend.com/docs/send-with-nodejs), i
 
 Email verification is required. Password recovery is included. **Do not set `EMAIL_MODE=console` in production**: it only works in development. Missing email configuration disables accounts instead of creating users who can never verify their addresses. Vercel background tasks keep email delivery alive after the response. Auth rate limiting uses PostgreSQL, so it works across function instances.
 
-Use the exact canonical domain above when signing in. For preview testing, give that deployment its own exact `BETTER_AUTH_URL`, database branch, secret and email settings; avoid wildcard trusted origins. Never put credentials in `NEXT_PUBLIC_*` variables.
+Use the exact canonical domain above when signing in to Production. For Preview, configure a separate database branch, secret and email settings. The app automatically trusts the exact `VERCEL_URL` and `VERCEL_BRANCH_URL` supplied to that preview deployment, overriding any inherited production `BETTER_AUTH_URL`. Signup, verification/reset links and saving data work on both preview URLs; no per-deployment URL edits are needed. Other deployments and arbitrary `*.vercel.app` origins are not trusted.
+
+Keep **Automatically expose System Environment Variables** enabled in Vercel. If system URLs are unavailable, the app falls back to `BETTER_AUTH_URL`; set that to the exact preview origin and redeploy. Custom preview domains also require an explicit configuration change. Environment-variable edits apply to new deployments, so retry on the latest preview after redeploying. Never put credentials in `NEXT_PUBLIC_*` variables. References: [Vercel system environment variables](https://vercel.com/docs/environment-variables/system-environment-variables), [Better Auth dynamic base URLs](https://www.better-auth.com/docs/reference/options#baseurl).
 
 ## 3. Automatic deployment migrations
 
@@ -95,7 +97,7 @@ pnpm build
 TEST_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_test pnpm test
 ```
 
-The last command exercises real authentication and account-owned persistence against a disposable local database. It refuses non-local database hosts and databases whose names do not end in `_test`. The test cleans up the users it creates. Without `TEST_DATABASE_URL`, that integration test is explicitly skipped.
+The last command exercises real authentication and account-owned persistence against a disposable local database. It refuses non-local database hosts and databases whose names do not end in `_test`. The test cleans up the users it creates and resets the test database's rate-limit records. Without `TEST_DATABASE_URL`, that integration test is explicitly skipped. Run the same command with `TEST_VERCEL_PREVIEW=deployment` and then `TEST_VERCEL_PREVIEW=branch` to check the entire account workflow on both preview URLs while simulating an inherited production `BETTER_AUTH_URL`. Run these database tests sequentially.
 
 ## Storage and privacy
 
