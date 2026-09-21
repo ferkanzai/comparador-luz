@@ -5,6 +5,7 @@ import {
   tariffSchema,
   today,
   money,
+  powerUnitLabels,
   type Profile,
   type Tariff,
 } from "@/lib/domain";
@@ -13,12 +14,21 @@ import { ProfileFields, TaxFields } from "./profile-fields";
 import InvoicePrices from "./invoice-prices";
 import { calculate } from "@/lib/calculator";
 import { billLines } from "@/lib/bill-data";
+import {
+  estimateMeter,
+  estimateSocial,
+  meterEstimateSource,
+  meterEstimates,
+  socialEstimate2026,
+} from "@/lib/charge-estimates";
+import EstimateNotice from "./estimate-notice";
 export default function TariffForm({
   initial,
   initialProfile,
   firstTariff,
   isCurrent,
   currentSince,
+  invoiceDraft = false,
   onSave,
   onClose,
 }: {
@@ -27,6 +37,7 @@ export default function TariffForm({
   firstTariff: boolean;
   isCurrent: boolean;
   currentSince: string;
+  invoiceDraft?: boolean;
   onSave: (
     t: Tariff,
     since: string,
@@ -41,7 +52,12 @@ export default function TariffForm({
   const [since, setSince] = useState(today());
   const [error, setError] = useState("");
   const update = (key: keyof Tariff, value: string | boolean) =>
-    setTariff((t) => ({ ...t, [key]: value }));
+    setTariff((t) => ({
+      ...t,
+      [key]: value,
+      ...(key === "meterDay" ? { meterEstimate: "none" as const } : {}),
+      ...(key === "socialDay" ? { socialEstimate: "none" as const } : {}),
+    }));
   const numeric = (
     key: keyof Tariff,
     label: string,
@@ -158,6 +174,7 @@ export default function TariffForm({
                 onChange={(e) => update("powerUnit", e.target.value)}
               >
                 <option value="day">€/kW/día</option>
+                <option value="month">€/kW/mes</option>
                 <option value="year">€/kW/año</option>
               </select>
             </label>
@@ -183,14 +200,14 @@ export default function TariffForm({
                 : tariff.powerKind === "same"
                   ? "Precio de cada periodo"
                   : "P1 · Punta",
-              tariff.powerUnit === "day" ? "€/kW/día" : "€/kW/año",
+              powerUnitLabels[tariff.powerUnit],
               true,
             )}
             {tariff.powerKind === "periods" &&
               numeric(
                 "powerValley",
                 "P2 · Valle",
-                tariff.powerUnit === "day" ? "€/kW/día" : "€/kW/año",
+                powerUnitLabels[tariff.powerUnit],
                 true,
               )}
           </div>
@@ -201,6 +218,13 @@ export default function TariffForm({
                 ? "Se aplica este precio a los kW de punta y a los de valle, y se suman ambos importes."
                 : "La tarifa 2.0TD tiene dos periodos de potencia, aunque tengas los mismos kW contratados."}
           </p>
+          {tariff.powerUnit === "month" && (
+            <p className="notice small">
+              Convertimos a precio diario: precio mensual × 12 ÷ 365. Si tu
+              compañía prorratea de otra forma, puedes calcular el precio desde
+              los importes de tu factura más abajo.
+            </p>
+          )}
         </div>
         <section className="form-section">
           <h3>03 / Alquiler, bono social y otros costes</h3>
@@ -208,11 +232,83 @@ export default function TariffForm({
             En blanco equivale a cero en estos cargos. Comprueba si están
             incluidos en el precio para no sumarlos dos veces.
           </p>
-          <div className="form-grid three">
-            {numeric("meterDay", "Alquiler de contador", "€/día")}
-            {numeric("socialDay", "Financiación bono social", "€/día")}
-            {numeric("servicesMonth", "Mantenimiento / servicios", "€/mes")}
+          <div className="form-grid two charge-fields">
+            <div className="charge-field">
+              {numeric("meterDay", "Alquiler de contador", "€/día")}
+              <button
+                type="button"
+                className="link-button estimate-action"
+                onClick={() =>
+                  setTariff((t) => estimateMeter(t, "single-2013"))
+                }
+              >
+                No lo sé · Usar estimación
+              </button>
+              {tariff.meterEstimate !== "none" && tariff.meterEstimate && (
+                <label className="auth-label small">
+                  Estimación aplicada · tipo de contador
+                  <select
+                    value={tariff.meterEstimate}
+                    onChange={(e) => {
+                      const kind = e.target.value;
+                      if (kind === "single-2013" || kind === "three-2013")
+                        setTariff((t) => estimateMeter(t, kind));
+                    }}
+                  >
+                    {Object.entries(meterEstimates).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <p className="small muted">
+                La estimación inicial usa un contador inteligente monofásico.
+                Puedes cambiar a trifásico. Si es tuyo, introduce 0.
+                Prorrateamos el mes × 12 ÷ 365, sin impuestos.{" "}
+                <a
+                  className="text-link"
+                  href={meterEstimateSource}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Referencia regulada
+                </a>
+                .
+              </p>
+            </div>
+            <div className="charge-field">
+              {numeric("socialDay", "Financiación bono social", "€/día")}
+              <button
+                type="button"
+                className="link-button estimate-action"
+                onClick={() => setTariff(estimateSocial)}
+              >
+                No lo sé · Usar estimación
+              </button>
+              {tariff.socialEstimate === "ted634-2026" && (
+                <p role="status" className="estimate-note small">
+                  Estimación aplicada · referencia de junio de 2026.
+                </p>
+              )}
+              <p className="small muted">
+                Referencia de 2026: 9,011295 €/año ÷ 365, sin impuestos. En
+                mercado libre depende del contrato: si ya está incluido,
+                introduce 0 para no duplicarlo.{" "}
+                <a
+                  className="text-link"
+                  href={socialEstimate2026.source}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  BOE · junio de 2026
+                </a>
+                .
+              </p>
+            </div>
           </div>
+          {numeric("servicesMonth", "Mantenimiento / servicios", "€/mes")}
           <label className="checkbox small">
             <input
               type="checkbox"
@@ -265,8 +361,9 @@ export default function TariffForm({
         <section className="form-section">
           <h3>04 / Tu factura de referencia</h3>
           <p className="small muted">
-            Completa aquí lo que falte. Estos datos se usarán para comparar
-            todas las tarifas.
+            {invoiceDraft
+              ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
+              : "Completa aquí lo que falte. Estos datos se usarán para comparar todas las tarifas."}
           </p>
           <ProfileFields value={profile} onChange={setProfile} />
           <TaxFields value={profile} onChange={setProfile} />
@@ -277,6 +374,7 @@ export default function TariffForm({
           aria-label="Resultado de esta tarifa"
         >
           <h3>Así quedaría tu factura</h3>
+          <EstimateNotice tariff={tariff} />
           {cost ? (
             <>
               <strong className="big-amount">{money(cost.total)}</strong>

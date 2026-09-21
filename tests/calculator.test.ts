@@ -5,8 +5,16 @@ import {
   changeCurrent,
   emptyWorkspace,
   newTariff,
+  powerDayFactor,
+  powerDescription,
+  tariffSchema,
   workspaceSchema,
 } from "../src/lib/domain";
+import {
+  estimateMeter,
+  estimateSocial,
+  estimatedCharges,
+} from "../src/lib/charge-estimates";
 const profile = {
   ...emptyWorkspace().profile,
   days: "30",
@@ -246,4 +254,77 @@ test("reported invoice can be reproduced from billed amounts without inventing a
     1.02,
   );
   assert.equal(calculate(fromBill, { ...p, taxes: false })!.total, 20.79);
+});
+
+test("monthly power annualizes all price modes and supports invoice reconstruction", () => {
+  for (const days of [28, 30, 31, 365]) {
+    for (const powerKind of ["periods", "same", "combined"] as const) {
+      const monthly = {
+        ...tariff,
+        powerUnit: "month" as const,
+        powerKind,
+        powerPeak: "3,04",
+        powerValley: "0.91",
+      };
+      const annual = {
+        ...monthly,
+        powerUnit: "year" as const,
+        powerPeak: "36.48",
+        powerValley: "10.92",
+      };
+      assert.equal(
+        calculate(monthly, { ...profile, days: String(days) })!.power,
+        calculate(annual, { ...profile, days: String(days) })!.power,
+      );
+      assert.match(powerDescription(monthly), /€\/kW\/mes/);
+    }
+  }
+  const p = { ...profile, days: "29", valleyKw: "5" };
+  const fromAmounts = {
+    ...tariff,
+    powerUnit: "month" as const,
+    powerPeak: (11.25 / (4 * 29 * powerDayFactor("month"))).toFixed(12),
+    powerValley: (3.13 / (5 * 29 * powerDayFactor("month"))).toFixed(12),
+  };
+  assert.equal(calculate(fromAmounts, p)!.power, 14.38);
+  assert.equal(calculate({ ...fromAmounts, powerKind: "combined" }, p), null);
+});
+
+test("opt-in estimates use dated pre-tax references and survive workspace snapshots", () => {
+  assert.equal(estimatedCharges(tariff), "");
+  assert.equal(calculate(tariff, profile)!.meter, 0);
+  const t = estimateSocial(estimateMeter(tariff, "single-2013"));
+  assert.equal(estimatedCharges(t), "alquiler y bono social");
+  assert.equal(calculate(t, profile)!.meter, 0.8);
+  assert.equal(calculate(t, profile)!.social, 0.74);
+  const year = calculate(t, { ...profile, days: "365" })!;
+  assert.equal(year.meter, 9.72);
+  assert.equal(year.social, 9.01);
+  assert.equal(
+    calculate(estimateMeter(t, "three-2013"), { ...profile, days: "365" })!
+      .meter,
+    16.32,
+  );
+  const next = { ...tariff, id: crypto.randomUUID() };
+  const changed = changeCurrent(
+    {
+      ...emptyWorkspace(),
+      tariffs: [t, next],
+      currentId: t.id,
+      currentSince: "2026-07-01",
+    },
+    next.id,
+    "2026-09-01",
+  );
+  const restored = workspaceSchema.parse(JSON.parse(JSON.stringify(changed)));
+  assert.equal(restored.history[0].tariff.socialEstimate, "ted634-2026");
+  assert.equal(restored.history[0].tariff.meterEstimate, "single-2013");
+  assert.equal(restored.history[0].tariff.socialDay, t.socialDay);
+  const legacy = tariffSchema.parse({
+    ...tariff,
+    meterEstimate: undefined,
+    socialEstimate: undefined,
+  });
+  assert.equal(legacy.meterEstimate, "none");
+  assert.equal(legacy.socialEstimate, "none");
 });

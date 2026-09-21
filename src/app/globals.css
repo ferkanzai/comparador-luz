@@ -503,6 +503,120 @@ small {
 .field {
   min-width: 0;
 }
+.charge-fields {
+  margin: 18px 0;
+  align-items: start;
+}
+.charge-field {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.charge-field > p {
+  margin: 10px 0 0;
+}
+.charge-field select {
+  width: 100%;
+  min-width: 0;
+}
+.estimate-action {
+  min-height: 44px;
+  text-align: left;
+}
+.estimate-note {
+  color: #53683d;
+  background: #edf2e3;
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin: 12px 0;
+}
+.pvpc-panel {
+  margin-top: 28px;
+  padding: 24px;
+  border-top: 3px solid #91ac70;
+}
+.pvpc-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pvpc-heading .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+.pvpc-panel h2 {
+  margin: 16px 0 8px;
+  font-size: 1.5rem;
+}
+.pvpc-panel > p {
+  margin: 12px 0;
+}
+.pvpc-month {
+  font-weight: 600;
+}
+.pvpc-month span {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.pvpc-prices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 8px;
+}
+.pvpc-prices dt {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.pvpc-prices dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pvpc-prices small {
+  display: block;
+  font-weight: 400;
+}
+.pvpc-panel select {
+  max-width: 100%;
+  width: 100%;
+}
+.pvpc-total {
+  margin: 20px 0;
+  padding: 16px 0;
+  border-block: 1px solid var(--line);
+}
+.pvpc-total > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.pvpc-total strong {
+  font-family: var(--display);
+  font-size: 2rem;
+}
+.pvpc-total p {
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+.pvpc-details summary {
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 8px 0;
+}
+.pvpc-sources {
+  padding-top: 12px;
+}
 .field > label {
   display: block;
   font-size: 0.875rem;
@@ -1102,6 +1216,83 @@ small {
 .modal::backdrop {
   background: #152b2390;
   backdrop-filter: blur(4px);
+}
+.bill-concepts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 18px 0;
+}
+.bill-concept {
+  min-width: 0;
+}
+.bill-concept:has(.bill-price-lines) {
+  grid-column: 1 / -1;
+}
+.split-price-button {
+  font-size: 0.8125rem;
+  text-align: left;
+  min-height: 44px;
+}
+.bill-price-lines {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f0f4e9;
+}
+.bill-price-lines h3 {
+  font-size: 1rem;
+}
+.bill-price-lines > p {
+  margin: 12px 0;
+}
+.bill-price-line {
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 8px;
+}
+.bill-price-line summary {
+  padding: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.bill-price-line summary span {
+  display: inline-block;
+  margin-left: 12px;
+  color: var(--muted);
+}
+.price-line-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+.price-line-body select {
+  width: 100%;
+  min-width: 0;
+}
+.price-line-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+.price-line-actions button,
+.price-line-body > button {
+  min-height: 44px;
+  text-align: left;
+}
+.bill-reconciliation p {
+  margin: 0 0 8px;
+}
+@media (max-width: 480px) {
+  .bill-concepts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bill-price-lines {
+    padding: 12px;
+  }
 }
 .modal-head {
   display: flex;
@@ -2746,4 +2937,296 @@ button:disabled {
 }
 .series-paid .spending-line {
   stroke-width: 4;
+}
+
+/* Invoice consumption and advisory tariff review */
+.consumption-peakKwh {
+  background: #335e48;
+}
+.consumption-flatKwh {
+  background: #88a460;
+}
+.consumption-valleyKwh {
+  background: #c9dc88;
+}
+.consumption-unallocated {
+  background: repeating-linear-gradient(
+    135deg,
+    #a5aaa2,
+    #a5aaa2 3px,
+    #d9ddd6 3px,
+    #d9ddd6 6px
+  );
+}
+.consumption-chart .interactive-chart {
+  min-width: 1080px;
+}
+.consumption-chart .month-amount {
+  font-size: 0.8125rem;
+}
+.consumption-chart caption {
+  text-align: left;
+  padding: 16px 20px;
+  color: var(--muted);
+}
+.bill-consumption-fields h3,
+.bill-tariff-check h3 {
+  margin: 0 0 12px;
+}
+.bill-consumption-fields .form-grid {
+  margin-top: 16px;
+}
+.check-inputs {
+  padding: 14px 16px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.check-inputs summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.bill-tariff-check .notice {
+  margin: 16px 0;
+}
+.tariff-check-warning {
+  background: #fcf5e5;
+  border-color: #ddc58e;
+}
+.tariff-suggestions,
+.tariff-acceptance {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.tariff-suggestions p {
+  margin: 0;
+}
+.tariff-suggestions .button {
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.tariff-suggestions small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.tariff-acceptance .link-button {
+  justify-self: start;
+  text-align: left;
+}
+.bill-tariff-check > .link-button {
+  text-align: left;
+}
+@media (max-width: 520px) {
+  .chart-toolbar .segmented {
+    width: 100%;
+  }
+  .chart-toolbar button {
+    flex: 1;
+    padding-inline: 8px;
+    gap: 5px;
+    font-size: 0.8125rem;
+  }
+  .chart-toolbar button svg {
+    width: 14px;
+    flex-shrink: 0;
+  }
+  .check-inputs {
+    padding: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .chart-toolbar button svg {
+    display: none;
+  }
+  .chart-toolbar button {
+    padding-inline: 6px;
+  }
+}
+
+.feedback-notice {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.feedback-notice > span {
+  flex: 1;
+  min-width: 0;
+}
+.feedback-notice .icon-button {
+  flex-shrink: 0;
+  margin: -6px -6px -6px 0;
+  color: inherit;
+}
+.year-controls {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.year-controls .form-grid {
+  flex: 1;
+  max-width: 500px;
+}
+.year-controls .auth-label {
+  margin: 0;
+}
+.year-controls .segmented {
+  display: flex;
+  width: auto;
+}
+.year-controls .segmented button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.year-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 24px;
+  margin-top: 28px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 12px;
+}
+.year-summary > div {
+  display: grid;
+  gap: 8px;
+}
+.year-summary .big-amount {
+  line-height: 1.2;
+}
+.year-summary dl {
+  display: flex;
+  gap: 36px;
+  margin: 0;
+  align-items: center;
+}
+.year-summary dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.year-summary dd {
+  margin: 8px 0 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.year-chart-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+}
+.year-chart-heading h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+.year-chart-heading .chart-legend {
+  margin: 0;
+}
+.year-first {
+  background: #a9bb8e;
+}
+.year-second {
+  background: #28704f;
+}
+.year-first-text {
+  color: #637b48;
+}
+.year-second-text {
+  color: #24563e;
+  font-weight: 600;
+}
+.year-chart {
+  position: relative;
+  height: 260px;
+  min-width: 1200px;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.year-month {
+  position: relative;
+  text-align: center;
+  font-size: 0.8125rem;
+}
+.year-month-values {
+  display: grid;
+  gap: 3px;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+}
+.year-bar {
+  position: absolute;
+  width: 26%;
+  max-width: 28px;
+  border-radius: 3px 3px 0 0;
+}
+.year-comparison tfoot {
+  font-weight: 700;
+  background: var(--paper);
+}
+@media (max-width: 640px) {
+  .year-summary {
+    padding: 18px;
+  }
+  .year-summary .big-amount {
+    font-size: 1.9rem;
+    overflow-wrap: anywhere;
+  }
+  .year-controls {
+    align-items: stretch;
+    gap: 16px;
+  }
+  .year-controls .form-grid {
+    min-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .year-controls .segmented {
+    width: 100%;
+  }
+  .year-controls .segmented button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+@media (max-width: 520px) {
+  .workspace-bar nav:has(button:nth-child(4)) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+  }
+}
+.year-comparison {
+  padding: 26px;
+}
+.year-comparison table {
+  min-width: 640px;
+}
+.year-comparison td {
+  white-space: nowrap;
+}
+.year-comparison td small {
+  white-space: normal;
+  min-width: 130px;
+  overflow-wrap: normal;
+}
+@media (max-width: 640px) {
+  .year-comparison {
+    padding: 18px 14px;
+  }
 }

@@ -1,10 +1,13 @@
 import { cents, type Calculation } from "./calculator";
 import {
   numberOf,
+  billBreakdownSchema,
+  decimal,
   today,
   type Bill,
   type Profile,
   type Tariff,
+  type BillPriceLine,
 } from "./domain";
 
 export const billGroups = [
@@ -53,7 +56,13 @@ export function billFromCalculation(
     paid: String(cost.total),
     credit: "0",
     kwh: String(cost.kwh),
+    consumption: {
+      peakKwh: profile.peakKwh,
+      flatKwh: profile.flatKwh,
+      valleyKwh: profile.valleyKwh,
+    },
     notes: "",
+    priceLines: [],
     tariff: structuredClone(tariff),
     profile: structuredClone(profile),
     breakdown: {
@@ -66,6 +75,57 @@ export function billFromCalculation(
       vat: String(cost.vat),
       servicesVat: String(cost.servicesVat),
     },
+  };
+}
+
+export function billReconciliation(bill: Bill) {
+  if (
+    !bill.breakdown ||
+    !billBreakdownSchema.safeParse(bill.breakdown).success ||
+    !decimal().safeParse(bill.credit).success ||
+    !/^-?\d+(?:[.,]\d+)?$/.test(bill.paid) ||
+    !Number.isFinite(numberOf(bill.paid))
+  )
+    return null;
+  const gross = Object.values(bill.breakdown).reduce(
+    (sum, value) => sum + numberOf(value),
+    0,
+  );
+  const net = cents(gross - numberOf(bill.credit));
+  return {
+    gross: cents(gross),
+    net,
+    difference: cents(net - numberOf(bill.paid)),
+  };
+}
+
+export function replaceBillPriceLines(
+  bill: Bill,
+  concept: BillPriceLine["concept"],
+  lines: BillPriceLine[],
+): Bill {
+  const valid = lines.every(
+    (line) => line.amount !== "" && decimal().safeParse(line.amount).success,
+  );
+  return {
+    ...bill,
+    priceLines: [
+      ...bill.priceLines.filter((line) => line.concept !== concept),
+      ...lines,
+    ],
+    breakdown:
+      bill.breakdown && lines.length
+        ? {
+            ...bill.breakdown,
+            [concept]: valid
+              ? String(
+                  cents(
+                    lines.reduce((sum, line) => sum + numberOf(line.amount), 0),
+                  ),
+                )
+              : "",
+          }
+        : bill.breakdown,
   };
 }
 export function billBuckets(bill: Bill) {

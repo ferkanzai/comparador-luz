@@ -1,4 +1,5 @@
 "use client";
+import FeedbackNotice, { useFeedback } from "./feedback-notice";
 import { useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
@@ -32,7 +33,7 @@ export default function AccountForm({
   const [name, setName] = useState("");
   const codeInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const { message, setMessage, dismiss } = useFeedback();
   const [error, setError] = useState(
     verificationError
       ? "El enlace ha caducado o no es válido. Solicita uno nuevo."
@@ -352,14 +353,17 @@ export default function AccountForm({
             </fieldset>
           </form>
           {error && (
-            <div role="alert" className="notice error">
-              {error}
-            </div>
+            <FeedbackNotice
+              message={{ id: 0, text: error, kind: "error" }}
+              onDismiss={() => setError("")}
+            />
           )}
           {message && (
-            <div role="status" className="notice success">
-              {message}
-            </div>
+            <FeedbackNotice
+              key={message.id}
+              message={message}
+              onDismiss={dismiss}
+            />
           )}
           <p className="auth-switch">
             {mode === "signin"

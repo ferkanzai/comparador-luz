@@ -2,6 +2,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X, Zap } from "lucide-react";
 import Link from "next/link";
+import { lockModalScroll } from "@/lib/modal-scroll";
 export function Brand() {
   return (
     <Link href="/" className="brand" aria-label="Luz en claro, inicio">
@@ -99,7 +100,11 @@ export function Modal({
   useEffect(() => {
     const dialog = ref.current;
     dialog?.showModal();
-    return () => dialog?.close();
+    const unlock = lockModalScroll();
+    return () => {
+      dialog?.close();
+      unlock();
+    };
   }, []);
   return (
     <dialog

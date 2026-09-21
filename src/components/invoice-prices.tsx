@@ -1,6 +1,12 @@
 "use client";
+import FeedbackNotice, { useFeedback } from "./feedback-notice";
 import { useState } from "react";
-import { numberOf, type Profile, type Tariff } from "@/lib/domain";
+import {
+  numberOf,
+  powerDayFactor,
+  type Profile,
+  type Tariff,
+} from "@/lib/domain";
 import { Field } from "./ui";
 
 export default function InvoicePrices({
@@ -13,7 +19,7 @@ export default function InvoicePrices({
   onApply: (tariff: Tariff) => void;
 }) {
   const [amounts, setAmounts] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState("");
+  const { message, setMessage, dismiss } = useFeedback();
   const days = numberOf(profile.days);
   const quantities: [keyof Tariff, string, number][] = [
     [
@@ -34,14 +40,12 @@ export default function InvoicePrices({
     [
       "powerPeak",
       "Potencia punta",
-      (numberOf(profile.peakKw) * days) /
-        (tariff.powerUnit === "year" ? 365 : 1),
+      numberOf(profile.peakKw) * days * powerDayFactor(tariff.powerUnit),
     ],
     [
       "powerValley",
       "Potencia valle",
-      (numberOf(profile.valleyKw) * days) /
-        (tariff.powerUnit === "year" ? 365 : 1),
+      numberOf(profile.valleyKw) * days * powerDayFactor(tariff.powerUnit),
     ],
     ["socialDay", "Bono social del periodo", days],
     ["meterDay", "Alquiler del periodo", days],
@@ -86,16 +90,19 @@ export default function InvoicePrices({
             ) {
               setMessage(
                 "Completa el consumo, la potencia y los días correspondientes antes de calcular los precios.",
+                "error",
               );
               return;
             }
             Object.assign(next, {
               [key]: String(Number((numberOf(amount) / quantity).toFixed(12))),
             });
+            if (key === "meterDay") next.meterEstimate = "none";
+            if (key === "socialDay") next.socialEstimate = "none";
             applied = true;
           }
           if (!applied) {
-            setMessage("Introduce al menos un importe de tu factura.");
+            setMessage("Introduce al menos un importe de tu factura.", "error");
             return;
           }
           if (amounts.powerPeak || amounts.powerValley)
@@ -109,9 +116,11 @@ export default function InvoicePrices({
         Aplicar importes a los precios
       </button>
       {message && (
-        <p role="status" className="notice">
-          {message}
-        </p>
+        <FeedbackNotice
+          key={message.id}
+          message={message}
+          onDismiss={dismiss}
+        />
       )}
     </details>
   );

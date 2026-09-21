@@ -1,4 +1,5 @@
 "use client";
+import FeedbackNotice, { useFeedback } from "./feedback-notice";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -41,8 +42,13 @@ import {
 } from "@/lib/domain";
 import { Brand, Empty, Field, Modal } from "./ui";
 import TariffForm from "./tariff-form";
+import EstimateNotice from "./estimate-notice";
+import PvpcComparison from "./pvpc-comparison";
+import { estimatedCharges } from "@/lib/charge-estimates";
 import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
+import YearComparison from "./year-comparison";
+import { invoiceYears } from "@/lib/year-comparison";
 import BillForm from "./bill-form";
 import {
   mergeGuestComparison,
@@ -52,7 +58,7 @@ import {
 } from "@/lib/workspace-draft";
 import { billFromCalculation } from "@/lib/bill-data";
 
-type Tab = "compare" | "history" | "bills";
+type Tab = "compare" | "history" | "bills" | "years";
 export default function Dashboard({
   user,
   accountsAvailable,
@@ -77,9 +83,12 @@ export default function Dashboard({
   } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const { message, setMessage, dismiss } = useFeedback();
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<Tab>("compare");
+  const [requestedTab, setTab] = useState<Tab>("compare");
+  const hasMultipleYears = invoiceYears(w.bills).length > 1;
+  const tab =
+    requestedTab === "years" && !hasMultipleYears ? "bills" : requestedTab;
   const [billDraft, setBillDraft] = useState<Bill | null>(null);
   const [editing, setEditing] = useState<Tariff | null>(null);
   const [switchTo, setSwitchTo] = useState<string | null>(null);
@@ -161,7 +170,7 @@ export default function Dashboard({
           );
       });
     return () => controller.abort();
-  }, [user, reload]);
+  }, [user, reload, setMessage]);
   useEffect(() => {
     if (!dirty || draftStored) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
@@ -454,6 +463,16 @@ export default function Dashboard({
               <Receipt size={17} />
               Mis facturas
             </button>
+            {hasMultipleYears && (
+              <button
+                aria-current={tab === "years" ? "page" : undefined}
+                className={tab === "years" ? "active" : ""}
+                onClick={() => setTab("years")}
+              >
+                <BarChart3 size={17} />
+                Por años
+              </button>
+            )}
           </nav>
           <span className="workspace-status">
             <span className={`status-dot ${dirty ? "unsaved" : ""}`} />
@@ -569,14 +588,17 @@ export default function Dashboard({
           </div>
         )}
         {message && (
-          <div className="notice success" role="status">
-            {message}
-          </div>
+          <FeedbackNotice
+            key={message.id}
+            message={message}
+            onDismiss={dismiss}
+          />
         )}
         {error && (
-          <div className="notice error" role="alert">
-            {error}
-          </div>
+          <FeedbackNotice
+            message={{ id: 0, text: error, kind: "error" }}
+            onDismiss={() => setError("")}
+          />
         )}
         {loadError && (
           <div className="notice error" role="alert">
@@ -744,6 +766,7 @@ export default function Dashboard({
                         </div>
                       )}
                     </section>
+                    <PvpcComparison profile={w.profile} current={current} />
                   </div>
                   <aside className="results-column">
                     <section className="results-panel">
@@ -772,7 +795,7 @@ export default function Dashboard({
                           </p>
                           <span>
                             <ShieldCheck size={15} />
-                            Sin estimaciones inventadas
+                            Tus datos, con los supuestos a la vista
                           </span>
                         </div>
                       ) : (
@@ -798,6 +821,14 @@ export default function Dashboard({
                                 : best.tariff.name}
                             </span>
                           </div>
+                          {(estimatedCharges(best.tariff) ||
+                            (baseline &&
+                              estimatedCharges(baseline.tariff))) && (
+                            <p className="estimate-note small">
+                              Costes y ahorro aproximados: hay cargos estimados
+                              en las tarifas comparadas.
+                            </p>
+                          )}
                           {user && baseline && (
                             <button
                               className="button bill-save full"
@@ -941,6 +972,8 @@ export default function Dashboard({
                   pagas cada mes. El comparador es libre y no necesita cuenta.
                 </Empty>
               </div>
+            ) : tab === "years" ? (
+              <YearComparison bills={w.bills} />
             ) : tab === "bills" ? (
               <Bills workspace={w} update={save} />
             ) : (
@@ -993,6 +1026,7 @@ export default function Dashboard({
                         <div>
                           <h3>{h.tariff.name}</h3>
                           <p className="muted">{h.tariff.provider}</p>
+                          <EstimateNotice tariff={h.tariff} />
                           <p className="small">
                             {h.tariff.kind === "fixed"
                               ? `${h.tariff.energyPeak} €/kWh · Precio único`
@@ -1039,8 +1073,14 @@ export default function Dashboard({
           initial={billDraft}
           workspace={w}
           onClose={() => setBillDraft(null)}
-          onSave={async (bill) => {
-            if (!(await save({ ...w, bills: [...w.bills, bill] })))
+          onSave={async (bill, newTariff) => {
+            if (
+              !(await save({
+                ...w,
+                tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
+                bills: [...w.bills, bill],
+              }))
+            )
               throw new Error(
                 "No se ha guardado la factura. Tus datos siguen aquí; vuelve a intentarlo.",
               );
@@ -1126,7 +1166,8 @@ export default function Dashboard({
               </li>
               <li>
                 <strong>Potencia:</strong> kW contratados × precio × días. Los
-                precios anuales se dividen entre 365.
+                precios anuales se dividen entre 365; los mensuales se
+                multiplican por 12 y se dividen entre 365.
               </li>
               <li>
                 <strong>Financiación del bono social:</strong> cargo diario de
@@ -1147,6 +1188,12 @@ export default function Dashboard({
               </li>
             </ol>
             <p>
+              Puedes estimar el alquiler y la financiación del bono social al
+              editar una tarifa. Guardamos el valor de referencia elegido y
+              marcamos el cálculo como aproximado. Comprueba si tu contrato ya
+              incluye esos cargos antes de añadirlos.
+            </p>
+            <p>
               Los costes mensuales de servicios se prorratean a 12 × días / 365.
               Los importes se redondean a céntimos por concepto. Si tu factura
               muestra precios redondeados, usa «Calcular precios desde los
@@ -1160,10 +1207,12 @@ export default function Dashboard({
               fecha.
             </p>
             <p>
-              No simula PVPC horario, compensación solar, descuentos del bono
-              social, IGIC, IPSI, penalizaciones ni promociones temporales.
-              Introduce precios netos de descuentos y comprueba permanencias
-              antes de cambiar.
+              PVPC se muestra aparte como referencia histórica con medias por
+              periodo del último mes completo; no reconstruye tu factura horaria
+              ni predice precios futuros. No simula compensación solar,
+              descuentos del bono social, IGIC, IPSI, penalizaciones ni
+              promociones temporales. Introduce precios netos de descuentos y
+              comprueba permanencias antes de cambiar.
             </p>
             <div className="source-links">
               <a
@@ -1300,6 +1349,7 @@ function TariffCard({
           )}
         </div>
       </div>
+      <EstimateNotice tariff={t} />
       {!t.checkedOn && (
         <button
           type="button"
@@ -1345,6 +1395,7 @@ function ResultRow({
           <span>
             {tariff.name}
             {current && <small>Actual</small>}
+            {estimatedCharges(tariff) && <small>Aproximado</small>}
             {best && <small className="best-tag">Menor coste</small>}
           </span>
           <strong>{money(cost.total)}</strong>
@@ -1364,6 +1415,7 @@ function ResultRow({
           <ChevronDown size={13} />
         </div>
       </summary>
+      <EstimateNotice tariff={tariff} />
       <dl className="breakdown">
         {lines.map(([label, amount]) => (
           <div key={label}>

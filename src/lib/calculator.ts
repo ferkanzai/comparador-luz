@@ -2,6 +2,7 @@ import {
   numberOf as n,
   profileSchema,
   tariffSchema,
+  powerDayFactor,
   type Profile,
   type Tariff,
 } from "./domain";
@@ -40,19 +41,48 @@ export function calculate(t: Tariff, p: Profile) {
           n(p.valleyKwh) * n(t.energyValley),
   );
   const power = cents(
-    ((n(p.peakKw) * n(t.powerPeak) +
+    (n(p.peakKw) * n(t.powerPeak) +
       (t.powerKind === "combined"
         ? 0
         : n(p.valleyKw) *
           n(t.powerKind === "same" ? t.powerPeak : t.powerValley))) *
-      days) /
-      (t.powerUnit === "year" ? 365 : 1),
+      days *
+      powerDayFactor(t.powerUnit),
   );
   const social = cents(n(t.socialDay) * days);
   const meter = cents(n(t.meterDay) * days);
   const services = cents((n(t.servicesMonth) * 12 * days) / 365);
+  return calculateTotals(
+    { energy, power, social, meter, services, kwh, days },
+    p,
+    t.socialInElectricityTax !== false,
+  );
+}
+
+// Shared tax treatment for entered tariffs and historical PVPC estimates.
+export function calculateTotals(
+  {
+    energy,
+    power,
+    social,
+    meter,
+    services,
+    kwh,
+    days,
+  }: {
+    energy: number;
+    power: number;
+    social: number;
+    meter: number;
+    services: number;
+    kwh: number;
+    days: number;
+  },
+  p: Profile,
+  socialInElectricityTax = true,
+) {
   const electricityBase = cents(
-    energy + power + (t.socialInElectricityTax === false ? 0 : social),
+    energy + power + (socialInElectricityTax ? social : 0),
   );
   const electricityTax = p.taxes
     ? cents(

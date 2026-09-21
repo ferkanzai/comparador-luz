@@ -19,6 +19,7 @@ import {
 import { Empty } from "./ui";
 import BillForm from "./bill-form";
 import BillsChart from "./bills-chart";
+import { consumptionMonths, formatKwh } from "@/lib/bill-consumption";
 export default function Bills({
   workspace: w,
   update,
@@ -28,6 +29,15 @@ export default function Bills({
 }) {
   const [editing, setEditing] = useState<Bill | null>(null);
   const [year, setYear] = useState(today().slice(0, 4));
+  const [chartView, setChartView] = useState<"bars" | "line" | "consumption">(
+    "bars",
+  );
+  const consumption = consumptionMonths(w.bills, year);
+  const knownKwh = consumption.reduce((sum, m) => sum + (m.total ?? 0), 0);
+  const recordedConsumption = consumption.reduce(
+    (sum, m) => sum + m.recorded,
+    0,
+  );
   const bills = w.bills
     .filter((b) => b.month.startsWith(year))
     .sort((a, b) => b.month.localeCompare(a.month));
@@ -69,10 +79,12 @@ export default function Bills({
       paid: "",
       credit: "0",
       kwh: "",
+      consumption: null,
       notes: "",
       tariff: current ? structuredClone(current) : null,
       profile: null,
       breakdown: null,
+      priceLines: [],
     });
   }
   return (
@@ -90,11 +102,22 @@ export default function Bills({
       <div className="panel bill-chart">
         <div className="section-inline">
           <div>
-            <span className="muted">Pagado en {year}</span>
-            <div className="big-amount">{money(total)}</div>
+            <span className="muted">
+              {chartView === "consumption" ? "Consumo registrado" : "Pagado"} en{" "}
+              {year}
+            </span>
+            <div className="big-amount">
+              {chartView === "consumption"
+                ? recordedConsumption
+                  ? formatKwh(knownKwh)
+                  : "— kWh"
+                : money(total)}
+            </div>
             <span className="small muted">
               {bills.length} facturas · {months.filter((m) => m.count).length}{" "}
               meses con datos
+              {chartView === "consumption" &&
+                ` · ${recordedConsumption}/${bills.length} facturas con kWh`}
             </span>
           </div>
           <label className="inline-label">
@@ -114,53 +137,68 @@ export default function Bills({
             </select>
           </label>
         </div>
-        <BillsChart months={months} year={year} />
-        <p className="small muted">
-          Cada factura se agrupa en el mes elegido (por defecto, el mes de fin
-          del periodo), sin prorratearla. Otros cargos: bono social, alquiler y
-          servicios. Las facturas antiguas sin conceptos aparecen como «Sin
-          desglose»; los meses sin facturas, como «—». Los créditos se restan
-          del total y aparecen bajo el cero en las barras.
-        </p>
-        <details className="form-section">
-          <summary>Ver desglose mensual en tabla</summary>
-          <div
-            className="table-scroll"
-            tabIndex={0}
-            role="region"
-            aria-label="Desglose mensual"
-          >
-            <table>
-              <caption className="bill-table-caption">
-                Total antes de créditos · Pagado después de créditos.
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Mes</th>
-                  {groups.map(([key, label]) => (
-                    <th scope="col" key={key}>
-                      {label}
-                    </th>
-                  ))}
-                  <th scope="col">Total</th>
-                  <th scope="col">Pagado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {months.map((m) => (
-                  <tr key={m.month}>
-                    <th scope="row">{m.label}</th>
-                    {groups.map(([key]) => (
-                      <td key={key}>{m.count ? money(m.totals[key]) : "—"}</td>
+        <BillsChart
+          months={months}
+          year={year}
+          consumption={consumption}
+          view={chartView}
+          onViewChange={setChartView}
+        />
+        {chartView !== "consumption" && (
+          <>
+            <p className="small muted">
+              Cada factura se agrupa en el mes elegido (por defecto, el mes de
+              fin del periodo), sin prorratearla. Otros cargos: bono social,
+              alquiler y servicios. Las facturas antiguas sin conceptos aparecen
+              como «Sin desglose»; los meses sin facturas, como «—». Los
+              créditos se restan del total y aparecen bajo el cero en las
+              barras.
+            </p>
+            <details className="form-section">
+              <summary>Ver desglose mensual en tabla</summary>
+              <div
+                className="table-scroll"
+                tabIndex={0}
+                role="region"
+                aria-label="Desglose mensual"
+              >
+                <table>
+                  <caption className="bill-table-caption">
+                    Total antes de créditos · Pagado después de créditos.
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Mes</th>
+                      {groups.map(([key, label]) => (
+                        <th scope="col" key={key}>
+                          {label}
+                        </th>
+                      ))}
+                      <th scope="col">Total</th>
+                      <th scope="col">Pagado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {months.map((m) => (
+                      <tr key={m.month}>
+                        <th scope="row">{m.label}</th>
+                        {groups.map(([key]) => (
+                          <td key={key}>
+                            {m.count ? money(m.totals[key]) : "—"}
+                          </td>
+                        ))}
+                        <td>
+                          {m.count ? money(m.amount - m.totals.credit) : "—"}
+                        </td>
+                        <td>{m.count ? money(m.amount) : "—"}</td>
+                      </tr>
                     ))}
-                    <td>{m.count ? money(m.amount - m.totals.credit) : "—"}</td>
-                    <td>{m.count ? money(m.amount) : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </details>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </>
+        )}
       </div>
       {!bills.length ? (
         <div className="panel">
@@ -277,9 +315,10 @@ export default function Bills({
           initial={editing}
           workspace={w}
           onClose={() => setEditing(null)}
-          onSave={async (bill) => {
+          onSave={async (bill, newTariff) => {
             const saved = await update({
               ...w,
+              tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
               bills: [...w.bills.filter((b) => b.id !== bill.id), bill],
             });
             if (!saved)

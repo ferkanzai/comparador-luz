@@ -130,6 +130,7 @@ test(
         tariff: structuredClone(tariff),
         profile: null,
         breakdown: null,
+        priceLines: [],
       });
       const put = (cookie: string, version: number, origin = base) =>
         PUT(

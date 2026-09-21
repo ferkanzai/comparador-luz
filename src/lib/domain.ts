@@ -38,9 +38,11 @@ export const tariffSchema = z.object({
   powerPeak: decimal(1000),
   powerValley: decimal(1000),
   powerKind: z.enum(["periods", "same", "combined"]).default("periods"),
-  powerUnit: z.enum(["day", "year"]),
+  powerUnit: z.enum(["day", "month", "year"]),
   meterDay: decimal(100),
+  meterEstimate: z.enum(["none", "single-2013", "three-2013"]).default("none"),
   socialDay: decimal(100),
+  socialEstimate: z.enum(["none", "ted634-2026"]).default("none"),
   socialInElectricityTax: z.boolean().default(true),
   servicesMonth: decimal(10000),
   url: z
@@ -70,6 +72,35 @@ export const billBreakdownSchema = z.object({
   vat: billedAmount,
   servicesVat: billedAmount,
 });
+export const billPriceLineSchema = z
+  .object({
+    id: z.uuid(),
+    concept: billBreakdownSchema.keyof(),
+    label: z.string().trim().max(100),
+    start: optionalDate,
+    end: optionalDate,
+    quantity: decimal(),
+    unit: z.enum(["day", "kwh", "kwDay", "kwMonth", "kwYear", "month"]),
+    price: decimal(10000),
+    amount: billedAmount,
+  })
+  .refine(
+    (line) =>
+      (!line.start && !line.end) ||
+      (!!line.start && !!line.end && line.end > line.start),
+    "En cada tramo, indica ambas fechas y un fin posterior al inicio.",
+  )
+  .refine(
+    (line) => !!line.quantity === !!line.price,
+    "Completa la cantidad y el precio del tramo, o deja ambos en blanco.",
+  );
+export type BillPriceLine = z.infer<typeof billPriceLineSchema>;
+export const consumptionSchema = z.object({
+  peakKwh: decimal(),
+  flatKwh: decimal(),
+  valleyKwh: decimal(),
+});
+export type Consumption = z.infer<typeof consumptionSchema>;
 export const billSchema = z
   .object({
     id: z.uuid(),
@@ -87,10 +118,20 @@ export const billSchema = z
       ),
     credit: decimal(1_000_000).default("0"),
     kwh: decimal(),
+    // Undefined identifies older bills whose matching profile may supply periods.
+    // Explicit null means the user chose to keep only the total.
+    consumption: consumptionSchema.nullable().optional(),
+    tariffReview: z
+      .object({
+        signature: z.string().max(80),
+        reason: z.string().trim().min(1).max(500),
+      })
+      .optional(),
     notes: z.string().max(2000),
     tariff: tariffSchema.nullable(),
     profile: profileSchema.nullable().default(null),
     breakdown: billBreakdownSchema.nullable().default(null),
+    priceLines: z.array(billPriceLineSchema).max(64).default([]),
   })
   .refine(
     (b) =>
@@ -111,7 +152,62 @@ export const billSchema = z
   .refine(
     (b) => b.breakdown || numberOf(b.paid) + numberOf(b.credit) >= 0,
     "Un total negativo necesita un crédito que explique el saldo a tu favor.",
-  );
+  )
+  .superRefine((b, ctx) => {
+    if (
+      b.consumption &&
+      (Object.values(b.consumption).some((v) => v === "") ||
+        b.kwh === "" ||
+        Math.abs(
+          Object.values(b.consumption).reduce(
+            (sum, v) => sum + numberOf(v),
+            0,
+          ) - numberOf(b.kwh),
+        ) > 0.000001)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Completa los tres consumos (usa 0 donde corresponda). Su suma debe coincidir con los kWh totales.",
+      });
+    if (!b.priceLines.length) return;
+    if (!b.breakdown) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Los tramos de precio necesitan un desglose por conceptos.",
+      });
+      return;
+    }
+    if (
+      new Set(b.priceLines.map((line) => line.id)).size !== b.priceLines.length
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Hay tramos de precio duplicados.",
+      });
+    for (const concept of new Set(b.priceLines.map((line) => line.concept))) {
+      const sum = b.priceLines
+        .filter((line) => line.concept === concept)
+        .reduce((total, line) => total + numberOf(line.amount), 0);
+      if (Math.abs(sum - numberOf(b.breakdown[concept])) >= 0.005)
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "La suma de los tramos debe coincidir con el importe de su concepto.",
+        });
+    }
+    for (const line of b.priceLines) {
+      if (
+        (b.periodStart && line.start && line.start < b.periodStart) ||
+        (b.periodEnd && line.end && line.end > b.periodEnd)
+      )
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Las fechas de los tramos deben estar dentro del periodo de la factura.",
+        });
+    }
+  });
 export const workspaceSchema = z
   .object({
     profile: profileSchema,
@@ -170,7 +266,9 @@ export const newTariff = (): Tariff => ({
   powerKind: "periods",
   powerUnit: "day",
   meterDay: "",
+  meterEstimate: "none",
   socialDay: "",
+  socialEstimate: "none",
   socialInElectricityTax: true,
   servicesMonth: "",
   url: "",
@@ -229,8 +327,17 @@ export const shortDate = (s: string) =>
       }).format(new Date(s))
     : "Sin fecha";
 
+export const powerUnitLabels = {
+  day: "€/kW/día",
+  month: "€/kW/mes",
+  year: "€/kW/año",
+};
+// Monthly prices are annualized; this is not a supplier-specific billing rule.
+export const powerDayFactor = (unit: Tariff["powerUnit"]) =>
+  unit === "month" ? 12 / 365 : unit === "year" ? 1 / 365 : 1;
+
 export function powerDescription(t: Tariff) {
-  const unit = t.powerUnit === "year" ? "€/kW/año" : "€/kW/día";
+  const unit = powerUnitLabels[t.powerUnit];
   const peak = t.powerPeak.replace(".", ",") || "—";
   const valley = t.powerValley.replace(".", ",") || "—";
   return t.powerKind === "combined"
