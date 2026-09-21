@@ -16,14 +16,13 @@ import { Field, Modal } from "./ui";
 import EstimateNotice from "./estimate-notice";
 import BillPriceLines from "./bill-price-lines";
 import BillConsumptionFields from "./bill-consumption-fields";
-import BillTariffCheck from "./bill-tariff-check";
 import TariffForm from "./tariff-form";
 import {
   billConsumption,
   consumptionTotal,
   updateBillConsumption,
 } from "@/lib/bill-consumption";
-import { newInvoiceProfile } from "@/lib/bill-tariff-check";
+import { newInvoiceProfile } from "@/lib/invoice-profile";
 export default function BillForm({
   initial,
   workspace: w,
@@ -84,7 +83,6 @@ export default function BillForm({
   return (
     <>
       <Modal
-        wide={editing.priceLines.length > 0}
         title={
           w.bills.some((b) => b.id === editing.id)
             ? "Editar factura"
@@ -216,9 +214,8 @@ export default function BillForm({
               </select>
               <small>
                 Se guarda una copia de los precios; los cambios futuros no
-                alteran esta factura. Si hubo cambios durante el periodo,
-                registra los precios facturados en los tramos del desglose de
-                abajo.
+                alteran esta factura. Comprueba que coincidan con los precios
+                unitarios impresos en ella.
               </small>
             </label>
             {w.history.length > 0 && (
@@ -316,9 +313,7 @@ export default function BillForm({
                 <p className="small muted">
                   Copia los importes facturados. Conservamos el total pagado que
                   has indicado y comprobamos que la suma menos el crédito
-                  coincida. Si un concepto tiene varios precios, desglósalo en
-                  tramos dentro de esta misma factura, aunque no hayas cambiado
-                  de tarifa.
+                  coincida, incluidos los impuestos.
                 </p>
                 <div className="bill-concepts">
                   {billLines.map(([key, label]) => (
@@ -341,15 +336,40 @@ export default function BillForm({
                           }}
                         />
                       )}
+                      {editing.priceLines.some(
+                        (line) => line.concept === key,
+                      ) && (
+                        <div className="bill-split-total">
+                          <span>{label}</span>
+                          <strong>
+                            {money(numberOf(editing.breakdown![key]))}
+                          </strong>
+                          <small className="muted">
+                            Detalle en opciones avanzadas
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {editing.priceLines.length > 0 && (
+                  <details className="form-section bill-advanced">
+                    <summary>Opciones avanzadas · tramos guardados</summary>
+                    <p className="small muted">
+                      Revisa los tramos que ya tiene esta factura. Sus importes
+                      se suman en el concepto correspondiente.
+                    </p>
+                    {billLines.map(([key, label]) => (
                       <BillPriceLines
+                        key={key}
                         bill={editing}
                         concept={key}
                         label={label}
                         onChange={setEditing}
                       />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </details>
+                )}
                 <div
                   className={`notice bill-reconciliation ${reconciliation?.difference ? "error" : ""}`}
                   role="status"
@@ -387,17 +407,31 @@ export default function BillForm({
                 </div>
               </>
             )}
-            <BillTariffCheck
-              bill={editing}
-              workspace={{ ...w, tariffs: availableTariffs }}
-              onChange={setEditing}
-              onCreate={() =>
-                setCreatingTariff({
-                  ...newTariff(),
-                  provider: editing.provider,
-                })
-              }
-            />
+            <section className="form-section bill-invoice-tariff">
+              <h3>Precios de esta factura</h3>
+              <p className="small muted">
+                Un importe parecido no confirma que la tarifa sea la misma. Si
+                los precios unitarios son distintos, puedes guardar una tarifa
+                con los que aparecen en tu factura.
+              </p>
+              <button
+                type="button"
+                className="link-button"
+                disabled={availableTariffs.length >= 100}
+                onClick={() =>
+                  setCreatingTariff({
+                    ...newTariff(),
+                    provider: editing.provider,
+                  })
+                }
+              >
+                Crear tarifa con estos precios
+              </button>
+              <p className="small muted">
+                Se guardará junto con la factura, sin cambiar tu contrato
+                actual.
+              </p>
+            </section>
             <Field
               label="Notas (opcional)"
               value={editing.notes}

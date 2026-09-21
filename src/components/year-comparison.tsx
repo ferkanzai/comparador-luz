@@ -38,17 +38,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
       ? "Importe pagado después de créditos"
       : "Consumo registrado en kWh";
   return (
-    <section aria-labelledby="year-comparison-title">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">UN POCO MÁS DE PERSPECTIVA</span>
-          <h2 id="year-comparison-title">Tus facturas, año a año.</h2>
-          <p className="muted">
-            Compara lo que pagaste y lo que consumiste, con los datos que has
-            registrado.
-          </p>
-        </div>
-      </div>
+    <section aria-label="Comparación de facturas por años">
       <div className="panel year-comparison">
         <div className="year-controls">
           <div className="form-grid two">

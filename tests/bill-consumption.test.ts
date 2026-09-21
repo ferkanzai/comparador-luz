@@ -5,7 +5,6 @@ import {
   emptyWorkspace,
   newTariff,
   workspaceSchema,
-  type Bill,
 } from "../src/lib/domain";
 import { billFromCalculation } from "../src/lib/bill-data";
 import { calculate } from "../src/lib/calculator";
@@ -14,11 +13,7 @@ import {
   consumptionMonths,
   updateBillConsumption,
 } from "../src/lib/bill-consumption";
-import {
-  billCheckSignature,
-  checkBillTariff,
-  invoiceProfile,
-} from "../src/lib/bill-tariff-check";
+import { invoiceProfile, newInvoiceProfile } from "../src/lib/invoice-profile";
 
 function fixture() {
   const profile = {
@@ -118,154 +113,27 @@ test("monthly consumption combines invoices, preserves total-only data and disti
   assert.equal(months[5].total, null); // The invoice starts in June but is reported in July.
 });
 
-test("itemized tariff checks ignore tax rate differences and use invoice dates and consumption", () => {
-  const { bill, workspace } = fixture();
-  const original = checkBillTariff(bill, workspace)!;
-  assert.equal(original.mismatch, false);
-  assert.equal(original.preTax, true);
+test("invoice profiles use invoice dates and consumption instead of the original calculator copy", () => {
+  const { bill } = fixture();
   const historical = {
     ...bill,
-    profile: {
-      ...bill.profile!,
-      days: "1",
-      vat: "10",
-      electricityTax: "0.5",
-      peakKwh: "999",
-    },
+    profile: { ...bill.profile!, days: "1", peakKwh: "999" },
   };
   assert.equal(invoiceProfile(historical)!.days, "30");
   assert.equal(invoiceProfile(historical)!.peakKwh, "100");
-  assert.equal(
-    checkBillTariff(historical, workspace)!.expected,
-    original.expected,
-  );
-  assert.equal(checkBillTariff({ ...bill, profile: null }, workspace), null);
-  assert.equal(checkBillTariff({ ...bill, periodEnd: "" }, workspace), null);
+  assert.equal(invoiceProfile({ ...bill, profile: null }), null);
+  assert.equal(invoiceProfile({ ...bill, periodEnd: "" }), null);
+  const fresh = newInvoiceProfile({ ...bill, profile: null });
+  assert.equal(fresh.days, "30");
+  assert.equal(fresh.peakKwh, "100");
 });
 
-test("total-only checks apply saved taxes and credits; fixed tariffs need no invented period split", () => {
-  const { bill, workspace } = fixture();
-  const totalOnly = {
-    ...bill,
-    breakdown: null,
-    paid: String(Number(bill.paid) - 10),
-    credit: "10",
+test("existing tariff review metadata remains readable after retiring automatic checks", () => {
+  const { bill } = fixture();
+  const review = {
+    signature: "v1:legacy",
+    reason: "He comprobado el contrato",
   };
-  assert.equal(checkBillTariff(totalOnly, workspace)!.difference, 0);
-  const reduced = {
-    ...totalOnly,
-    profile: { ...bill.profile!, vat: "10", electricityTax: "0.5" },
-  };
-  assert.ok(
-    checkBillTariff(reduced, workspace)!.expected <
-      checkBillTariff(totalOnly, workspace)!.expected,
-  );
-  assert.equal(
-    checkBillTariff(
-      { ...totalOnly, profile: { ...bill.profile!, vat: "" } },
-      workspace,
-    ),
-    null,
-  );
-  assert.equal(
-    checkBillTariff({ ...totalOnly, consumption: null }, workspace),
-    null,
-  );
-  const fixed = {
-    ...totalOnly,
-    consumption: null,
-    tariff: { ...bill.tariff!, kind: "fixed" as const },
-  };
-  assert.ok(checkBillTariff(fixed, workspace));
-  assert.equal(fixed.consumption, null);
-  assert.equal(checkBillTariff({ ...fixed, kwh: "" }, workspace), null);
-});
-
-test("warnings tolerate rounding, suggest closer saved/history prices and do not guess through split prices", () => {
-  const { bill, tariff, workspace } = fixture();
-  const wrong = {
-    ...bill,
-    tariff: {
-      ...tariff,
-      id: crypto.randomUUID(),
-      name: "Otra",
-      energyPeak: "0.6",
-    },
-  };
-  const check = checkBillTariff(wrong, workspace)!;
-  assert.equal(check.mismatch, true);
-  assert.equal(check.suggestions[0].tariff.id, tariff.id);
-  assert.equal(check.suggestions[0].gap, 0);
-  const history = {
-    ...workspace,
-    tariffs: [],
-    history: [
-      {
-        id: crypto.randomUUID(),
-        start: "2026-01-01",
-        end: "2026-07-15",
-        tariff,
-      },
-    ],
-  };
-  assert.equal(checkBillTariff(wrong, history)!.suggestions.length, 1);
-  assert.equal(
-    checkBillTariff(wrong, {
-      ...history,
-      history: [{ ...history.history[0], end: "2026-07-01" }],
-    })!.suggestions.length,
-    0,
-  );
-  const split: Bill = {
-    ...wrong,
-    priceLines: [
-      {
-        id: crypto.randomUUID(),
-        concept: "energy",
-        label: "P1",
-        start: "",
-        end: "",
-        quantity: "",
-        unit: "kwh",
-        price: "",
-        amount: "37",
-      },
-    ],
-  };
-  assert.equal(checkBillTariff(split, workspace)!.suggestions.length, 0);
-  assert.equal(checkBillTariff(split, workspace)!.splitPrices, true);
-  const withSocial = {
-    ...split,
-    priceLines: [
-      { ...split.priceLines[0], concept: "social" as const, amount: "0.75" },
-    ],
-  };
-  assert.equal(checkBillTariff(withSocial, workspace)!.suggestions.length, 1);
-  const nearby = {
-    ...bill,
-    breakdown: null,
-    paid: String(Number(bill.paid) + 1),
-  };
-  assert.equal(checkBillTariff(nearby, workspace)!.mismatch, false);
-});
-
-test("acknowledgements persist without blocking mismatches and invalidate when relevant inputs change", () => {
-  const { bill, workspace } = fixture();
-  const wrong = { ...bill, tariff: { ...bill.tariff!, energyPeak: "0.9" } };
-  const signature = billCheckSignature(wrong);
-  const accepted = billSchema.parse({
-    ...wrong,
-    tariffReview: { signature, reason: "He comprobado el contrato" },
-  });
-  assert.equal(checkBillTariff(accepted, workspace)!.mismatch, true);
-  assert.equal(billCheckSignature(accepted), signature);
-  assert.equal(
-    billCheckSignature({ ...accepted, notes: "Personal note" }),
-    signature,
-  );
-  assert.notEqual(billCheckSignature({ ...accepted, paid: "50" }), signature);
-  assert.notEqual(
-    billCheckSignature({ ...accepted, tariff: bill.tariff }),
-    signature,
-  );
+  const saved = billSchema.parse({ ...bill, tariffReview: review });
+  assert.deepEqual(saved.tariffReview, review);
 });

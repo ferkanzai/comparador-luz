@@ -47,8 +47,6 @@ import PvpcComparison from "./pvpc-comparison";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
-import YearComparison from "./year-comparison";
-import { invoiceYears } from "@/lib/year-comparison";
 import BillForm from "./bill-form";
 import {
   mergeGuestComparison,
@@ -58,7 +56,7 @@ import {
 } from "@/lib/workspace-draft";
 import { billFromCalculation } from "@/lib/bill-data";
 
-type Tab = "compare" | "history" | "bills" | "years";
+type Tab = "compare" | "history" | "bills";
 export default function Dashboard({
   user,
   accountsAvailable,
@@ -85,10 +83,7 @@ export default function Dashboard({
   const [busy, setBusy] = useState(false);
   const { message, setMessage, dismiss } = useFeedback();
   const [error, setError] = useState("");
-  const [requestedTab, setTab] = useState<Tab>("compare");
-  const hasMultipleYears = invoiceYears(w.bills).length > 1;
-  const tab =
-    requestedTab === "years" && !hasMultipleYears ? "bills" : requestedTab;
+  const [tab, setTab] = useState<Tab>("compare");
   const [billDraft, setBillDraft] = useState<Bill | null>(null);
   const [editing, setEditing] = useState<Tariff | null>(null);
   const [switchTo, setSwitchTo] = useState<string | null>(null);
@@ -463,16 +458,6 @@ export default function Dashboard({
               <Receipt size={17} />
               Mis facturas
             </button>
-            {hasMultipleYears && (
-              <button
-                aria-current={tab === "years" ? "page" : undefined}
-                className={tab === "years" ? "active" : ""}
-                onClick={() => setTab("years")}
-              >
-                <BarChart3 size={17} />
-                Por años
-              </button>
-            )}
           </nav>
           <span className="workspace-status">
             <span className={`status-dot ${dirty ? "unsaved" : ""}`} />
@@ -972,8 +957,6 @@ export default function Dashboard({
                   pagas cada mes. El comparador es libre y no necesita cuenta.
                 </Empty>
               </div>
-            ) : tab === "years" ? (
-              <YearComparison bills={w.bills} />
             ) : tab === "bills" ? (
               <Bills workspace={w} update={save} />
             ) : (

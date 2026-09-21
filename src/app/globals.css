@@ -1226,14 +1226,6 @@ small {
 .bill-concept {
   min-width: 0;
 }
-.bill-concept:has(.bill-price-lines) {
-  grid-column: 1 / -1;
-}
-.split-price-button {
-  font-size: 0.8125rem;
-  text-align: left;
-  min-height: 44px;
-}
 .bill-price-lines {
   padding: 16px;
   border: 1px solid var(--line);
@@ -2970,56 +2962,60 @@ button:disabled {
   color: var(--muted);
 }
 .bill-consumption-fields h3,
-.bill-tariff-check h3 {
+.bill-invoice-tariff h3 {
   margin: 0 0 12px;
 }
 .bill-consumption-fields .form-grid {
   margin-top: 16px;
 }
-.check-inputs {
-  padding: 14px 16px;
-  margin: 16px 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--paper);
+.bill-invoice-tariff > .link-button {
+  margin-block: 12px;
+  text-align: left;
+  min-height: 44px;
 }
-.check-inputs summary {
-  cursor: pointer;
+.bill-split-total {
+  display: grid;
+  gap: 4px;
+}
+.bill-split-total strong {
+  font-variant-numeric: tabular-nums;
+}
+.bill-advanced > p,
+.bill-advanced .bill-price-lines {
+  margin-block: 16px;
+}
+.bill-views {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+.bill-views button {
+  position: relative;
+  padding: 14px 2px;
+  color: var(--muted);
   font-weight: 600;
 }
-.bill-tariff-check .notice {
-  margin: 16px 0;
+.bill-views button[aria-pressed="true"] {
+  color: var(--ink);
 }
-.tariff-check-warning {
-  background: #fcf5e5;
-  border-color: #ddc58e;
+.bill-views button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  inset-inline: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--green);
 }
-.tariff-suggestions,
-.tariff-acceptance {
-  display: grid;
-  gap: 12px;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+.bill-views > span {
+  margin-left: auto;
 }
-.tariff-suggestions p {
-  margin: 0;
-}
-.tariff-suggestions .button {
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-.tariff-suggestions small {
-  font-weight: 400;
-  color: var(--muted);
-}
-.tariff-acceptance .link-button {
-  justify-self: start;
-  text-align: left;
-}
-.bill-tariff-check > .link-button {
-  text-align: left;
+@media (max-width: 600px) {
+  .bill-views > span {
+    display: none;
+  }
 }
 @media (max-width: 520px) {
   .chart-toolbar .segmented {
@@ -3034,9 +3030,6 @@ button:disabled {
   .chart-toolbar button svg {
     width: 14px;
     flex-shrink: 0;
-  }
-  .check-inputs {
-    padding: 12px;
   }
 }
 @media (max-width: 380px) {

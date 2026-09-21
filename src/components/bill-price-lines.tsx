@@ -1,5 +1,5 @@
 "use client";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   decimal,
   money,
@@ -34,20 +34,6 @@ export default function BillPriceLines({
   const lines = bill.priceLines.filter((line) => line.concept === concept);
   const replace = (next: BillPriceLine[]) =>
     onChange(replaceBillPriceLines(bill, concept, next));
-  function blankLine(amount = ""): BillPriceLine {
-    return {
-      id: crypto.randomUUID(),
-      concept,
-      label: "",
-      start: "",
-      end: "",
-      quantity: "",
-      price: "",
-      amount,
-      unit:
-        concept === "energy" ? "kwh" : concept === "power" ? "kwDay" : "day",
-    };
-  }
   function update(id: string, patch: Partial<BillPriceLine>) {
     replace(
       lines.map((line) => {
@@ -67,20 +53,7 @@ export default function BillPriceLines({
       }),
     );
   }
-  if (!lines.length)
-    return (
-      <button
-        type="button"
-        className="link-button split-price-button"
-        disabled={bill.priceLines.length > 62}
-        onClick={() =>
-          replace([blankLine(bill.breakdown?.[concept] ?? "0"), blankLine()])
-        }
-      >
-        <Plus size={14} aria-hidden="true" /> Desglosar {label.toLowerCase()} en
-        tramos
-      </button>
-    );
+  if (!lines.length) return null;
   return (
     <section
       className="bill-price-lines"
@@ -214,14 +187,6 @@ export default function BillPriceLines({
         </details>
       ))}
       <div className="price-line-actions">
-        <button
-          type="button"
-          className="link-button"
-          disabled={bill.priceLines.length >= 64}
-          onClick={() => replace([...lines, blankLine()])}
-        >
-          <Plus size={14} aria-hidden="true" /> Añadir otro tramo
-        </button>
         <button
           type="button"
           className="link-button"
