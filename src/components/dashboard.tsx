@@ -287,11 +287,12 @@ export default function Dashboard({
     );
   }
   async function confirmPrices(id?: string) {
+    if (!w.tariffs.some((t) => !t.checkedOn && (!id || t.id === id))) return;
     const next = {
       ...w,
       reviewedOn: id ? w.reviewedOn : today(),
       tariffs: w.tariffs.map((t) =>
-        !id || t.id === id ? { ...t, checkedOn: today() } : t,
+        !t.checkedOn && (!id || t.id === id) ? { ...t, checkedOn: today() } : t,
       ),
     };
     if (user) {
@@ -300,7 +301,7 @@ export default function Dashboard({
     setMessage(
       id
         ? "Precios confirmados hoy."
-        : "Todos los precios confirmados hoy. La revisión está guardada.",
+        : "Precios pendientes confirmados a día de hoy. La revisión está guardada.",
     );
   }
   function exportData() {
@@ -866,8 +867,9 @@ export default function Dashboard({
                       <h3>¿Hay algo mejor ahí fuera?</h3>
                       <p>
                         Busca una oferta, copia sus precios y comprueba si te
-                        compensa con tu consumo. Confirma la fecha cuando hayas
-                        comprobado que los precios siguen vigentes.
+                        compensa con tu consumo. Si una tarifa aún no tiene
+                        fecha de confirmación, añádela tras comprobar sus
+                        precios.
                       </p>
                       <a
                         className="text-link"
@@ -878,21 +880,12 @@ export default function Dashboard({
                         Explorar ofertas en la CNMC
                         <ExternalLink size={14} />
                       </a>
-                      {user && (
+                      {user && w.tariffs.some((t) => !t.checkedOn) && (
                         <button
                           className="button secondary full small-button"
-                          disabled={
-                            !w.tariffs.length ||
-                            (w.reviewedOn === today() &&
-                              w.tariffs.every((t) => t.checkedOn === today()))
-                          }
                           onClick={() => confirmPrices()}
                         >
-                          <Check size={15} />
-                          {w.reviewedOn === today() &&
-                          w.tariffs.every((t) => t.checkedOn === today())
-                            ? "Revisión de hoy guardada"
-                            : "He comprobado todos los precios"}
+                          <Check size={15} /> Confirmar precios pendientes
                         </button>
                       )}
                     </div>
@@ -1302,17 +1295,15 @@ function TariffCard({
           )}
         </div>
       </div>
-      <button
-        type="button"
-        className="link-button tariff-review"
-        onClick={onReview}
-        disabled={t.checkedOn === today()}
-      >
-        <Check size={16} />
-        {t.checkedOn === today()
-          ? "Precios confirmados hoy"
-          : "Confirmar precios de hoy"}
-      </button>
+      {!t.checkedOn && (
+        <button
+          type="button"
+          className="link-button tariff-review"
+          onClick={onReview}
+        >
+          <Check size={16} /> Confirmar precios a día de hoy
+        </button>
+      )}
       {t.notes && <p className="tariff-notes small muted">{t.notes}</p>}
     </article>
   );
