@@ -117,7 +117,6 @@ function EmailLayout({
             style={{
               backgroundColor: "#ffffff",
               border: `1px solid ${theme.line}`,
-              borderTop: `5px solid ${theme.lime}`,
               borderRadius: "16px",
               padding: "32px 24px",
             }}
