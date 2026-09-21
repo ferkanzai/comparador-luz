@@ -44,6 +44,12 @@ import TariffForm from "./tariff-form";
 import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
 import BillForm from "./bill-form";
+import {
+  mergeGuestComparison,
+  readDraft,
+  writeDraft,
+  removeDraft,
+} from "@/lib/workspace-draft";
 import { billFromCalculation } from "@/lib/bill-data";
 
 type Tab = "compare" | "history" | "bills";
@@ -61,9 +67,14 @@ export default function Dashboard({
 }) {
   const [w, setWorkspace] = useState<Workspace>(emptyWorkspace);
   const [version, setVersion] = useState(0);
-  const [loaded, setLoaded] = useState(!user);
+  const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [reload, setReload] = useState(0);
+  const [draftStored, setDraftStored] = useState(true);
+  const [conflict, setConflict] = useState<{
+    data: Workspace;
+    version: number;
+  } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,15 +87,68 @@ export default function Dashboard({
   const [taxesOpen, setTaxesOpen] = useState(false);
   const [taxHelp, setTaxHelp] = useState(false);
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      try {
+        const draft = readDraft(sessionStorage, "guest");
+        if (draft) {
+          setWorkspace(draft.data);
+          setDirty(true);
+        }
+      } catch {
+        setDraftStored(false);
+      }
+      setLoaded(true);
+      return;
+    }
     const controller = new AbortController();
     fetch("/api/workspace", { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error);
         const data = workspaceSchema.parse(body.data);
-        setWorkspace(data);
-        setVersion(body.version);
+        let next = data;
+        let draftVersion = body.version;
+        try {
+          const own = readDraft(sessionStorage, user.id);
+          const guest = readDraft(sessionStorage, "guest");
+          if (own) {
+            // A stale draft must never overwrite a newer save from another tab/device.
+            if (
+              own.version !== body.version &&
+              JSON.stringify(own.data) !== JSON.stringify(data)
+            )
+              setConflict({ data, version: body.version });
+            next = own.data;
+            draftVersion =
+              JSON.stringify(own.data) === JSON.stringify(data)
+                ? body.version
+                : own.version;
+            setDirty(JSON.stringify(next) !== JSON.stringify(data));
+          }
+          if (guest) {
+            next = mergeGuestComparison(next, guest.data);
+            setDirty(true);
+            if (
+              writeDraft(sessionStorage, user.id, {
+                data: next,
+                version: draftVersion,
+              })
+            )
+              removeDraft(sessionStorage, "guest");
+            else setDraftStored(false);
+            setMessage(
+              "Tu comparación sigue aquí: hemos recuperado tu consumo y añadido tus ofertas. Tu contrato y tus facturas guardados se conservan. Pulsa Guardar cambios para llevar la comparación a tu cuenta.",
+            );
+          } else if (own && JSON.stringify(next) !== JSON.stringify(data)) {
+            setMessage(
+              "Hemos recuperado tu borrador. Pulsa Guardar cambios para guardarlo en tu cuenta.",
+            );
+          }
+        } catch {
+          setDraftStored(false);
+        }
+        setWorkspace(next);
+        setVersion(draftVersion);
         setLoaded(true);
         setLoadError("");
       })
@@ -99,10 +163,8 @@ export default function Dashboard({
     return () => controller.abort();
   }, [user, reload]);
   useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-    };
+    if (!dirty || draftStored) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     const confirmNavigation = (event: MouseEvent) => {
       const link =
         event.target instanceof Element ? event.target.closest("a") : null;
@@ -114,13 +176,13 @@ export default function Dashboard({
       )
         return;
       if (
-        !window.confirm("Tienes cambios sin guardar. ¿Salir y descartarlos?")
+        !window.confirm(
+          "No se ha podido guardar tu borrador en el navegador. ¿Salir y perder estos cambios?",
+        )
       ) {
         event.preventDefault();
         event.stopPropagation();
-      } else {
-        window.removeEventListener("beforeunload", warn);
-      }
+      } else window.removeEventListener("beforeunload", warn);
     };
     window.addEventListener("beforeunload", warn);
     document.addEventListener("click", confirmNavigation, true);
@@ -128,14 +190,32 @@ export default function Dashboard({
       window.removeEventListener("beforeunload", warn);
       document.removeEventListener("click", confirmNavigation, true);
     };
-  }, [dirty]);
+  }, [dirty, draftStored]);
+  function persistDraft(next: Workspace) {
+    let stored = false;
+    try {
+      stored = writeDraft(sessionStorage, user?.id ?? "guest", {
+        data: next,
+        version,
+      });
+    } catch {
+      /* Storage may be disabled by the browser. */
+    }
+    setDraftStored(stored);
+    return stored;
+  }
   function update(next: Workspace) {
     setWorkspace(next);
     setDirty(true);
     setMessage("");
     setError("");
+    persistDraft(next);
   }
   async function save(next = w) {
+    if (conflict) return false;
+    setWorkspace(next);
+    setDirty(true);
+    persistDraft(next);
     setBusy(true);
     setError("");
     setMessage("");
@@ -153,6 +233,11 @@ export default function Dashboard({
       if (!response.ok) throw new Error(body.error);
       setWorkspace(parsed.data);
       setVersion(body.version);
+      try {
+        removeDraft(sessionStorage, user!.id);
+      } catch {
+        /* Server save succeeded. */
+      }
       setDirty(false);
       setMessage("Todo guardado en tu cuenta.");
       return true;
@@ -368,18 +453,22 @@ export default function Dashboard({
             <span className={`status-dot ${dirty ? "unsaved" : ""}`} />
             {user
               ? dirty
-                ? "Cambios sin guardar"
+                ? "Borrador · pendiente de guardar en tu cuenta"
                 : "Tu espacio personal"
-              : "Comparación sin cuenta"}
+              : dirty && draftStored
+                ? "Borrador guardado en esta pestaña"
+                : "Comparación sin cuenta"}
           </span>
         </div>
-        {user && (
+        {(user || dirty) && (
           <div className="save-strip">
             <span>
               <ShieldCheck size={16} />
-              {w.reviewedOn
-                ? `Última revisión: ${shortDate(w.reviewedOn)}`
-                : "Tus precios y facturas, solo para ti."}
+              {!user
+                ? "Tu comparación se conserva al entrar o crear una cuenta. Cierra la pestaña solo después de guardarla en tu cuenta o exportarla."
+                : w.reviewedOn
+                  ? `Última revisión: ${shortDate(w.reviewedOn)}`
+                  : "Tus precios y facturas, solo para ti."}
             </span>
             <div>
               <button
@@ -390,21 +479,53 @@ export default function Dashboard({
                 <Download size={15} />
                 Exportar
               </button>
-              {tab !== "bills" ? (
+              {user && (tab !== "bills" || dirty) ? (
                 <button
                   className="button primary small-button"
                   onClick={() => save()}
-                  disabled={!loaded || busy || !dirty}
+                  disabled={!loaded || busy || !dirty || !!conflict}
                 >
                   <Save size={15} />
                   {busy ? "Guardando…" : "Guardar cambios"}
                 </button>
               ) : (
                 <span className="small muted">
-                  Las facturas se guardan al confirmar.
+                  {user
+                    ? "Las facturas se guardan al confirmar."
+                    : "Sin cuenta · solo en esta pestaña"}
                 </span>
               )}
             </div>
+          </div>
+        )}
+        {!draftStored && dirty && (
+          <div className="notice error" role="alert">
+            El navegador no permite guardar el borrador. Exporta tus datos antes
+            de salir o guárdalos en tu cuenta.
+          </div>
+        )}
+        {conflict && (
+          <div className="notice" role="alert">
+            Tu cuenta tiene cambios más recientes. Estás viendo tu borrador, que
+            no se ha sobrescrito. Exporta lo que quieras conservar antes de
+            cargar la versión de tu cuenta.
+            <button
+              className="button secondary small-button"
+              onClick={() => {
+                setWorkspace(conflict.data);
+                setVersion(conflict.version);
+                setDirty(false);
+                try {
+                  removeDraft(sessionStorage, user!.id);
+                } catch {
+                  /* Storage unavailable. */
+                }
+                setConflict(null);
+                setMessage("Datos de tu cuenta cargados.");
+              }}
+            >
+              Cargar versión de mi cuenta
+            </button>
           </div>
         )}
         {user && !user.emailVerified && (
@@ -706,12 +827,14 @@ export default function Dashboard({
                               <Leaf size={18} />
                               <div>
                                 <strong>
-                                  {money((saving * 365) / baseline.cost.days)} /
-                                  año
+                                  {saving > 0
+                                    ? `${money((saving * 365) / baseline.cost.days)} / año`
+                                    : "Ya tienes la tarifa más barata"}
                                 </strong>
                                 <span>
-                                  Ahorro extrapolado si mantienes este consumo y
-                                  precios todo el año. No es una previsión.
+                                  {saving > 0
+                                    ? "Ahorro extrapolado si mantienes este consumo y precios todo el año. No es una previsión."
+                                    : "Entre las tarifas que has comparado, ninguna mejora tu precio actual para este consumo."}
                                 </span>
                               </div>
                             </div>

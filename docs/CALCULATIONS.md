@@ -60,3 +60,9 @@ Bills may span calendar months. Start and end dates follow meter-reading boundar
 The full paid amount is attributed to the selected reporting month; there is no unsupported allocation of kWh or costs across calendar months. Stacks show energy, power, other charges (financing/rental/services), taxes and legacy totals without a breakdown. Itemized amounts must sum to the paid total. Multiple bills in a month are aggregated and missing months remain missing. A text table presents the same monthly data.
 
 The CNMC confirms that households can contract equal or different powers in the two periods: [CNMC power guidance](https://blog.cnmc.es/2023/06/23/panel-de-hogares-cnmc-por-que-tienes-contratada-mas-potencia-de-la-necesaria/).
+
+## Recorded bill credits
+
+Bills optionally store a positive `credit` amount (zero for older records). It represents a credit applied to the final bill after the recorded taxes. With a breakdown, `paid = sum(line amounts) - credit`; changing the credit updates the total without modifying the recorded tax amounts. Credits larger than the charges can produce a negative total (a balance in the customer's favour). A discount that reduces a taxable charge should instead be reflected in the actual net charge and tax lines, not deducted a second time here.
+
+Charts show gross charge categories above zero and credits below zero. Total-only bills use `paid + credit` as the unknown gross charge. The line view uses the net amount paid, and missing months interrupt the line.

@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import {
   billSchema,
   numberOf,
@@ -22,6 +22,10 @@ export default function BillForm({
   onClose: () => void;
 }) {
   const [editing, setEditing] = useState(initial);
+  const [showPastTariffs, setShowPastTariffs] = useState(false);
+  const [pastTariffMessage, setPastTariffMessage] = useState("");
+  const pastTariffsId = useId();
+  const tariffSelect = useRef<HTMLSelectElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   async function save(e: FormEvent) {
@@ -110,6 +114,7 @@ export default function BillForm({
             />
             <Field
               label="Total pagado"
+              signed
               required
               decimal
               unit="€"
@@ -117,6 +122,28 @@ export default function BillForm({
               onChange={(v) => setEditing({ ...editing, paid: v })}
             />
           </div>
+          <Field
+            label="Crédito o descuento sobre el total (opcional)"
+            decimal
+            unit="€"
+            hint="Importe positivo que se resta después de impuestos. Si el descuento reduce una base imponible, copia los conceptos e impuestos ya descontados de tu factura y no lo restes aquí otra vez."
+            value={editing.credit}
+            onChange={(credit) => {
+              const gross = editing.breakdown
+                ? Object.values(editing.breakdown).reduce(
+                    (sum, v) => sum + numberOf(v),
+                    0,
+                  )
+                : numberOf(editing.paid) + numberOf(editing.credit);
+              setEditing({
+                ...editing,
+                credit,
+                paid: Number.isFinite(gross - numberOf(credit))
+                  ? String(cents(gross - numberOf(credit)))
+                  : editing.paid,
+              });
+            }}
+          />
           <Field
             label="Comercializadora"
             required
@@ -133,8 +160,10 @@ export default function BillForm({
           <label className="auth-label">
             Tarifa de esta factura
             <select
+              ref={tariffSelect}
               value={editing.tariff ? "snapshot" : ""}
-              onChange={(e) =>
+              onChange={(e) => {
+                setPastTariffMessage("");
                 setEditing({
                   ...editing,
                   tariff:
@@ -143,37 +172,98 @@ export default function BillForm({
                       : structuredClone(
                           w.tariffs.find(
                             (t) => `live:${t.id}` === e.target.value,
-                          ) ??
-                            w.history.find(
-                              (h) => `history:${h.id}` === e.target.value,
-                            )?.tariff ??
-                            null,
+                          ) ?? null,
                         ),
-                })
-              }
+                });
+              }}
             >
               <option value="">Sin vincular</option>
               {editing.tariff && (
                 <option value="snapshot">
-                  {editing.tariff.name} · conservar esta copia
+                  {editing.tariff.name} · precios de esta factura
                 </option>
               )}
-              {w.tariffs.map((t) => (
-                <option key={t.id} value={`live:${t.id}`}>
-                  {t.name}
-                </option>
-              ))}
-              {w.history.map((h) => (
-                <option key={h.id} value={`history:${h.id}`}>
-                  {h.tariff.name} · {shortDate(h.start)} a {shortDate(h.end)}
-                </option>
-              ))}
+              <optgroup label="Tarifas guardadas">
+                {w.tariffs
+                  .filter(
+                    (t) => JSON.stringify(t) !== JSON.stringify(editing.tariff),
+                  )
+                  .map((t) => (
+                    <option key={t.id} value={`live:${t.id}`}>
+                      {t.name}
+                      {t.id === editing.tariff?.id ? " · precios actuales" : ""}
+                    </option>
+                  ))}
+              </optgroup>
             </select>
             <small>
               Se guarda una copia de los precios; los cambios futuros no alteran
               esta factura.
             </small>
           </label>
+          {w.history.length > 0 && (
+            <div className="past-tariff-picker">
+              <button
+                type="button"
+                className="link-button"
+                aria-expanded={showPastTariffs}
+                aria-controls={pastTariffsId}
+                onClick={() => setShowPastTariffs(!showPastTariffs)}
+              >
+                {showPastTariffs
+                  ? "Ocultar tarifas anteriores"
+                  : "Elegir una tarifa anterior"}
+              </button>
+              {showPastTariffs && (
+                <div id={pastTariffsId}>
+                  <label className="auth-label">
+                    Precios que tenías antes
+                    <select
+                      defaultValue=""
+                      onChange={(event) => {
+                        const previous = w.history.find(
+                          (h) => h.id === event.target.value,
+                        );
+                        if (!previous) return;
+                        setEditing({
+                          ...editing,
+                          tariff: structuredClone(previous.tariff),
+                        });
+                        setPastTariffMessage(
+                          `Precios de ${shortDate(previous.start)} a ${shortDate(previous.end)} vinculados. Los importes de la factura no cambian.`,
+                        );
+                        setShowPastTariffs(false);
+                        tariffSelect.current?.focus();
+                      }}
+                    >
+                      <option value="" disabled>
+                        Selecciona la tarifa y el periodo
+                      </option>
+                      {[...w.history]
+                        .sort((a, b) => b.end.localeCompare(a.end))
+                        .map((h) => (
+                          <option key={h.id} value={h.id}>
+                            {h.tariff.name} · {shortDate(h.start)}
+                            {h.start === h.end
+                              ? " · cambio de precios ese día"
+                              : ` a ${shortDate(h.end)}`}
+                          </option>
+                        ))}
+                    </select>
+                    <small>
+                      Vincula una copia de esos precios; los importes de la
+                      factura no cambian.
+                    </small>
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+          {pastTariffMessage && (
+            <p className="small muted" role="status">
+              {pastTariffMessage}
+            </p>
+          )}
           <label className="checkbox">
             <input
               type="checkbox"
@@ -202,7 +292,7 @@ export default function BillForm({
             <>
               <p className="small muted">
                 Copia los importes facturados. Al editar una línea, el total se
-                actualiza con su suma.
+                actualiza con su suma menos el crédito aplicado.
               </p>
               <div className="form-grid two">
                 {billLines.map(([key, label]) => (
@@ -220,7 +310,12 @@ export default function BillForm({
                         ...editing,
                         breakdown,
                         paid: values.every(Number.isFinite)
-                          ? String(cents(values.reduce((sum, n) => sum + n, 0)))
+                          ? String(
+                              cents(
+                                values.reduce((sum, n) => sum + n, 0) -
+                                  numberOf(editing.credit),
+                              ),
+                            )
                           : editing.paid,
                       });
                     }}

@@ -24,9 +24,9 @@ Vercel deployments automatically run database migrations before building through
 
 ## Daily workflow
 
-Start with your current tariff or your consumption. The tariff editor includes consumption, taxes and a live breakdown; the first tariff can become your reference immediately. Add an offer to compare it. In your account, click **Guardar cambios** to persist your work. For weekly checks, review the suppliers' current conditions, then use **Confirmar precios de hoy** per tariff or **He comprobado todos los precios**. For signed-in users these review dates save immediately.
+Start with your current tariff or your consumption. The tariff editor includes consumption, taxes and a live breakdown; the first tariff can become your reference immediately. Add an offer to compare it. Draft comparisons survive refresh and account navigation in the same browser tab. Signing in recovers guest consumption and offers alongside account data. In your account, click **Guardar cambios** to persist your work beyond the tab. For weekly checks, review the suppliers' current conditions, then use **Confirmar precios de hoy** per tariff or **He comprobado todos los precios**. For signed-in users these review dates save immediately.
 
-**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este periodo como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. No provider switching, automatic offer scraping or email reminders are performed.
+**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este periodo como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
 
 ## Stack
 

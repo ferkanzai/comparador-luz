@@ -12,12 +12,14 @@ import {
 import { billBuckets, billLines } from "@/lib/bill-data";
 import { Empty } from "./ui";
 import BillForm from "./bill-form";
+import BillsChart from "./bills-chart";
 const groups = [
   ["energy", "Energía"],
   ["power", "Potencia"],
   ["other", "Otros cargos"],
   ["taxes", "Impuestos"],
   ["unknown", "Sin desglose"],
+  ["credit", "Créditos"],
 ] as const;
 export default function Bills({
   workspace: w,
@@ -34,7 +36,14 @@ export default function Bills({
   const months = Array.from({ length: 12 }, (_, index) => {
     const month = `${year}-${String(index + 1).padStart(2, "0")}`;
     const entries = bills.filter((b) => b.month === month);
-    const totals = { energy: 0, power: 0, other: 0, taxes: 0, unknown: 0 };
+    const totals = {
+      energy: 0,
+      power: 0,
+      other: 0,
+      taxes: 0,
+      unknown: 0,
+      credit: 0,
+    };
     for (const entry of entries) {
       const amounts = billBuckets(entry);
       for (const [key] of groups) totals[key] += amounts[key];
@@ -51,7 +60,6 @@ export default function Bills({
     };
   });
   const total = months.reduce((sum, m) => sum + m.amount, 0);
-  const max = Math.max(...months.map((m) => m.amount), 1);
   function create() {
     const current = w.tariffs.find((t) => t.id === w.currentId);
     setEditing({
@@ -61,6 +69,7 @@ export default function Bills({
       periodStart: "",
       periodEnd: "",
       paid: "",
+      credit: "0",
       kwh: "",
       notes: "",
       tariff: current ? structuredClone(current) : null,
@@ -107,60 +116,13 @@ export default function Bills({
             </select>
           </label>
         </div>
-        <ul className="chart-legend" aria-label="Conceptos del gráfico">
-          {groups.map(([key, label]) => (
-            <li key={key}>
-              <span className={`swatch stack-${key}`} />
-              {label}
-            </li>
-          ))}
-        </ul>
-        <div
-          className="chart-scroll"
-          tabIndex={0}
-          role="region"
-          aria-label="Gráfico mensual. Desplázate horizontalmente para ver todos los meses."
-        >
-          <div
-            className="chart stacked-chart"
-            role="img"
-            aria-label={`Gasto mensual de ${year}, desglosado por conceptos. Total ${money(total)}. Consulta los mismos datos en la tabla de desglose mensual.`}
-          >
-            {months.map((m) => (
-              <div className="chart-column" key={m.month}>
-                <span className="chart-value">
-                  {m.count ? money(m.amount) : "—"}
-                </span>
-                <div
-                  className={`chart-bar ${m.count ? "" : "no-data"}`}
-                  style={{
-                    height: `${m.count ? Math.max((m.amount / max) * 200, 3) : 3}px`,
-                  }}
-                >
-                  {groups.map(
-                    ([key, label]) =>
-                      m.totals[key] > 0 && (
-                        <span
-                          key={key}
-                          className={`stack-${key}`}
-                          style={{
-                            height: `${(m.totals[key] / m.amount) * 100}%`,
-                          }}
-                          title={`${m.label} · ${label}: ${money(m.totals[key])}`}
-                        />
-                      ),
-                  )}
-                </div>
-                <span>{m.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <BillsChart months={months} year={year} />
         <p className="small muted">
           Cada factura se agrupa en el mes elegido (por defecto, el mes de fin
           del periodo), sin prorratearla. Otros cargos: bono social, alquiler y
           servicios. Las facturas antiguas sin conceptos aparecen como «Sin
-          desglose»; los meses sin facturas, como «—».
+          desglose»; los meses sin facturas, como «—». Los créditos se restan
+          del total y aparecen bajo el cero en las barras.
         </p>
         <details className="form-section">
           <summary>Ver desglose mensual en tabla</summary>
@@ -253,6 +215,11 @@ export default function Bills({
                     )}
                     {b.notes && (
                       <small className="block muted">{b.notes}</small>
+                    )}
+                    {numberOf(b.credit) > 0 && (
+                      <small className="block muted">
+                        Crédito aplicado: −{money(numberOf(b.credit))}
+                      </small>
                     )}
                     {b.breakdown && (
                       <details>

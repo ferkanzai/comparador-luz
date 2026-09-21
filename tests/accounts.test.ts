@@ -124,6 +124,7 @@ test(
         periodEnd: "",
         provider: "Private provider",
         paid: "65,42",
+        credit: "0",
         kwh: "300",
         notes: "",
         tariff: structuredClone(tariff),

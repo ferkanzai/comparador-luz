@@ -3,6 +3,8 @@ import { useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "./input-otp";
 import { Brand } from "./ui";
 export default function AccountForm({
   configured,
@@ -259,20 +261,27 @@ export default function AccountForm({
               {sent && method === "otp" && (
                 <label className="auth-label">
                   Código de 6 dígitos
-                  <input
+                  <InputOTP
                     ref={codeInput}
                     name="otp"
-                    className="otp-input"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\s/g, ""))}
+                    onChange={setOtp}
+                    pasteTransformer={(text) => text.replace(/[\s-]/g, "")}
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    pattern="[0-9]{6}"
+                    pattern={REGEXP_ONLY_DIGITS}
                     minLength={6}
                     maxLength={6}
                     required
                     aria-describedby="otp-hint"
-                  />
+                    aria-invalid={!!error}
+                  >
+                    <InputOTPGroup>
+                      {Array.from({ length: 6 }, (_, index) => (
+                        <InputOTPSlot key={index} index={index} />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
                   <small id="otp-hint">
                     Enviado a {email}. Caduca en 10 minutos.
                   </small>

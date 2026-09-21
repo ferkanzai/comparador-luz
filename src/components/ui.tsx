@@ -26,6 +26,7 @@ export function Field({
   placeholder,
   maxLength = 100,
   decimal = false,
+  signed = false,
 }: {
   label: string;
   value: string;
@@ -37,9 +38,12 @@ export function Field({
   placeholder?: string;
   maxLength?: number;
   decimal?: boolean;
+  signed?: boolean;
 }) {
   const id = useId();
-  const invalid = decimal && value !== "" && !/^\d+(?:[.,]\d+)?$/.test(value);
+  const pattern = signed ? "-?[0-9]+([.,][0-9]+)?" : "[0-9]+([.,][0-9]+)?";
+  const invalid =
+    decimal && value !== "" && !new RegExp(`^${pattern}$`).test(value);
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -51,7 +55,7 @@ export function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           inputMode={decimal ? "decimal" : undefined}
-          pattern={decimal ? "[0-9]+([.,][0-9]+)?" : undefined}
+          pattern={decimal ? pattern : undefined}
           required={required}
           maxLength={maxLength}
           placeholder={placeholder ?? (decimal ? "0,00" : undefined)}
@@ -70,7 +74,9 @@ export function Field({
       </div>
       {invalid && (
         <small id={`${id}-error`} className="field-error">
-          Usa un número positivo, con coma o punto decimal.
+          {signed
+            ? "Usa un número válido, con coma o punto decimal."
+            : "Usa un número positivo, con coma o punto decimal."}
         </small>
       )}
       {hint && <small id={`${id}-hint`}>{hint}</small>}

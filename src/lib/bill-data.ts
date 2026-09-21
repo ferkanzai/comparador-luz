@@ -32,6 +32,7 @@ export function billFromCalculation(
     month: today().slice(0, 7),
     provider: tariff.provider || tariff.name,
     paid: String(cost.total),
+    credit: "0",
     kwh: String(cost.kwh),
     notes: "",
     tariff: structuredClone(tariff),
@@ -63,6 +64,14 @@ export function billBuckets(bill: Bill) {
             numberOf(b.servicesVat),
         ),
         unknown: 0,
+        credit: -numberOf(bill.credit ?? "0"),
       }
-    : { energy: 0, power: 0, other: 0, taxes: 0, unknown: numberOf(bill.paid) };
+    : {
+        energy: 0,
+        power: 0,
+        other: 0,
+        taxes: 0,
+        unknown: cents(numberOf(bill.paid) + numberOf(bill.credit ?? "0")),
+        credit: -numberOf(bill.credit ?? "0"),
+      };
 }

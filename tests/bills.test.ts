@@ -96,3 +96,45 @@ test("bills can span calendar months and keep a separate reporting month", () =>
     true,
   );
 });
+
+test("credits reduce the recorded total without changing taxes and old bills default to no credit", () => {
+  const raw = {
+    id: crypto.randomUUID(),
+    month: "2026-09",
+    provider: "Provider",
+    paid: "20",
+    kwh: "",
+    notes: "",
+    tariff: null,
+  };
+  assert.equal(billSchema.parse(raw).credit, "0");
+  const breakdown = {
+    energy: "10",
+    power: "10",
+    social: "0",
+    meter: "0",
+    services: "0",
+    electricityTax: "1",
+    vat: "4",
+    servicesVat: "0",
+  };
+  const bill = billSchema.parse({ ...raw, breakdown, credit: "5" });
+  assert.equal(billBuckets(bill).credit, -5);
+  assert.equal(billBuckets(bill).taxes, 5);
+  assert.equal(
+    Object.values(billBuckets(bill)).reduce((a, b) => a + b, 0),
+    20,
+  );
+  assert.equal(billSchema.safeParse({ ...bill, paid: "25" }).success, false);
+  const refund = billSchema.parse({ ...bill, paid: "-5", credit: "30" });
+  assert.equal(
+    Object.values(billBuckets(refund)).reduce((a, b) => a + b, 0),
+    -5,
+  );
+  const noBreakdown = billSchema.parse({ ...raw, credit: "5" });
+  assert.equal(billBuckets(noBreakdown).unknown, 25);
+  assert.equal(
+    Object.values(billBuckets(noBreakdown)).reduce((a, b) => a + b, 0),
+    20,
+  );
+});

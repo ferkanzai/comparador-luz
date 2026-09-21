@@ -77,7 +77,15 @@ export const billSchema = z
     periodStart: optionalDate.default(""),
     periodEnd: optionalDate.default(""),
     provider: z.string().trim().min(1).max(100),
-    paid: decimal(1_000_000).refine((s) => s !== ""),
+    paid: z
+      .string()
+      .max(24)
+      .refine(
+        (s) =>
+          /^-?\d+(?:[.,]\d+)?$/.test(s) && Math.abs(numberOf(s)) <= 1_000_000,
+        "Introduce un total válido.",
+      ),
+    credit: decimal(1_000_000).default("0"),
     kwh: decimal(),
     notes: z.string().max(2000),
     tariff: tariffSchema.nullable(),
@@ -95,9 +103,14 @@ export const billSchema = z
       !b.breakdown ||
       Math.abs(
         Object.values(b.breakdown).reduce((sum, v) => sum + numberOf(v), 0) -
+          numberOf(b.credit) -
           numberOf(b.paid),
       ) < 0.005,
-    "El desglose debe sumar el total pagado. Revisa los importes o guarda solo el total.",
+    "La suma de los conceptos menos el crédito debe coincidir con el total pagado.",
+  )
+  .refine(
+    (b) => b.breakdown || numberOf(b.paid) + numberOf(b.credit) >= 0,
+    "Un total negativo necesita un crédito que explique el saldo a tu favor.",
   );
 export const workspaceSchema = z
   .object({
