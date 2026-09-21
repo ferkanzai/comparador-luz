@@ -130,7 +130,6 @@ test(
         tariff: structuredClone(tariff),
         profile: null,
         breakdown: null,
-        priceLines: [],
       });
       const put = (cookie: string, version: number, origin = base) =>
         PUT(
@@ -150,7 +149,7 @@ test(
         await GET(request("/api/workspace", undefined, aliceCookie))
       ).json();
       assert.equal(saved.data.tariffs[0].name, "Private tariff");
-      assert.equal(saved.data.bills[0].paid, "65,42");
+      assert.equal(saved.data.bills[0].paid, "65.42");
       assert.equal(saved.version, 1);
       const bobs = await (
         await GET(request("/api/workspace", undefined, bobCookie))
@@ -224,7 +223,9 @@ test(
           }),
         );
         assert.equal(sent.status, 200);
-        const code = emails.at(-1)?.match(/: (\d{6})/)?.[1];
+        const code = emails
+          .at(-1)
+          ?.match(/^\[Development email\] (\d{6})\b/)?.[1];
         assert.ok(code, "Email delivery contains a six-digit code");
         return code;
       };
@@ -288,7 +289,7 @@ test(
       const retained = await (
         await GET(request("/api/workspace", undefined, cookieOf(aliceOTP)))
       ).json();
-      assert.equal(retained.data.bills[0].paid, "65,42");
+      assert.equal(retained.data.bills[0].paid, "65.42");
     } finally {
       console.info = originalLog;
       await getPool().query('DELETE FROM "user" WHERE email = ANY($1)', [

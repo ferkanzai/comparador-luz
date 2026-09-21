@@ -1225,64 +1225,12 @@ small {
 .bill-concept {
   min-width: 0;
 }
-.bill-price-lines {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #f0f4e9;
-}
-.bill-price-lines h3 {
-  font-size: 1rem;
-}
-.bill-price-lines > p {
-  margin: 12px 0;
-}
-.bill-price-line {
-  margin: 12px 0;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  border-radius: 8px;
-}
-.bill-price-line summary {
-  padding: 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-.bill-price-line summary span {
-  display: inline-block;
-  margin-left: 12px;
-  color: var(--muted);
-}
-.price-line-body {
-  display: grid;
-  gap: 12px;
-  padding: 0 12px 12px;
-}
-.price-line-body select {
-  width: 100%;
-  min-width: 0;
-}
-.price-line-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 20px;
-}
-.price-line-actions button,
-.price-line-body > button {
-  min-height: 44px;
-  text-align: left;
-}
 .bill-reconciliation p {
   margin: 0 0 8px;
 }
 @media (max-width: 480px) {
   .bill-concepts {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .bill-price-lines {
-    padding: 12px;
   }
 }
 .modal-head {
@@ -2971,17 +2919,6 @@ button:disabled {
   margin-block: 12px;
   text-align: left;
   min-height: 44px;
-}
-.bill-split-total {
-  display: grid;
-  gap: 4px;
-}
-.bill-split-total strong {
-  font-variant-numeric: tabular-nums;
-}
-.bill-advanced > p,
-.bill-advanced .bill-price-lines {
-  margin-block: 16px;
 }
 .bill-views {
   display: flex;

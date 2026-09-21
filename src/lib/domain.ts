@@ -72,35 +72,21 @@ export const billBreakdownSchema = z.object({
   vat: billedAmount,
   servicesVat: billedAmount,
 });
-export const billPriceLineSchema = z
-  .object({
-    id: z.uuid(),
-    concept: billBreakdownSchema.keyof(),
-    label: z.string().trim().max(100),
-    start: optionalDate,
-    end: optionalDate,
-    quantity: decimal(),
-    unit: z.enum(["day", "kwh", "kwDay", "kwMonth", "kwYear", "month"]),
-    price: decimal(10000),
-    amount: billedAmount,
-  })
-  .refine(
-    (line) =>
-      (!line.start && !line.end) ||
-      (!!line.start && !!line.end && line.end > line.start),
-    "En cada tramo, indica ambas fechas y un fin posterior al inicio.",
-  )
-  .refine(
-    (line) => !!line.quantity === !!line.price,
-    "Completa la cantidad y el precio del tramo, o deja ambos en blanco.",
-  );
-export type BillPriceLine = z.infer<typeof billPriceLineSchema>;
 export const consumptionSchema = z.object({
   peakKwh: decimal(),
   flatKwh: decimal(),
   valleyKwh: decimal(),
 });
 export type Consumption = z.infer<typeof consumptionSchema>;
+function hasLegacyPriceLines(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "priceLines" in value &&
+    Array.isArray(value.priceLines) &&
+    value.priceLines.length > 0
+  );
+}
 export const billSchema = z
   .object({
     id: z.uuid(),
@@ -131,7 +117,6 @@ export const billSchema = z
     tariff: tariffSchema.nullable(),
     profile: profileSchema.nullable().default(null),
     breakdown: billBreakdownSchema.nullable().default(null),
-    priceLines: z.array(billPriceLineSchema).max(64).default([]),
   })
   .refine(
     (b) =>
@@ -170,43 +155,6 @@ export const billSchema = z
         message:
           "Completa los tres consumos (usa 0 donde corresponda). Su suma debe coincidir con los kWh totales.",
       });
-    if (!b.priceLines.length) return;
-    if (!b.breakdown) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Los tramos de precio necesitan un desglose por conceptos.",
-      });
-      return;
-    }
-    if (
-      new Set(b.priceLines.map((line) => line.id)).size !== b.priceLines.length
-    )
-      ctx.addIssue({
-        code: "custom",
-        message: "Hay tramos de precio duplicados.",
-      });
-    for (const concept of new Set(b.priceLines.map((line) => line.concept))) {
-      const sum = b.priceLines
-        .filter((line) => line.concept === concept)
-        .reduce((total, line) => total + numberOf(line.amount), 0);
-      if (Math.abs(sum - numberOf(b.breakdown[concept])) >= 0.005)
-        ctx.addIssue({
-          code: "custom",
-          message:
-            "La suma de los tramos debe coincidir con el importe de su concepto.",
-        });
-    }
-    for (const line of b.priceLines) {
-      if (
-        (b.periodStart && line.start && line.start < b.periodStart) ||
-        (b.periodEnd && line.end && line.end > b.periodEnd)
-      )
-        ctx.addIssue({
-          code: "custom",
-          message:
-            "Las fechas de los tramos deben estar dentro del periodo de la factura.",
-        });
-    }
   });
 export const workspaceSchema = z
   .object({
@@ -215,7 +163,14 @@ export const workspaceSchema = z
     currentId: z.uuid().nullable(),
     currentSince: optionalDate,
     history: z.array(historySchema).max(500),
-    bills: z.array(billSchema).max(1200),
+    // Retired split-price invoices are intentionally discarded, including stale browser drafts.
+    bills: z.preprocess(
+      (value) =>
+        Array.isArray(value)
+          ? value.filter((bill) => !hasLegacyPriceLines(bill))
+          : value,
+      z.array(billSchema).max(1200),
+    ),
     reviewedOn: optionalDate,
   })
   .superRefine((w, ctx) => {

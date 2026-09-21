@@ -89,7 +89,6 @@ export default function Bills({
       tariff: current ? structuredClone(current) : null,
       profile: null,
       breakdown: null,
-      priceLines: [],
     });
   }
   return (

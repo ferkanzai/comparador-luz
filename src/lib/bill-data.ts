@@ -7,7 +7,6 @@ import {
   type Bill,
   type Profile,
   type Tariff,
-  type BillPriceLine,
 } from "./domain";
 
 export const billGroups = [
@@ -62,7 +61,6 @@ export function billFromCalculation(
       valleyKwh: profile.valleyKwh,
     },
     notes: "",
-    priceLines: [],
     tariff: structuredClone(tariff),
     profile: structuredClone(profile),
     breakdown: {
@@ -99,35 +97,6 @@ export function billReconciliation(bill: Bill) {
   };
 }
 
-export function replaceBillPriceLines(
-  bill: Bill,
-  concept: BillPriceLine["concept"],
-  lines: BillPriceLine[],
-): Bill {
-  const valid = lines.every(
-    (line) => line.amount !== "" && decimal().safeParse(line.amount).success,
-  );
-  return {
-    ...bill,
-    priceLines: [
-      ...bill.priceLines.filter((line) => line.concept !== concept),
-      ...lines,
-    ],
-    breakdown:
-      bill.breakdown && lines.length
-        ? {
-            ...bill.breakdown,
-            [concept]: valid
-              ? String(
-                  cents(
-                    lines.reduce((sum, line) => sum + numberOf(line.amount), 0),
-                  ),
-                )
-              : "",
-          }
-        : bill.breakdown,
-  };
-}
 export function billBuckets(bill: Bill) {
   const b = bill.breakdown;
   return b

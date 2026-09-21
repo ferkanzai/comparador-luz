@@ -4,7 +4,7 @@ A Spanish electricity comparison dashboard for a weekly manual review of your ho
 
 - Guest comparison with empty forms, no sample prices, and no account requirement.
 - Better Auth email-code login or email/password with immediate signup sessions, email verification and password recovery.
-- PostgreSQL persistence, available through Neon's free Vercel Marketplace plan.
+- Relational PostgreSQL persistence with account-scoped foreign keys, row-level security and atomic versioned saves.
 - Saved consumption, current tariff, manually entered offers, review dates and offer expiry.
 - Historical price snapshots when changing providers or updating current prices.
 - Bills with actual date ranges, consumption snapshots, editable breakdowns, immediate saving, monthly stacked charts and JSON export.
@@ -39,4 +39,4 @@ pnpm test
 pnpm build
 ```
 
-The account integration test runs only with an explicitly configured disposable local PostgreSQL database; see the setup guide.
+The account and relational storage integration tests run only with explicitly configured disposable local PostgreSQL databases; see [the setup guide](docs/SETUP.md) and [database model, migration and isolation tests](docs/DATABASE.md). Existing JSON workspace installations require a maintenance-window migration before deploying this version.

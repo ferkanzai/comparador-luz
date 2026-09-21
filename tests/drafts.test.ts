@@ -62,3 +62,36 @@ test("storage failure is reported instead of claiming a draft is saved", () => {
     false,
   );
 });
+
+test("legacy drafts discard invoices with tramos and retain ordinary invoices", () => {
+  const storage = memory();
+  const bill = {
+    id: crypto.randomUUID(),
+    month: "2026-09",
+    provider: "Supplier",
+    paid: "10",
+    credit: "0",
+    kwh: "",
+    notes: "Keep me",
+    tariff: null,
+  };
+  storage.setItem(
+    "luz:comparison-draft:v1:guest",
+    JSON.stringify({
+      data: {
+        ...emptyWorkspace(),
+        bills: [
+          bill,
+          { ...bill, id: crypto.randomUUID(), priceLines: [] },
+          { id: "retired", priceLines: [{ amount: "invalid" }] },
+        ],
+      },
+      version: 8,
+    }),
+  );
+  const draft = readDraft(storage, "guest");
+  assert.equal(draft?.version, 8);
+  assert.equal(draft?.data.bills.length, 2);
+  assert.ok(draft?.data.bills.every((b) => !("priceLines" in b)));
+  assert.equal(draft?.data.bills[0].notes, "Keep me");
+});

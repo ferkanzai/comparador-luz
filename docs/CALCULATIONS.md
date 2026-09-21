@@ -92,17 +92,11 @@ Bills optionally store a positive `credit` amount (zero for older records). It r
 
 Charts show gross charge categories above zero and credits below zero. Total-only bills use `paid + credit` as the unknown gross charge. The evolution view shows a separate line for each charge category and the net amount paid, with optional credit and unknown-amount series. Each line can be hidden from the legend. Missing months interrupt every line. Both tables distinguish the total before credits from the net amount paid; the bill list also shows the credit in its own column.
 
-## Multiple prices within one invoice
+## Invoice breakdown
 
-The editor no longer offers creation of new price lines. Existing lines remain editable under **Opciones avanzadas · tramos guardados**, and the invoice modal keeps the same width throughout.
+Invoices store one editable amount per charge concept, with optional aggregate breakdowns and credits. There is no split-price (tramos) editor or price-line storage. The sum of the recorded concepts minus the credit must match the independently entered paid total.
 
-One invoice remains one record even if the supplier changes a tariff or a regulated charge during its billing period. Optional `priceLines` preserve multiple billed lines **per concept**, with a label (for example P1 or the tariff name), start/end dates, quantity, unit, printed price and actual billed amount. Dates use exclusive end boundaries, consistent with the bill's meter-reading dates. Dates and quantity/price can be omitted when only the billed amounts are available; each pair must otherwise be complete. Supplied dates must lie inside the invoice period. Energy period lines may share a date range, so overlaps are not automatically rejected or interpreted as duplicate usage.
-
-The editor proposes each line amount as `round(quantity × price, 2)`, but permits an explicit correction to match the supplier's billed amount when the printed unit price is rounded. For daily charges there is an explicit “use days in this interval” action. For power the quantity must be kW × days/months/years matching the printed price unit. The app never distributes kWh proportionally across dates or infers a tariff switch from a changed regulated charge.
-
-The sum of the lines updates **only that concept's aggregate**, leaving the independently entered paid total and tax amounts unchanged. Example using the user's rounded prices: 16 days × €0.019 → €0.30, plus 14 days × €0.025 → €0.35, yields €0.65 of financing in the same invoice. Copy the actual invoice's dates, prices and rounded amounts; these example rates are not universal regulatory defaults. Existing energy, power and tax lines use the same aggregate calculation.
-
-Both client and server validate line dates, quantities, identifiers, aggregate sums and the final reconciliation: `sum(concepts) - credit = paid`. Missing or invalid line amounts are incomplete, not zero. Removing all detailed lines retains the concept total; disabling the whole breakdown removes the line details as well. Older bills default to an empty `priceLines` array. Exports, saved bills and account reloads retain the lines; monthly charts still count one invoice and use its aggregate concepts. The single linked tariff snapshot is contextual; actual split billed prices live in `priceLines` and do not alter tariff history.
+Legacy invoices with nonempty `priceLines` are intentionally discarded in migration, including their bill-specific snapshots and breakdowns. Invoices with no price lines remain. Old browser drafts undergo the same cleanup so they cannot reintroduce retired invoices.
 
 ## Recorded consumption and invoice prices
 

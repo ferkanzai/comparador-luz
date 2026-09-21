@@ -14,7 +14,6 @@ import {
 import { billLines, billReconciliation } from "@/lib/bill-data";
 import { Field, Modal } from "./ui";
 import EstimateNotice from "./estimate-notice";
-import BillPriceLines from "./bill-price-lines";
 import BillConsumptionFields from "./bill-consumption-fields";
 import TariffForm from "./tariff-form";
 import {
@@ -290,7 +289,6 @@ export default function BillForm({
                 onChange={(e) =>
                   setEditing({
                     ...editing,
-                    priceLines: [],
                     breakdown: e.target.checked
                       ? {
                           energy: "0",
@@ -318,58 +316,22 @@ export default function BillForm({
                 <div className="bill-concepts">
                   {billLines.map(([key, label]) => (
                     <div key={key} className="bill-concept">
-                      {!editing.priceLines.some(
-                        (line) => line.concept === key,
-                      ) && (
-                        <Field
-                          label={label}
-                          value={editing.breakdown![key]}
-                          decimal
-                          unit="€"
-                          required
-                          onChange={(value) => {
-                            const breakdown = {
-                              ...editing.breakdown!,
-                              [key]: value,
-                            };
-                            setEditing({ ...editing, breakdown });
-                          }}
-                        />
-                      )}
-                      {editing.priceLines.some(
-                        (line) => line.concept === key,
-                      ) && (
-                        <div className="bill-split-total">
-                          <span>{label}</span>
-                          <strong>
-                            {money(numberOf(editing.breakdown![key]))}
-                          </strong>
-                          <small className="muted">
-                            Detalle en opciones avanzadas
-                          </small>
-                        </div>
-                      )}
+                      <Field
+                        label={label}
+                        value={editing.breakdown![key]}
+                        decimal
+                        unit="€"
+                        required
+                        onChange={(value) =>
+                          setEditing({
+                            ...editing,
+                            breakdown: { ...editing.breakdown!, [key]: value },
+                          })
+                        }
+                      />
                     </div>
                   ))}
                 </div>
-                {editing.priceLines.length > 0 && (
-                  <details className="form-section bill-advanced">
-                    <summary>Opciones avanzadas · tramos guardados</summary>
-                    <p className="small muted">
-                      Revisa los tramos que ya tiene esta factura. Sus importes
-                      se suman en el concepto correspondiente.
-                    </p>
-                    {billLines.map(([key, label]) => (
-                      <BillPriceLines
-                        key={key}
-                        bill={editing}
-                        concept={key}
-                        label={label}
-                        onChange={setEditing}
-                      />
-                    ))}
-                  </details>
-                )}
                 <div
                   className={`notice bill-reconciliation ${reconciliation?.difference ? "error" : ""}`}
                   role="status"
