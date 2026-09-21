@@ -1,0 +1,160 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { calculate } from "../src/lib/calculator";
+import {
+  changeCurrent,
+  emptyWorkspace,
+  newTariff,
+  workspaceSchema,
+} from "../src/lib/domain";
+const profile = {
+  ...emptyWorkspace().profile,
+  days: "30",
+  peakKwh: "100",
+  flatKwh: "100",
+  valleyKwh: "100",
+  peakKw: "4",
+  valleyKw: "4",
+};
+const tariff = {
+  ...newTariff(),
+  name: "Test",
+  energyPeak: "0.2",
+  energyFlat: "0.15",
+  energyValley: "0.1",
+  powerPeak: "0.1",
+  powerValley: "0.03",
+};
+test("period energy and power use all five prices and actual billing days", () => {
+  const cost = calculate(tariff, profile)!;
+  assert.equal(cost.energy, 45);
+  assert.equal(cost.power, 15.6);
+  assert.equal(cost.total, 60.6);
+});
+test("fixed price uses the total consumption regardless of period prices", () => {
+  assert.equal(
+    calculate(
+      {
+        ...tariff,
+        kind: "fixed",
+        energyPeak: "0.12",
+        energyFlat: "",
+        energyValley: "",
+      },
+      profile,
+    )!.energy,
+    36,
+  );
+});
+test("annual power prices convert to daily without multiplying by months", () => {
+  assert.equal(
+    calculate(
+      { ...tariff, powerUnit: "year", powerPeak: "36.5", powerValley: "10.95" },
+      profile,
+    )!.power,
+    15.6,
+  );
+});
+test("Spanish commas work and incomplete input never produces a cheapest zero bill", () => {
+  assert.equal(
+    calculate({ ...tariff, energyPeak: "0,2" }, profile)!.total,
+    60.6,
+  );
+  for (const days of ["", "0", "-1", "1.5", "NaN", "Infinity", "999"])
+    assert.equal(calculate(tariff, { ...profile, days }), null);
+  assert.equal(calculate({ ...tariff, powerPeak: "" }, profile), null);
+  assert.equal(calculate(tariff, { ...profile, peakKwh: "" }), null);
+  assert.equal(calculate(tariff, { ...profile, peakKw: "16" }), null);
+});
+test("electricity tax includes social financing but excludes meter and services; IVA includes IEE", () => {
+  const cost = calculate(
+    { ...tariff, socialDay: "0.04", meterDay: "0.03", servicesMonth: "10" },
+    { ...profile, taxes: true, vat: "21", electricityTax: "5.11269632" },
+  )!;
+  assert.equal(cost.social, 1.2);
+  assert.equal(cost.electricityBase, 61.8);
+  assert.equal(cost.electricityTax, 3.16);
+  assert.equal(cost.meter, 0.9);
+  assert.equal(cost.vatBase, 65.86);
+  assert.equal(cost.vat, 13.83);
+  assert.equal(cost.services, 9.86);
+  assert.equal(cost.servicesVat, 2.07);
+  assert.equal(cost.total, 91.62);
+});
+test("reduced supply IVA does not reduce IVA on independent services", () => {
+  const cost = calculate(
+    { ...tariff, servicesMonth: "10" },
+    { ...profile, taxes: true, vat: "10", electricityTax: "0.5" },
+  )!;
+  assert.equal(cost.vat, 6.09);
+  assert.equal(cost.servicesVat, 2.07);
+});
+test("minimum domestic IEE is one euro per MWh and can be disabled for exempt cases", () => {
+  const t = {
+    ...tariff,
+    energyPeak: "0",
+    energyFlat: "0",
+    energyValley: "0",
+    powerPeak: "0",
+    powerValley: "0",
+  };
+  const p = { ...profile, taxes: true, electricityTax: "0.5", vat: "21" };
+  assert.equal(calculate(t, p)!.electricityTax, 0.3);
+  assert.equal(calculate(t, { ...p, minimumTax: false })!.electricityTax, 0);
+});
+test("tax toggle retains all non-tax charges and never charges taxes when disabled", () => {
+  const cost = calculate(
+    { ...tariff, socialDay: "0.04", meterDay: "0.03", servicesMonth: "10" },
+    profile,
+  )!;
+  assert.equal(cost.total, 72.56);
+  assert.equal(cost.electricityTax, 0);
+  assert.equal(cost.vat, 0);
+  assert.equal(cost.servicesVat, 0);
+  assert.equal(calculate(tariff, { ...profile, taxes: true }), null);
+});
+test("changing provider preserves a deep copy of previous prices and valid dates", () => {
+  const next = { ...tariff, id: crypto.randomUUID(), name: "Next" };
+  const w = {
+    ...emptyWorkspace(),
+    tariffs: [tariff, next],
+    currentId: tariff.id,
+    currentSince: "2025-01-01",
+  };
+  const changed = changeCurrent(w, next.id, "2025-02-01");
+  assert.equal(changed.currentId, next.id);
+  assert.equal(changed.history.length, 1);
+  assert.equal(changed.history[0].tariff.energyPeak, "0.2");
+  assert.notEqual(changed.history[0].tariff, tariff);
+  assert.throws(() => changeCurrent(w, next.id, "2024-01-01"));
+  assert.throws(() => changeCurrent(w, next.id, "2099-01-01"));
+  assert.throws(() => changeCurrent(w, crypto.randomUUID(), "2025-02-01"));
+});
+test("workspace rejects unsafe URLs, invalid dates, duplicate ids, and broken current references", () => {
+  assert.equal(
+    workspaceSchema.safeParse({
+      ...emptyWorkspace(),
+      tariffs: [{ ...tariff, url: "javascript:alert(1)" }],
+    }).success,
+    false,
+  );
+  assert.equal(
+    workspaceSchema.safeParse({
+      ...emptyWorkspace(),
+      tariffs: [{ ...tariff, checkedOn: "2025-02-31" }],
+    }).success,
+    false,
+  );
+  assert.equal(
+    workspaceSchema.safeParse({
+      ...emptyWorkspace(),
+      tariffs: [tariff, tariff],
+    }).success,
+    false,
+  );
+  assert.equal(
+    workspaceSchema.safeParse({ ...emptyWorkspace(), currentId: tariff.id })
+      .success,
+    false,
+  );
+});
