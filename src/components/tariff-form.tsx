@@ -186,9 +186,11 @@ export default function TariffForm({
               onChange={(e) => update("powerKind", e.target.value)}
             >
               <option value="periods">Dos precios: punta y valle</option>
-              <option value="same">El mismo precio en cada periodo</option>
               <option value="combined">
-                Un precio combinado: suma de punta y valle
+                Un precio total de potencia: se cobra una vez
+              </option>
+              <option value="same">
+                El mismo precio por periodo: se cobra en punta y en valle
               </option>
             </select>
           </label>
@@ -196,7 +198,7 @@ export default function TariffForm({
             {numeric(
               "powerPeak",
               tariff.powerKind === "combined"
-                ? "Precio combinado P1 + P2"
+                ? "Precio total de potencia (P1 + P2)"
                 : tariff.powerKind === "same"
                   ? "Precio de cada periodo"
                   : "P1 · Punta",
@@ -213,14 +215,14 @@ export default function TariffForm({
           </div>
           <p className="small muted">
             {tariff.powerKind === "combined"
-              ? "La suma se cobra una vez y requiere los mismos kW en ambos periodos. Si tus potencias son distintas, introduce los dos precios."
+              ? "Multiplicamos el precio total por tus kW una sola vez. Requiere los mismos kW en ambos periodos; si son distintos, introduce los dos precios."
               : tariff.powerKind === "same"
-                ? "Se aplica este precio a los kW de punta y a los de valle, y se suman ambos importes."
+                ? "Este precio se cobra dos veces: por los kW de punta y por los de valle. Si tu oferta indica un precio total de potencia, elige «Un precio total de potencia»."
                 : "La tarifa 2.0TD tiene dos periodos de potencia, aunque tengas los mismos kW contratados."}
           </p>
           {tariff.powerUnit === "month" && (
             <p className="notice small">
-              Convertimos a precio diario: precio mensual × 12 ÷ 365. Si tu
+              Potencia mensual: precio × kW × días ÷ 30. Si tu
               compañía prorratea de otra forma, puedes calcular el precio desde
               los importes de tu factura más abajo.
             </p>

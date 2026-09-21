@@ -1166,8 +1166,9 @@ export default function Dashboard({
               </li>
               <li>
                 <strong>Potencia:</strong> kW contratados × precio × días. Los
-                precios anuales se dividen entre 365; los mensuales se
-                multiplican por 12 y se dividen entre 365.
+                precios anuales se dividen entre 365; los mensuales se dividen
+                entre 30. Un precio total de potencia se aplica una sola vez; un
+                precio por periodo se aplica por separado a punta y valle.
               </li>
               <li>
                 <strong>Financiación del bono social:</strong> cargo diario de

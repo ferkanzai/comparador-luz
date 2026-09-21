@@ -256,25 +256,53 @@ test("reported invoice can be reproduced from billed amounts without inventing a
   assert.equal(calculate(fromBill, { ...p, taxes: false })!.total, 20.79);
 });
 
-test("monthly power annualizes all price modes and supports invoice reconstruction", () => {
-  for (const days of [28, 30, 31, 365]) {
+test("a total monthly power price is charged once and prorated over 30 days", () => {
+  const monthly = {
+    ...tariff,
+    powerUnit: "month" as const,
+    powerKind: "combined" as const,
+    powerPeak: "7,20",
+    powerValley: "",
+  };
+  for (const [days, expected] of [
+    [29, 27.84],
+    [30, 28.8],
+    [31, 29.76],
+    [60, 57.6],
+  ]) {
+    assert.equal(
+      calculate(monthly, { ...profile, days: String(days) })!.power,
+      expected,
+    );
+  }
+  // An explicitly per-period price still charges both contracted powers.
+  assert.equal(
+    calculate({ ...monthly, powerKind: "same" }, { ...profile, days: "29" })!
+      .power,
+    55.68,
+  );
+  assert.equal(calculate(monthly, { ...profile, valleyKw: "5" }), null);
+});
+
+test("monthly power uses 30-day proration in all price modes and invoice reconstruction", () => {
+  for (const days of [28, 29, 30, 31, 60, 365]) {
     for (const powerKind of ["periods", "same", "combined"] as const) {
       const monthly = {
         ...tariff,
         powerUnit: "month" as const,
         powerKind,
-        powerPeak: "3,04",
-        powerValley: "0.91",
+        powerPeak: "3,60",
+        powerValley: "0.90",
       };
-      const annual = {
+      const daily = {
         ...monthly,
-        powerUnit: "year" as const,
-        powerPeak: "36.48",
-        powerValley: "10.92",
+        powerUnit: "day" as const,
+        powerPeak: "0.12",
+        powerValley: "0.03",
       };
       assert.equal(
         calculate(monthly, { ...profile, days: String(days) })!.power,
-        calculate(annual, { ...profile, days: String(days) })!.power,
+        calculate(daily, { ...profile, days: String(days) })!.power,
       );
       assert.match(powerDescription(monthly), /€\/kW\/mes/);
     }
@@ -283,9 +311,10 @@ test("monthly power annualizes all price modes and supports invoice reconstructi
   const fromAmounts = {
     ...tariff,
     powerUnit: "month" as const,
-    powerPeak: (11.25 / (4 * 29 * powerDayFactor("month"))).toFixed(12),
-    powerValley: (3.13 / (5 * 29 * powerDayFactor("month"))).toFixed(12),
+    powerPeak: (11.25 / ((4 * 29) / 30)).toFixed(12),
+    powerValley: (3.13 / ((5 * 29) / 30)).toFixed(12),
   };
+  assert.equal(powerDayFactor("month"), 1 / 30);
   assert.equal(calculate(fromAmounts, p)!.power, 14.38);
   assert.equal(calculate({ ...fromAmounts, powerKind: "combined" }, p), null);
 });

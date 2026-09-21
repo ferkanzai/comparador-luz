@@ -332,9 +332,9 @@ export const powerUnitLabels = {
   month: "€/kW/mes",
   year: "€/kW/año",
 };
-// Monthly prices are annualized; this is not a supplier-specific billing rule.
+// Monthly power uses a 30-day billing month, so 30 days costs exactly the quoted rate.
 export const powerDayFactor = (unit: Tariff["powerUnit"]) =>
-  unit === "month" ? 12 / 365 : unit === "year" ? 1 / 365 : 1;
+  unit === "month" ? 1 / 30 : unit === "year" ? 1 / 365 : 1;
 
 export function powerDescription(t: Tariff) {
   const unit = powerUnitLabels[t.powerUnit];
