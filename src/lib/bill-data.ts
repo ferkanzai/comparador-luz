@@ -7,6 +7,25 @@ import {
   type Tariff,
 } from "./domain";
 
+export const billGroups = [
+  ["energy", "Energía"],
+  ["power", "Potencia"],
+  ["other", "Otros cargos"],
+  ["taxes", "Impuestos"],
+  ["unknown", "Sin desglose"],
+  ["credit", "Créditos"],
+] as const;
+export function billMonthLabel(month: string) {
+  const name = new Intl.DateTimeFormat("es-ES", {
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${month}-01`));
+  return `${name[0].toUpperCase()}${name.slice(1)} ${month.slice(0, 4)}`;
+}
+export function billTotal(bill: Pick<Bill, "paid" | "credit">) {
+  return cents(numberOf(bill.paid) + numberOf(bill.credit));
+}
+
 export const billLines = [
   ["energy", "Energía"],
   ["power", "Potencia"],
@@ -71,7 +90,7 @@ export function billBuckets(bill: Bill) {
         power: 0,
         other: 0,
         taxes: 0,
-        unknown: cents(numberOf(bill.paid) + numberOf(bill.credit ?? "0")),
+        unknown: billTotal(bill),
         credit: -numberOf(bill.credit ?? "0"),
       };
 }

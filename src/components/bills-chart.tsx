@@ -2,15 +2,11 @@
 import { useId, useState } from "react";
 import { BarChart3, ChartLine } from "lucide-react";
 import { money } from "@/lib/domain";
+import {
+  billGroups as groups,
+  billMonthLabel as fullMonth,
+} from "@/lib/bill-data";
 
-const groups = [
-  ["energy", "Energía"],
-  ["power", "Potencia"],
-  ["other", "Otros cargos"],
-  ["taxes", "Impuestos"],
-  ["unknown", "Sin desglose"],
-  ["credit", "Créditos"],
-] as const;
 type Month = {
   month: string;
   label: string;
@@ -18,12 +14,10 @@ type Month = {
   count: number;
   totals: Record<(typeof groups)[number][0], number>;
 };
-const fullMonth = (month: string) =>
-  new Intl.DateTimeFormat("es-ES", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${month}-01`));
+const lineSeries = [...groups, ["paid", "Pagado"]] as const;
+type SeriesKey = (typeof lineSeries)[number][0];
+const seriesAmount = (month: Month, key: SeriesKey) =>
+  key === "paid" ? month.amount : month.totals[key];
 
 export default function BillsChart({
   months,
@@ -35,19 +29,34 @@ export default function BillsChart({
   const [view, setView] = useState<"bars" | "line">("bars");
   const [selected, setSelected] = useState<string | null>(null);
   const detailId = useId();
+  const [hiddenSeries, setHiddenSeries] = useState<SeriesKey[]>([]);
+  const availableSeries = lineSeries.filter(
+    ([key]) =>
+      (key !== "credit" && key !== "unknown") ||
+      months.some((m) => m.totals[key] !== 0),
+  );
+  const visibleSeries = availableSeries.filter(
+    ([key]) => !hiddenSeries.includes(key),
+  );
   const active =
     months.find((m) => m.month === selected) ??
     months.findLast((m) => m.count) ??
     months[0];
   const top = Math.max(
     1,
-    ...months.map((m) =>
-      view === "bars" ? m.amount - m.totals.credit : m.amount,
+    ...months.flatMap((m) =>
+      view === "bars"
+        ? [m.amount - m.totals.credit]
+        : visibleSeries.map(([key]) => seriesAmount(m, key)),
     ),
   );
   const bottom = Math.min(
     0,
-    ...months.map((m) => (view === "bars" ? m.totals.credit : m.amount)),
+    ...months.flatMap((m) =>
+      view === "bars"
+        ? [m.totals.credit]
+        : visibleSeries.map(([key]) => seriesAmount(m, key)),
+    ),
   );
   const scale = 190 / (top - bottom);
   const y = (amount: number) => 38 + (top - amount) * scale;
@@ -87,10 +96,48 @@ export default function BillsChart({
           ))}
         </ul>
       ) : (
-        <p className="small muted chart-line-note">
-          Total pagado cada mes, después de créditos. Los meses sin facturas
-          interrumpen la línea.
-        </p>
+        <>
+          <ul
+            className="chart-legend line-legend"
+            aria-label="Conceptos del gráfico. Activa o desactiva cada línea."
+          >
+            {availableSeries.map(([key, label]) => (
+              <li key={key}>
+                <button
+                  type="button"
+                  aria-pressed={!hiddenSeries.includes(key)}
+                  onClick={() =>
+                    setHiddenSeries((hidden) =>
+                      hidden.includes(key)
+                        ? hidden.filter((item) => item !== key)
+                        : [...hidden, key],
+                    )
+                  }
+                >
+                  <svg
+                    viewBox="0 0 28 12"
+                    aria-hidden="true"
+                    className={`series-key series-${key}`}
+                  >
+                    <line
+                      x1="0"
+                      x2="28"
+                      y1="6"
+                      y2="6"
+                      className="spending-line"
+                    />
+                  </svg>
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="small muted chart-line-note">
+            Cada línea muestra un concepto; «Pagado» es el importe después de
+            créditos. Pulsa la leyenda para mostrar u ocultar líneas. Los meses
+            sin facturas interrumpen las líneas.
+          </p>
+        </>
       )}
       <div
         className="chart-scroll"
@@ -107,27 +154,31 @@ export default function BillsChart({
           >
             <line x1="0" x2="1200" y1={zero} y2={zero} className="chart-zero" />
             {view === "line" &&
-              months.map((m, i) =>
-                m.count ? (
-                  <g key={m.month}>
-                    {i > 0 && months[i - 1].count > 0 && (
-                      <line
-                        x1={(i - 1) * 100 + 50}
-                        y1={y(months[i - 1].amount)}
-                        x2={i * 100 + 50}
-                        y2={y(m.amount)}
-                        className="spending-line"
-                      />
-                    )}
-                    <circle
-                      cx={i * 100 + 50}
-                      cy={y(m.amount)}
-                      r={m.month === active.month ? 7 : 5}
-                      className="spending-point"
-                    />
-                  </g>
-                ) : null,
-              )}
+              visibleSeries.map(([key]) => (
+                <g key={key} data-series={key} className={`series-${key}`}>
+                  {months.map((m, i) =>
+                    m.count ? (
+                      <g key={m.month}>
+                        {i > 0 && months[i - 1].count > 0 && (
+                          <line
+                            x1={(i - 1) * 100 + 50}
+                            y1={y(seriesAmount(months[i - 1], key))}
+                            x2={i * 100 + 50}
+                            y2={y(seriesAmount(m, key))}
+                            className="spending-line"
+                          />
+                        )}
+                        <circle
+                          cx={i * 100 + 50}
+                          cy={y(seriesAmount(m, key))}
+                          r={m.month === active.month ? 6 : 4}
+                          className="spending-point"
+                        />
+                      </g>
+                    ) : null,
+                  )}
+                </g>
+              ))}
           </svg>
           {months.map((m) => (
             <button
@@ -214,7 +265,11 @@ export default function BillsChart({
                 </div>
               ))}
             <div className="chart-detail-total">
-              <dt>Total pagado</dt>
+              <dt>Total antes de créditos</dt>
+              <dd>{money(active.amount - active.totals.credit)}</dd>
+            </div>
+            <div className="chart-detail-total">
+              <dt>Pagado</dt>
               <dd>{money(active.amount)}</dd>
             </div>
           </dl>

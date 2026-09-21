@@ -9,18 +9,16 @@ import {
   type Bill,
   type Workspace,
 } from "@/lib/domain";
-import { billBuckets, billLines } from "@/lib/bill-data";
+import {
+  billBuckets,
+  billLines,
+  billGroups as groups,
+  billMonthLabel,
+  billTotal,
+} from "@/lib/bill-data";
 import { Empty } from "./ui";
 import BillForm from "./bill-form";
 import BillsChart from "./bills-chart";
-const groups = [
-  ["energy", "Energía"],
-  ["power", "Potencia"],
-  ["other", "Otros cargos"],
-  ["taxes", "Impuestos"],
-  ["unknown", "Sin desglose"],
-  ["credit", "Créditos"],
-] as const;
 export default function Bills({
   workspace: w,
   update,
@@ -92,7 +90,7 @@ export default function Bills({
       <div className="panel bill-chart">
         <div className="section-inline">
           <div>
-            <span className="muted">Total registrado en {year}</span>
+            <span className="muted">Pagado en {year}</span>
             <div className="big-amount">{money(total)}</div>
             <span className="small muted">
               {bills.length} facturas · {months.filter((m) => m.count).length}{" "}
@@ -133,6 +131,9 @@ export default function Bills({
             aria-label="Desglose mensual"
           >
             <table>
+              <caption className="bill-table-caption">
+                Total antes de créditos · Pagado después de créditos.
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">Mes</th>
@@ -142,6 +143,7 @@ export default function Bills({
                     </th>
                   ))}
                   <th scope="col">Total</th>
+                  <th scope="col">Pagado</th>
                 </tr>
               </thead>
               <tbody>
@@ -151,6 +153,7 @@ export default function Bills({
                     {groups.map(([key]) => (
                       <td key={key}>{m.count ? money(m.totals[key]) : "—"}</td>
                     ))}
+                    <td>{m.count ? money(m.amount - m.totals.credit) : "—"}</td>
                     <td>{m.count ? money(m.amount) : "—"}</td>
                   </tr>
                 ))}
@@ -182,11 +185,16 @@ export default function Bills({
           aria-label="Facturas registradas"
         >
           <table>
+            <caption className="bill-table-caption">
+              Total antes de créditos · Pagado después de créditos.
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Periodo</th>
                 <th scope="col">Comercializadora</th>
                 <th scope="col">Consumo</th>
+                <th scope="col">Total</th>
+                <th scope="col">Créditos</th>
                 <th scope="col">Pagado</th>
                 <th scope="col">
                   <span className="sr-only">Acciones</span>
@@ -197,11 +205,7 @@ export default function Bills({
               {bills.map((b) => (
                 <tr key={b.id}>
                   <td>
-                    {new Intl.DateTimeFormat("es-ES", {
-                      month: "long",
-                      year: "numeric",
-                      timeZone: "UTC",
-                    }).format(new Date(`${b.month}-01`))}
+                    {billMonthLabel(b.month)}
                     {b.periodStart && b.periodEnd && (
                       <small className="block muted">
                         {shortDate(b.periodStart)} – {shortDate(b.periodEnd)}
@@ -215,11 +219,6 @@ export default function Bills({
                     )}
                     {b.notes && (
                       <small className="block muted">{b.notes}</small>
-                    )}
-                    {numberOf(b.credit) > 0 && (
-                      <small className="block muted">
-                        Crédito aplicado: −{money(numberOf(b.credit))}
-                      </small>
                     )}
                     {b.breakdown && (
                       <details>
@@ -237,6 +236,10 @@ export default function Bills({
                   </td>
                   <td>
                     {b.kwh || "—"} {b.kwh && "kWh"}
+                  </td>
+                  <td className="amount">{money(billTotal(b))}</td>
+                  <td className="amount">
+                    {numberOf(b.credit) ? money(-numberOf(b.credit)) : "—"}
                   </td>
                   <td className="amount">{money(numberOf(b.paid))}</td>
                   <td>

@@ -7,7 +7,11 @@ import {
   workspaceSchema,
 } from "../src/lib/domain";
 import { calculate } from "../src/lib/calculator";
-import { billFromCalculation, billBuckets } from "../src/lib/bill-data";
+import {
+  billFromCalculation,
+  billBuckets,
+  billTotal,
+} from "../src/lib/bill-data";
 
 test("saving a calculation preserves consumption and cost snapshots for stacked monthly history", () => {
   const p = {
@@ -119,6 +123,8 @@ test("credits reduce the recorded total without changing taxes and old bills def
     servicesVat: "0",
   };
   const bill = billSchema.parse({ ...raw, breakdown, credit: "5" });
+  assert.equal(billTotal(bill), 25);
+  assert.equal(billTotal(billSchema.parse(raw)), 20);
   assert.equal(billBuckets(bill).credit, -5);
   assert.equal(billBuckets(bill).taxes, 5);
   assert.equal(
@@ -127,6 +133,7 @@ test("credits reduce the recorded total without changing taxes and old bills def
   );
   assert.equal(billSchema.safeParse({ ...bill, paid: "25" }).success, false);
   const refund = billSchema.parse({ ...bill, paid: "-5", credit: "30" });
+  assert.equal(billTotal(refund), 25);
   assert.equal(
     Object.values(billBuckets(refund)).reduce((a, b) => a + b, 0),
     -5,

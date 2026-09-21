@@ -2509,12 +2509,12 @@ button:disabled {
   vector-effect: non-scaling-stroke;
 }
 .spending-line {
-  stroke: var(--green);
+  stroke: currentColor;
   stroke-width: 3;
   vector-effect: non-scaling-stroke;
 }
 .spending-point {
-  fill: var(--green);
+  fill: currentColor;
   stroke: white;
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
@@ -2633,4 +2633,75 @@ button:disabled {
     border-left: 0;
     padding-left: 0;
   }
+}
+
+.bill-table-caption {
+  text-align: left;
+  padding: 16px 20px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.line-legend {
+  gap: 6px 12px;
+}
+.line-legend button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--white);
+}
+.line-legend button[aria-pressed="false"] {
+  background: var(--paper);
+  text-decoration: line-through;
+}
+.line-legend button[aria-pressed="false"] .series-key {
+  opacity: 0.4;
+}
+.series-key {
+  width: 28px;
+  height: 12px;
+}
+.series-energy {
+  color: #28704f;
+}
+.series-power {
+  color: #668930;
+}
+.series-power .spending-line {
+  stroke-dasharray: 7 3;
+}
+.series-other {
+  color: #aa692f;
+}
+.series-other .spending-line {
+  stroke-dasharray: 2 3;
+}
+.series-taxes {
+  color: #5e648e;
+}
+.series-taxes .spending-line {
+  stroke-dasharray: 9 3 2 3;
+}
+.series-unknown {
+  color: #777f7a;
+}
+.series-unknown .spending-line {
+  stroke-dasharray: 2 5;
+}
+.series-credit {
+  color: #a3342b;
+}
+.series-credit .spending-line {
+  stroke-dasharray: 6 3;
+}
+.series-paid {
+  color: var(--ink);
+}
+.series-paid .spending-line {
+  stroke-width: 4;
 }
