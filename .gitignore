@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.next/
+.env*
+!.env.example
+*.tsbuildinfo
+output/
+.playwright-cli/
