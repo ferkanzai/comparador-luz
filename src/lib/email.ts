@@ -1,28 +1,20 @@
+import {
+  accountLinkEmail,
+  accountOtpEmail,
+  type AccountEmail,
+} from "./email-templates";
+
 export async function sendAccountEmail(
   to: string,
   url: string,
   reset: boolean,
 ) {
-  const subject = reset
-    ? "Cambia tu contraseña · Luz en claro"
-    : "Verifica tu correo · Luz en claro";
-  const text = `${reset ? "Cambia tu contraseña" : "Confirma el correo de tu cuenta"}: ${url}\n\nSi no has solicitado este correo, puedes ignorarlo.`;
-  return deliverEmail(to, subject, text);
+  return deliverEmail(to, await accountLinkEmail(url, reset));
 }
-export function sendAccountOTP(to: string, otp: string, type: string) {
-  const action =
-    type === "forget-password"
-      ? "cambiar tu contraseña"
-      : type === "email-verification"
-        ? "verificar tu correo"
-        : "entrar en Luz en claro";
-  return deliverEmail(
-    to,
-    "Tu código de acceso · Luz en claro",
-    `Tu código para ${action}: ${otp}\n\nCaduca en 10 minutos y solo se puede usar una vez. No lo compartas. Si no lo has solicitado, puedes ignorar este correo.`,
-  );
+export async function sendAccountOTP(to: string, otp: string, type: string) {
+  return deliverEmail(to, await accountOtpEmail(otp, type));
 }
-async function deliverEmail(to: string, subject: string, text: string) {
+async function deliverEmail(to: string, { subject, text, html }: AccountEmail) {
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.EMAIL_MODE === "console"
@@ -43,6 +35,7 @@ async function deliverEmail(to: string, subject: string, text: string) {
       to: [to],
       subject,
       text,
+      html,
     }),
     signal: AbortSignal.timeout(15_000),
   });

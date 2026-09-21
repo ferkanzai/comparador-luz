@@ -264,6 +264,10 @@ small {
   display: flex;
   align-items: center;
   gap: 26px;
+  min-width: 0;
+}
+.login-label-mobile {
+  display: none;
 }
 .user-name {
   font-size: 1rem;
@@ -274,11 +278,11 @@ small {
   padding: 0 38px;
 }
 .hero {
-  padding: 60px 0 46px;
-  display: flex;
-  justify-content: space-between;
+  padding: 42px 0 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 30vw, 410px);
   align-items: center;
-  gap: 50px;
+  gap: clamp(32px, 4vw, 56px);
 }
 .hero .eyebrow {
   display: flex;
@@ -316,11 +320,11 @@ small {
 .hero-note {
   background: #edf1e1;
   border: 1px solid #e1e8d2;
-  padding: 23px 27px 19px;
+  padding: 26px 30px 22px;
   position: relative;
-  min-width: 263px;
+  min-width: 0;
   border-radius: 5px 28px 5px 5px;
-  transform: rotate(2deg);
+  transform: rotate(1deg);
   background-image: repeating-linear-gradient(
     0deg,
     transparent,
@@ -346,11 +350,14 @@ small {
   font-weight: 600;
 }
 .hero-note > .small {
-  margin-top: 16px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #d5ddc8;
   color: #536348;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   font-size: 0.875rem;
 }
 .note-mark {
@@ -1545,10 +1552,6 @@ td:first-child {
   animation-delay: 0.08s;
 }
 @media (min-width: 1400px) {
-  .hero {
-    padding-top: 65px;
-    padding-bottom: 50px;
-  }
   .shell,
   .header-inner {
     padding-left: 30px;
@@ -1573,7 +1576,6 @@ td:first-child {
     padding-right: 24px;
   }
   .hero-note {
-    min-width: 225px;
     padding: 21px;
   }
   .consumption {
@@ -1651,6 +1653,7 @@ td:first-child {
     margin-top: 0;
   }
   .hero {
+    grid-template-columns: minmax(0, 1fr);
     padding: 40px 0;
     gap: 24px;
   }
@@ -1721,6 +1724,10 @@ td:first-child {
     min-height: 73px;
     gap: 10px;
   }
+  .site-header .brand {
+    font-size: 1.125rem;
+    flex-shrink: 0;
+  }
   .brand {
     font-size: 1.25rem;
     gap: 7px;
@@ -1734,7 +1741,15 @@ td:first-child {
     width: 18px;
   }
   .header-actions {
-    gap: 13px;
+    gap: 8px;
+  }
+  .header-actions .user-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-actions .icon-button {
+    flex-shrink: 0;
   }
   .header-actions .button {
     padding: 9px;
@@ -1742,10 +1757,19 @@ td:first-child {
     gap: 4px;
   }
   .header-actions .button svg {
-    width: 12px;
+    display: none;
   }
   .login-link {
     font-size: 0.875rem;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .login-label-desktop {
+    display: none;
+  }
+  .login-label-mobile {
+    display: inline;
   }
   .hero {
     padding: 35px 0 27px;
@@ -2178,9 +2202,8 @@ summary:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
   .header-inner {
-    flex-wrap: wrap;
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
   .header-actions {
     margin-left: auto;
@@ -2438,23 +2461,12 @@ button:disabled {
   .header-inner {
     max-width: 1280px;
   }
-  .hero {
-    justify-content: flex-start;
-    gap: clamp(40px, 7vw, 110px);
-    padding: 42px 0 34px;
-  }
-  .hero > div:first-child {
-    flex: 0 1 auto;
-  }
   .hero h1 {
-    font-size: clamp(32px, 3.1vw, 42px);
+    font-size: clamp(32px, 3.8vw, 52px);
   }
   .hero > div > p {
     line-height: 1.65;
     margin-top: 14px;
-  }
-  .hero .hero-note p {
-    font-size: 1.25rem;
   }
   .input-wrap input,
   .auth-label input,

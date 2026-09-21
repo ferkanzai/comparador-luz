@@ -375,8 +375,13 @@ export default function Dashboard({
               </>
             ) : (
               <>
-                <Link className="text-link login-link" href="/cuenta">
-                  Iniciar sesión
+                <Link
+                  className="text-link login-link"
+                  href="/cuenta"
+                  aria-label="Iniciar sesión"
+                >
+                  <span className="login-label-desktop">Iniciar sesión</span>
+                  <span className="login-label-mobile">Entrar</span>
                 </Link>
                 <Link
                   className="button dark small-button"
@@ -862,7 +867,7 @@ export default function Dashboard({
                     <div className="weekly-card">
                       <div className="section-inline">
                         <span className="eyebrow">TU REVISIÓN SEMANAL</span>
-                        <span className="small">↗</span>
+                        <ArrowUpRight size={18} aria-hidden="true" />
                       </div>
                       <h3>¿Hay algo mejor ahí fuera?</h3>
                       <p>
