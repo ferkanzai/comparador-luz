@@ -2,6 +2,7 @@
 import FeedbackNotice, { useFeedback } from "./feedback-notice";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ArrowDownRight,
   ArrowRight,
@@ -16,7 +17,6 @@ import {
   SlidersHorizontal,
   Zap,
 } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
 import {
   changeCurrent,
   newTariff,
@@ -30,16 +30,24 @@ import {
 } from "@/lib/domain";
 import { Brand, Empty, Field, Modal } from "./ui";
 import EstimateNotice from "./estimate-notice";
-import TariffForm from "./tariff-form";
-import Bills from "./bills";
-import BillForm from "./bill-form";
-import { useWorkspace } from "./use-workspace";
+import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
+
+const TariffForm = dynamic(() => import("./tariff-form"));
+const BillForm = dynamic(() => import("./bill-form"));
+const Bills = dynamic(() => import("./bills"), {
+  loading: () => (
+    <div className="panel loading" role="status">
+      Cargando tus facturas…
+    </div>
+  ),
+});
 
 type Tab = "compare" | "history" | "bills";
 export default function Dashboard({
   user,
   accountsAvailable,
+  initialWorkspace,
 }: {
   user: {
     id: string;
@@ -48,8 +56,9 @@ export default function Dashboard({
     emailVerified: boolean;
   } | null;
   accountsAvailable: boolean;
+  initialWorkspace?: InitialWorkspace;
 }) {
-  const workspace = useWorkspace(user?.id);
+  const workspace = useWorkspace(user?.id, initialWorkspace);
   const { data: w, loaded, loadError, stored, status } = workspace;
   const [busy, setBusy] = useState(false);
   const { message, setMessage, dismiss } = useFeedback();
@@ -163,6 +172,7 @@ export default function Dashboard({
                   disabled={busy}
                   onClick={async () => {
                     try {
+                      const { authClient } = await import("@/lib/auth-client");
                       const result = await authClient.signOut();
                       if (result.error) throw new Error();
                       window.location.assign("/");
@@ -338,6 +348,7 @@ export default function Dashboard({
               onClick={async () => {
                 setBusy(true);
                 try {
+                  const { authClient } = await import("@/lib/auth-client");
                   const result = await authClient.sendVerificationEmail({
                     email: user.email,
                     callbackURL: `${window.location.origin}/`,

@@ -16,6 +16,10 @@ import {
   type SyncSnapshot,
 } from "@/lib/workspace-sync";
 
+export type InitialWorkspace = Promise<
+  { data: Workspace; version: number } | { error: string }
+>;
+
 function browserDraft(owner: string) {
   try {
     return migrateDraft(localStorage, sessionStorage, owner);
@@ -61,7 +65,10 @@ async function send(data: Workspace, version: number) {
   return body.version as number;
 }
 
-export function useWorkspace(userId?: string) {
+export function useWorkspace(
+  userId?: string,
+  initialWorkspace?: InitialWorkspace,
+) {
   const [snapshot, setSnapshot] = useState<SyncSnapshot>(() => ({
     data: emptyWorkspace(),
     stored: true,
@@ -132,7 +139,16 @@ export function useWorkspace(userId?: string) {
         conflict: false,
       });
     } else {
-      readAccount(abort.signal)
+      // The first read starts on the server while the browser loads the app.
+      // Explicit retries/reloads must fetch a fresh version, not replay it.
+      const account =
+        reload === 0 && initialWorkspace
+          ? Promise.resolve(initialWorkspace).then((result) => {
+              if ("error" in result) throw new Error(result.error);
+              return result;
+            })
+          : readAccount(abort.signal);
+      account
         .then((server) =>
           start(recoverDraft(server, own), browserDraft("guest")),
         )
@@ -163,7 +179,7 @@ export function useWorkspace(userId?: string) {
       controller.current = null;
       window.removeEventListener("online", retry);
     };
-  }, [userId, reload]);
+  }, [userId, reload, initialWorkspace]);
 
   async function useAccountVersion() {
     try {

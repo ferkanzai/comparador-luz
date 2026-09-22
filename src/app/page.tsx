@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { authConfigured, getAuth } from "@/lib/auth";
 import Dashboard from "@/components/dashboard";
+import { readWorkspace } from "@/lib/workspace-store";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -33,6 +34,13 @@ export default async function Home({
       key={user?.id ?? "guest"}
       user={user}
       accountsAvailable={configured && !unavailable}
+      initialWorkspace={
+        user
+          ? readWorkspace(user.id).catch(() => ({
+              error: "No se han podido cargar tus datos. Inténtalo de nuevo.",
+            }))
+          : undefined
+      }
     />
   );
 }

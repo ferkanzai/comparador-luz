@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 // Decimal strings preserve unfinished forms and Spanish decimal commas. No silent NaN -> 0.
 export const decimal = (max = 1_000_000) =>

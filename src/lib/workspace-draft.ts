@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { profileSchema, workspaceSchema, type Workspace } from "./domain";
 
 // Drafts may contain an unfinished number, but server writes still use workspaceSchema.

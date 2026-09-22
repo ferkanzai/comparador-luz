@@ -281,12 +281,22 @@ test("account autosave isolates simulations, reports failures and resets transie
     data: { data, version: 0 },
   });
   expect(saved.ok()).toBeTruthy();
+  const initialWorkspaceReads: string[] = [];
+  page.on("request", (request) => {
+    if (
+      new URL(request.url()).pathname === "/api/workspace" &&
+      request.method() === "GET"
+    )
+      initialWorkspaceReads.push(request.url());
+  });
   await page.goto("/");
   const table = page.getByRole("table", {
     name: "Comparativa de tarifas",
     exact: true,
   });
   await expect(table).toBeVisible();
+  // Saved comparisons arrive in the page stream, without a post-hydration GET.
+  expect(initialWorkspaceReads).toHaveLength(0);
   await expect(
     page.getByRole("heading", { name: /Que tu próxima factura/ }),
   ).toHaveCount(0);
@@ -313,6 +323,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("article")).toContainText("Contrato anterior");
+  expect(initialWorkspaceReads).toHaveLength(0);
   await page.getByRole("button", { name: "Comparador", exact: true }).click();
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { numberOf, profileSchema, today, type Profile } from "./domain";
 import { calculateTotals, cents } from "./calculator";
 import { socialEstimate2026 } from "./charge-estimates";
