@@ -67,6 +67,9 @@ A price per contracted kW, quoted per day, month, or year. Two separate period p
 **Combined power price (precio total de potencia)**:
 A single price covering P1 and P2 together, charged once against their equal contracted kW. A shared price charged separately in both periods remains two charges and is not a combined price.
 
+**Comparable power price (precio de potencia para comparar)**:
+The pre-tax power price expressed in a common time unit for a reference of 1 kW contracted in each power period: the sum of separate period prices, twice a shared per-period price, or a combined price counted once. It compares equal-power scenarios; it does not describe a household's power charge when its contracted powers differ.
+
 **Effective rate from billed amounts (precio calculado desde importes)**:
 A unit price reconstructed from a billed charge and its corresponding consumption, contracted power, and duration. It reproduces the entered amounts rather than recovering an unrounded supplier quote or predicting future prices.
 

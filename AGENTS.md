@@ -7,3 +7,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in local markdown under `.scratch/<feature>/`.
+Before reading or publishing tickets, read `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default triage roles as ticket status values.
+Before triaging, read `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use a single-context layout: root `CONTEXT.md` and `docs/adr/`.
+Before exploring the codebase, read `docs/agents/domain.md`.
