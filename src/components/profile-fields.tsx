@@ -57,11 +57,11 @@ export function ProfileFields({
         <div className={`form-grid ${samePower ? "two" : "three"}`}>
           {field(
             "peakKw",
-            samePower ? "Potencia en ambos periodos" : "Potencia P1 · Punta",
+            samePower ? "Potencia en ambos períodos" : "Potencia P1 · Punta",
             "kW",
           )}
           {!samePower && field("valleyKw", "Potencia P2 · Valle", "kW")}
-          {field("days", "Días del periodo", "días")}
+          {field("days", "Días del período", "días")}
         </div>
       </div>
     </>
@@ -131,5 +131,23 @@ export function TaxFields({
         la fecha. Alquiler y bono social se indican en cada tarifa.
       </p>
     </div>
+  );
+}
+
+export function TaxAssumptions({ profile }: { profile: Profile }) {
+  return (
+    <span aria-label="Impuestos de la comparación">
+      {profile.taxes ? (
+        <>
+          IVA {profile.vat.replace(".", ",") || "—"} % · IEE{" "}
+          {profile.electricityTax.replace(".", ",") || "—"} % ·{" "}
+          {profile.minimumTax
+            ? "Mínimo IEE 0,001 €/kWh"
+            : "Mínimo IEE desactivado"}
+        </>
+      ) : (
+        "Sin impuestos"
+      )}
+    </span>
   );
 }

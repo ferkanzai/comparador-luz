@@ -184,7 +184,7 @@ export default function Bills({
               <>
                 <p className="small muted">
                   Cada factura se agrupa en el mes elegido (por defecto, el mes
-                  de fin del periodo), sin prorratearla. Otros cargos: bono
+                  de fin del período), sin prorratearla. Otros cargos: bono
                   social, SNOEE, alquiler y servicios. Las facturas antiguas sin
                   conceptos aparecen como «Sin desglose»; los meses sin
                   facturas, como «—». Los créditos se restan del total y
@@ -266,7 +266,7 @@ export default function Bills({
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Periodo</th>
+                    <th scope="col">Período</th>
                     <th scope="col">Comercializadora</th>
                     <th scope="col">Consumo</th>
                     <th scope="col">Total</th>

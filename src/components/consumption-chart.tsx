@@ -35,7 +35,7 @@ export default function ConsumptionChart({
   const max = Math.max(1, ...months.map((m) => m.total ?? 0));
   return (
     <div className="consumption-chart">
-      <ul className="chart-legend" aria-label="Periodos de consumo">
+      <ul className="chart-legend" aria-label="Períodos de consumo">
         {consumptionGroups.map(([key, label]) => (
           <li key={key}>
             <span className={`swatch consumption-${key}`} />

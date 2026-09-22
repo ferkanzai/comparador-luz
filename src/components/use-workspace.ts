@@ -71,6 +71,7 @@ export function useWorkspace(userId?: string) {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [reload, setReload] = useState(0);
+  const [generation, setGeneration] = useState(0);
   const controller = useRef<WorkspaceSync | null>(null);
   useEffect(() => {
     const abort = new AbortController();
@@ -119,6 +120,8 @@ export function useWorkspace(userId?: string) {
         }
       }
       setLoadError("");
+      // Reset presentation state only once the replacement workspace is installed.
+      setGeneration((value) => value + 1);
       setLoaded(true);
     }
     if (!userId) {
@@ -186,6 +189,7 @@ export function useWorkspace(userId?: string) {
     ...snapshot,
     loaded,
     loadError,
+    generation,
     reload: () => setReload((n) => n + 1),
     update: (data: Workspace) => controller.current?.update(data),
     retry: () => controller.current?.retry(),

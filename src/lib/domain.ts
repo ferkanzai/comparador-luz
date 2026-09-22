@@ -124,7 +124,7 @@ export const billSchema = z
     (b) =>
       (!b.periodStart && !b.periodEnd) ||
       (!!b.periodStart && !!b.periodEnd && b.periodEnd > b.periodStart),
-    "Indica las dos fechas del periodo; la fecha final debe ser posterior a la inicial.",
+    "Indica las dos fechas del período; la fecha final debe ser posterior a la inicial.",
   )
   .refine(
     (b) =>
@@ -321,6 +321,6 @@ export function powerDescription(t: Tariff) {
   return t.powerKind === "combined"
     ? `${peak} ${unit} · P1 + P2 combinados`
     : t.powerKind === "same"
-      ? `${peak} ${unit} en cada periodo`
+      ? `${peak} ${unit} en cada período`
       : `P1 ${peak} · P2 ${valley} ${unit}`;
 }
