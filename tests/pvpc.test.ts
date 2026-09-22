@@ -121,6 +121,11 @@ test("historical total includes regulated power, financing, rental and selected 
   assert.equal(cost.energy, 29);
   assert.equal(cost.power, 10.37);
   assert.equal(cost.social, 0.74);
+  assert.equal(
+    cost.snoee,
+    0,
+    "published PVPC energy already includes its regulated contribution",
+  );
   assert.equal(cost.meter, 0.9);
   assert.equal(cost.total, 41.01);
   const taxed = calculatePvpc(

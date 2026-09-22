@@ -16,6 +16,7 @@ function fixture(): Workspace {
     name: "Current",
     provider: "Supplier",
     energyPeak: "0,1234567890123456789012",
+    snoeeKwh: "0,0034567890123456789012",
     checkedOn: "2026-09-01",
   };
   const w = emptyWorkspace();
@@ -37,7 +38,12 @@ function fixture(): Workspace {
       id: crypto.randomUUID(),
       start: "2026-01-01",
       end: "2026-02-01",
-      tariff: { ...tariff, name: "Historical", energyPeak: "0.2" },
+      tariff: {
+        ...tariff,
+        name: "Historical",
+        energyPeak: "0.2",
+        snoeeKwh: "0.002",
+      },
     },
   ];
   const bill = {
@@ -50,14 +56,20 @@ function fixture(): Workspace {
     credit: "11.5",
     kwh: "60",
     notes: "Credit preserved",
-    tariff: { ...tariff, name: "Bill snapshot", energyPeak: "0.3" },
+    tariff: {
+      ...tariff,
+      name: "Bill snapshot",
+      energyPeak: "0.3",
+      snoeeKwh: "0.003",
+    },
     profile: structuredClone(w.profile),
     consumption: { peakKwh: "10", flatKwh: "20", valleyKwh: "30" },
     tariffReview: { signature: "review-1", reason: "Confirmed from invoice" },
     breakdown: {
-      energy: "10",
+      energy: "9.25",
       power: "0",
       social: "0",
+      snoee: "0.75",
       meter: "0",
       services: "0",
       electricityTax: "0",
@@ -367,6 +379,8 @@ test(
       changed.tariffs.reverse();
       changed.tariffs.find((t) => t.id === original.currentId)!.energyPeak =
         "0.9";
+      changed.tariffs.find((t) => t.id === original.currentId)!.snoeeKwh =
+        "0.01";
       const versions = await Promise.all([
         saveWorkspace("alice", changed, 7),
         saveWorkspace("alice", changed, 7),
@@ -376,6 +390,9 @@ test(
       assert.deepEqual(stored.data, normalized(changed));
       assert.equal(stored.data.history[0].tariff.energyPeak, "0.2");
       assert.equal(stored.data.bills[0].tariff!.energyPeak, "0.3");
+      assert.equal(stored.data.history[0].tariff.snoeeKwh, "0.002");
+      assert.equal(stored.data.bills[0].tariff!.snoeeKwh, "0.003");
+      assert.equal(stored.data.bills[0].breakdown!.snoee, "0.75");
       await pool.query("INSERT INTO \"user\" VALUES ('new')");
       assert.deepEqual(
         (
@@ -442,6 +459,41 @@ test(
       assert.deepEqual(
         (await readWorkspace("fresh")).data,
         normalized(original),
+      );
+      // Simulate an existing relational deployment before 003, with unchanged old totals.
+      const beforeSnoee = structuredClone(original);
+      for (const t of beforeSnoee.tariffs) t.snoeeKwh = "";
+      for (const h of beforeSnoee.history) h.tariff.snoeeKwh = "";
+      for (const b of beforeSnoee.bills) {
+        if (b.tariff) b.tariff.snoeeKwh = "";
+        if (b.breakdown) {
+          b.breakdown.energy = "10";
+          b.breakdown.snoee = "0";
+        }
+      }
+      assert.equal(await saveWorkspace("fresh", beforeSnoee, 1), 2);
+      await pool.query(`
+        ALTER TABLE workspace_tariff DROP COLUMN snoee_kwh;
+        ALTER TABLE workspace_tariff_snapshot DROP COLUMN snoee_kwh;
+        ALTER TABLE workspace_bill_breakdown DROP COLUMN snoee;
+        DELETE FROM app_migration WHERE id = '003-snoee-cost';
+      `);
+      await migrateWorkspaces(pool);
+      await migrateWorkspaces(pool);
+      assert.deepEqual(await readWorkspace("fresh"), {
+        data: normalized(beforeSnoee),
+        version: 2,
+      });
+      assert.equal(await saveWorkspace("fresh", original, 2), 3);
+      assert.deepEqual(
+        (await readWorkspace("fresh")).data,
+        normalized(original),
+      );
+      await assert.rejects(
+        withWorkspaceTransaction("fresh", false, (c) =>
+          c.query("UPDATE workspace_tariff SET snoee_kwh = -1"),
+        ),
+        /check constraint/,
       );
     } finally {
       await pool.end();

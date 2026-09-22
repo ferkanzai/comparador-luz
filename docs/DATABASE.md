@@ -10,7 +10,7 @@ Account data lives in relational PostgreSQL tables. `workspace` contains ownersh
 | `workspace_history`         | Contract dates and a foreign key to a historical tariff snapshot                                          |
 | `workspace_bill`            | Reporting month, invoice dates, amounts, consumption and review acknowledgement; optional tariff snapshot |
 | `workspace_bill_profile`    | Optional profile snapshot belonging to one bill                                                           |
-| `workspace_bill_breakdown`  | Optional typed amounts for the bill's eight charge concepts                                               |
+| `workspace_bill_breakdown`  | Optional typed amounts for the bill's nine charge concepts                                               |
 
 All child keys and foreign keys include `user_id`. UUIDs can recur in another account without sharing records. Removing a live offer never changes its historical or invoice snapshots. Deleting a user cascades through their workspace and the legacy archive.
 
@@ -43,6 +43,10 @@ The migration locks the legacy table, renames it to `workspace_legacy`, creates 
 
 **After migration commits, old application builds are incompatible.** If the subsequent app build fails, keep maintenance enabled and fix/redeploy the new build. Before accepting new writes, restoring the pre-migration database backup and old app together is a rollback option. After accepting new writes, restoring that backup would lose them; use a forward fix or a separately reviewed reverse migration. Reverting only the application is not a rollback.
 
+## SNOEE incremental migration
+
+`003-snoee-cost` adds nullable `snoee_kwh` prices to live tariffs and tariff snapshots, and a nonnegative `snoee` amount defaulting to zero on invoice breakdowns. It leaves historical totals and workspace versions unchanged. The migration runner applies these columns before legacy imports as well as when upgrading an existing relational installation. It does not require another JSON-to-relational cutover. Existing applications can still read their previous fields, but a stale client that does not understand SNOEE cannot preserve a newly entered charge when rewriting a whole workspace; reload clients onto the new version before using the feature.
+
 ## Integration checks
 
 The existing account test uses a separate, explicitly configured local `*_test` database after `pnpm db:migrate`.
@@ -54,4 +58,4 @@ docker exec comparador-luz-dev-postgres createdb -U postgres luz_workspace_test
 TEST_WORKSPACE_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_workspace_test pnpm exec tsx --test tests/workspace-storage.test.ts
 ```
 
-It exercises fresh installation, legacy backfill, validation rollback, migration reruns, exact decimals, date handling, joins, snapshot preservation, all-table RLS without ownership filters, denied cross-owner inserts/updates/deletes, denied auth/archive/TRUNCATE access, missing identity, pooled identity cleanup, cross-account foreign keys, concurrent saves, consistent reads, rollback and cascade cleanup. Run it only against its own disposable database, never the account test's database.
+It exercises fresh installation, legacy backfill, validation rollback, migration reruns, the SNOEE incremental upgrade, exact decimals, date handling, joins, snapshot preservation, all-table RLS without ownership filters, denied cross-owner inserts/updates/deletes, denied auth/archive/TRUNCATE access, missing identity, pooled identity cleanup, cross-account foreign keys, concurrent saves, consistent reads, rollback and cascade cleanup. Run it only against its own disposable database, never the account test's database.

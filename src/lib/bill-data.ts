@@ -32,6 +32,7 @@ export const billLines = [
   ["energy", "Energía"],
   ["power", "Potencia"],
   ["social", "Financiación bono social"],
+  ["snoee", "Coste SNOEE"],
   ["meter", "Alquiler de contador"],
   ["services", "Servicios"],
   ["electricityTax", "Impuesto eléctrico"],
@@ -67,6 +68,7 @@ export function billFromCalculation(
       energy: String(cost.energy),
       power: String(cost.power),
       social: String(cost.social),
+      snoee: String(cost.snoee),
       meter: String(cost.meter),
       services: String(cost.services),
       electricityTax: String(cost.electricityTax),
@@ -104,7 +106,10 @@ export function billBuckets(bill: Bill) {
         energy: numberOf(b.energy),
         power: numberOf(b.power),
         other: cents(
-          numberOf(b.social) + numberOf(b.meter) + numberOf(b.services),
+          numberOf(b.social) +
+            numberOf(b.snoee ?? "0") +
+            numberOf(b.meter) +
+            numberOf(b.services),
         ),
         taxes: cents(
           numberOf(b.electricityTax) +

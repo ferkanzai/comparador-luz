@@ -8,7 +8,7 @@ A Spanish electricity comparison dashboard for a weekly manual review of your ho
 - Saved consumption, current tariff, manually entered offers, review dates and offer expiry.
 - Historical price snapshots when changing providers or updating current prices.
 - Bills with actual date ranges, consumption snapshots, editable breakdowns, immediate saving, monthly stacked charts and JSON export.
-- Optional IVA and IEE, social-bonus financing, meter rental and maintenance services, with visible breakdowns.
+- Optional IVA and IEE, social-bonus financing, separately billed SNOEE costs, meter rental and maintenance services, with visible breakdowns.
 - Spanish number formatting, decimal commas, keyboard-accessible dialogs and responsive layouts.
 
 ```sh

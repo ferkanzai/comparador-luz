@@ -1,12 +1,11 @@
 "use client";
 import FeedbackNotice, { useFeedback } from "./feedback-notice";
 import { useState } from "react";
+import { type Profile, type Tariff } from "@/lib/domain";
 import {
-  numberOf,
-  powerDayFactor,
-  type Profile,
-  type Tariff,
-} from "@/lib/domain";
+  invoicePriceQuantities,
+  tariffFromInvoiceAmounts,
+} from "@/lib/invoice-prices";
 import { Field } from "./ui";
 
 export default function InvoicePrices({
@@ -20,36 +19,7 @@ export default function InvoicePrices({
 }) {
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const { message, setMessage, dismiss } = useFeedback();
-  const days = numberOf(profile.days);
-  const quantities: [keyof Tariff, string, number][] = [
-    [
-      "energyPeak",
-      tariff.kind === "fixed" ? "Energía total" : "Energía punta",
-      tariff.kind === "fixed"
-        ? numberOf(profile.peakKwh) +
-          numberOf(profile.flatKwh) +
-          numberOf(profile.valleyKwh)
-        : numberOf(profile.peakKwh),
-    ],
-    ...(tariff.kind === "periods"
-      ? ([
-          ["energyFlat", "Energía llano", numberOf(profile.flatKwh)],
-          ["energyValley", "Energía valle", numberOf(profile.valleyKwh)],
-        ] as [keyof Tariff, string, number][])
-      : []),
-    [
-      "powerPeak",
-      "Potencia punta",
-      numberOf(profile.peakKw) * days * powerDayFactor(tariff.powerUnit),
-    ],
-    [
-      "powerValley",
-      "Potencia valle",
-      numberOf(profile.valleyKw) * days * powerDayFactor(tariff.powerUnit),
-    ],
-    ["socialDay", "Bono social del periodo", days],
-    ["meterDay", "Alquiler del periodo", days],
-  ];
+  const quantities = invoicePriceQuantities(tariff, profile);
   return (
     <details className="form-section invoice-prices">
       <summary>Calcular precios desde los importes</summary>
@@ -57,7 +27,8 @@ export default function InvoicePrices({
         Si tu factura redondea los precios, copia aquí los importes sin
         impuestos. Calcularemos precios efectivos usando el consumo, los kW y
         los días de esta factura. No añadas de nuevo sus peajes y cargos: ya
-        están incluidos.
+        están incluidos. Introduce el importe SNOEE solo si no forma parte del
+        importe de energía que has copiado.
       </p>
       <div className="form-grid two">
         {quantities.map(([key, label]) => (
@@ -78,39 +49,19 @@ export default function InvoicePrices({
         type="button"
         className="button secondary"
         onClick={() => {
-          const next = { ...tariff };
-          let applied = false;
-          for (const [key, , quantity] of quantities) {
-            const amount = amounts[key];
-            if (!amount) continue;
-            if (
-              !/^\d+([.,]\d+)?$/.test(amount) ||
-              quantity <= 0 ||
-              !Number.isFinite(quantity)
-            ) {
-              setMessage(
-                "Completa el consumo, la potencia y los días correspondientes antes de calcular los precios.",
-                "error",
-              );
-              return;
-            }
-            Object.assign(next, {
-              [key]: String(Number((numberOf(amount) / quantity).toFixed(12))),
-            });
-            if (key === "meterDay") next.meterEstimate = "none";
-            if (key === "socialDay") next.socialEstimate = "none";
-            applied = true;
+          try {
+            onApply(tariffFromInvoiceAmounts(tariff, profile, amounts));
+            setMessage(
+              "Precios efectivos aplicados. Puedes revisarlos arriba y comprobar el desglose abajo.",
+            );
+          } catch (error) {
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : "No se pudieron calcular los precios.",
+              "error",
+            );
           }
-          if (!applied) {
-            setMessage("Introduce al menos un importe de tu factura.", "error");
-            return;
-          }
-          if (amounts.powerPeak || amounts.powerValley)
-            next.powerKind = "periods";
-          onApply(next);
-          setMessage(
-            "Precios efectivos aplicados. Puedes revisarlos arriba y comprobar el desglose abajo.",
-          );
         }}
       >
         Aplicar importes a los precios

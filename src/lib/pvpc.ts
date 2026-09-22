@@ -184,6 +184,7 @@ export function calculatePvpc(
       365,
   );
   const social = cents((socialEstimate2026.annual * days) / 365);
+  // Published PVPC already includes RFE; do not add a separate SNOEE charge.
   return calculateTotals(
     {
       energy,

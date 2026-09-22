@@ -50,10 +50,11 @@ export function calculate(t: Tariff, p: Profile) {
       powerDayFactor(t.powerUnit),
   );
   const social = cents(n(t.socialDay) * days);
+  const snoee = cents(n(t.snoeeKwh ?? "") * kwh);
   const meter = cents(n(t.meterDay) * days);
   const services = cents((n(t.servicesMonth) * 12 * days) / 365);
   return calculateTotals(
-    { energy, power, social, meter, services, kwh, days },
+    { energy, power, social, snoee, meter, services, kwh, days },
     p,
     t.socialInElectricityTax !== false,
   );
@@ -65,6 +66,7 @@ export function calculateTotals(
     energy,
     power,
     social,
+    snoee = 0,
     meter,
     services,
     kwh,
@@ -73,6 +75,7 @@ export function calculateTotals(
     energy: number;
     power: number;
     social: number;
+    snoee?: number;
     meter: number;
     services: number;
     kwh: number;
@@ -82,7 +85,7 @@ export function calculateTotals(
   socialInElectricityTax = true,
 ) {
   const electricityBase = cents(
-    energy + power + (socialInElectricityTax ? social : 0),
+    energy + power + snoee + (socialInElectricityTax ? social : 0),
   );
   const electricityTax = p.taxes
     ? cents(
@@ -92,7 +95,9 @@ export function calculateTotals(
         ),
       )
     : 0;
-  const vatBase = cents(energy + power + social + electricityTax + meter);
+  const vatBase = cents(
+    energy + power + social + snoee + electricityTax + meter,
+  );
   const vat = p.taxes ? cents((vatBase * n(p.vat)) / 100) : 0;
   // Separate maintenance services remain at the general IVA rate, even when supply IVA is reduced.
   const servicesVat = p.taxes ? cents(services * 0.21) : 0;
@@ -101,6 +106,7 @@ export function calculateTotals(
     energy,
     power,
     social,
+    snoee,
     meter,
     services,
     electricityBase,

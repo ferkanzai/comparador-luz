@@ -222,9 +222,9 @@ export default function TariffForm({
           </p>
           {tariff.powerUnit === "month" && (
             <p className="notice small">
-              Potencia mensual: precio × kW × días ÷ 30. Si tu
-              compañía prorratea de otra forma, puedes calcular el precio desde
-              los importes de tu factura más abajo.
+              Potencia mensual: precio × kW × días ÷ 30. Si tu compañía
+              prorratea de otra forma, puedes calcular el precio desde los
+              importes de tu factura más abajo.
             </p>
           )}
         </div>
@@ -310,7 +310,36 @@ export default function TariffForm({
               </p>
             </div>
           </div>
-          {numeric("servicesMonth", "Mantenimiento / servicios", "€/mes")}
+          <div className="form-grid two charge-fields">
+            <div className="charge-field">
+              {numeric("snoeeKwh", "Coste SNOEE (sin impuestos)", "€/kWh")}
+              <p className="small muted">
+                Solo si se cobra aparte y no está incluido en los precios de
+                energía que has indicado. Si ya está incluido, déjalo vacío o a
+                0.
+              </p>
+              <details className="small">
+                <summary>¿Qué es el SNOEE?</summary>
+                <p className="muted">
+                  El Sistema Nacional de Obligaciones de Eficiencia Energética
+                  (SNOEE) exige a las comercializadoras contribuir al ahorro de
+                  energía. Algunas cobran este coste por separado. Es un coste
+                  del suministro, no un impuesto; lo multiplicamos por tus kWh y
+                  lo incluimos en las bases del IEE y del IVA.{" "}
+                  <a
+                    className="text-link"
+                    href="https://www.miteco.gob.es/es/energia/eficiencia/sistema-nacional-obligaciones-efe.html"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    MITECO · Qué es el SNOEE
+                  </a>
+                  .
+                </p>
+              </details>
+            </div>
+            {numeric("servicesMonth", "Mantenimiento / servicios", "€/mes")}
+          </div>
           <label className="checkbox small">
             <input
               type="checkbox"

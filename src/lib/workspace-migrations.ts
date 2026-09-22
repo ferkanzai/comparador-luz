@@ -32,6 +32,26 @@ async function removeInvoicePriceLines(client: PoolClient) {
   );
 }
 
+async function addSnoeeCost(client: PoolClient) {
+  if (
+    (
+      await client.query(
+        "SELECT 1 FROM app_migration WHERE id = '003-snoee-cost'",
+      )
+    ).rowCount
+  )
+    return;
+  await client.query(
+    await readFile(
+      new URL("../../migrations/003-snoee-cost.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await client.query(
+    "INSERT INTO app_migration (id) VALUES ('003-snoee-cost')",
+  );
+}
+
 export async function migrateWorkspaces(pool: Pool) {
   const client = await pool.connect();
   let failed = false;
@@ -49,6 +69,7 @@ export async function migrateWorkspaces(pool: Pool) {
       ).rowCount
     ) {
       await removeInvoicePriceLines(client);
+      await addSnoeeCost(client);
       await client.query("COMMIT");
       return;
     }
@@ -74,6 +95,8 @@ export async function migrateWorkspaces(pool: Pool) {
         "utf8",
       ),
     );
+    // The record readers/writers use these columns during the legacy import too.
+    await addSnoeeCost(client);
     if (legacy) {
       // Page through the locked legacy table instead of loading all accounts into memory.
       let after: string | null = null;

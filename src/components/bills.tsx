@@ -185,7 +185,7 @@ export default function Bills({
                 <p className="small muted">
                   Cada factura se agrupa en el mes elegido (por defecto, el mes
                   de fin del periodo), sin prorratearla. Otros cargos: bono
-                  social, alquiler y servicios. Las facturas antiguas sin
+                  social, SNOEE, alquiler y servicios. Las facturas antiguas sin
                   conceptos aparecen como «Sin desglose»; los meses sin
                   facturas, como «—». Los créditos se restan del total y
                   aparecen bajo el cero en las barras.

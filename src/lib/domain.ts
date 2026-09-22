@@ -44,6 +44,7 @@ export const tariffSchema = z.object({
   socialDay: decimal(100),
   socialEstimate: z.enum(["none", "ted634-2026"]).default("none"),
   socialInElectricityTax: z.boolean().default(true),
+  snoeeKwh: decimal(100).default(""),
   servicesMonth: decimal(10000),
   url: z
     .union([z.url({ protocol: /^https?$/ }), z.literal("")])
@@ -66,6 +67,7 @@ export const billBreakdownSchema = z.object({
   energy: billedAmount,
   power: billedAmount,
   social: billedAmount,
+  snoee: billedAmount.default("0"),
   meter: billedAmount,
   services: billedAmount,
   electricityTax: billedAmount,
@@ -225,6 +227,7 @@ export const newTariff = (): Tariff => ({
   socialDay: "",
   socialEstimate: "none",
   socialInElectricityTax: true,
+  snoeeKwh: "",
   servicesMonth: "",
   url: "",
   checkedOn: "",

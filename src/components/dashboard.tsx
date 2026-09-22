@@ -46,7 +46,7 @@ import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
 import BillForm from "./bill-form";
 import { useWorkspace } from "./use-workspace";
-import { billFromCalculation } from "@/lib/bill-data";
+import { billFromCalculation, billLines } from "@/lib/bill-data";
 
 type Tab = "compare" | "history" | "bills";
 export default function Dashboard({
@@ -819,7 +819,8 @@ export default function Dashboard({
                               Potencia: {powerDescription(h.tariff)}
                               <br />
                               Alquiler: {h.tariff.meterDay || "0"} €/día · Bono
-                              social: {h.tariff.socialDay || "0"} €/día ·
+                              social: {h.tariff.socialDay || "0"} €/día · Coste
+                              SNOEE: {h.tariff.snoeeKwh || "0"} €/kWh ·{" "}
                               Servicios: {h.tariff.servicesMonth || "0"} €/mes
                             </p>
                             <p className="small muted">{h.tariff.notes}</p>
@@ -949,10 +950,17 @@ export default function Dashboard({
                 No es el descuento para beneficiarios del bono social.
               </li>
               <li>
-                <strong>IEE:</strong> (energía + potencia + financiación bono
-                social, si está incluida en esta tarifa) × tipo indicado, con
-                mínimo doméstico opcional de 0,001 €/kWh. El alquiler del
-                contador y los servicios no forman parte de esta base.
+                <strong>Coste SNOEE:</strong> consumo total × precio por kWh
+                indicado en tu contrato, solo si no está incluido en los precios
+                de energía. No es un impuesto y se mantiene al desactivar los
+                impuestos. La referencia PVPC ya incluye su aportación regulada.
+              </li>
+              <li>
+                <strong>IEE:</strong> (energía + potencia + coste SNOEE +
+                financiación bono social, si está incluida en esta tarifa) ×
+                tipo indicado, con mínimo doméstico opcional de 0,001 €/kWh. El
+                alquiler del contador y los servicios no forman parte de esta
+                base.
               </li>
               <li>
                 <strong>IVA:</strong> se aplica al suministro, incluido el IEE y
@@ -975,7 +983,7 @@ export default function Dashboard({
             </p>
             <p>
               Tipos generales de referencia: IVA 21 % e IEE 5,11269632 %.
-              Revisión: 21/09/2026. Usa los tipos de tu factura para periodos
+              Revisión: 22/09/2026. Usa los tipos de tu factura para periodos
               con medidas temporales. No se aplica automáticamente un tipo por
               fecha.
             </p>
@@ -988,6 +996,14 @@ export default function Dashboard({
               comprueba permanencias antes de cambiar.
             </p>
             <div className="source-links">
+              <a
+                href="https://www.miteco.gob.es/es/energia/eficiencia/sistema-nacional-obligaciones-efe.html"
+                target="_blank"
+                rel="noreferrer"
+              >
+                MITECO · SNOEE
+                <ExternalLink size={14} />
+              </a>
               <a
                 href="https://sede.agenciatributaria.gob.es/Sede/impuestos-especiales-medioambientales/impuesto-especial-sobre-electricidad/liquidacion-pago-impuesto/tipo-impositivo.html"
                 target="_blank"
@@ -1094,6 +1110,12 @@ function TariffCard({
       <p className="small muted tariff-power">
         Potencia: {powerDescription(t)}
       </p>
+      {Number(t.snoeeKwh.replace(",", ".")) > 0 && (
+        <p className="small muted">
+          Coste SNOEE: {t.snoeeKwh.replace(".", ",")} €/kWh, aparte de la
+          energía
+        </p>
+      )}
       <div className="tariff-bottom">
         <span>
           {expired
@@ -1151,16 +1173,6 @@ function ResultRow({
   max: number;
   baseline?: number;
 }) {
-  const lines: [string, number][] = [
-    ["Energía", cost.energy],
-    ["Potencia", cost.power],
-    ["Financiación bono social", cost.social],
-    ["Alquiler de contador", cost.meter],
-    ["Servicios", cost.services],
-    ["Impuesto eléctrico", cost.electricityTax],
-    ["IVA suministro", cost.vat],
-    ["IVA servicios", cost.servicesVat],
-  ];
   return (
     <details className="result-row">
       <summary>
@@ -1190,10 +1202,10 @@ function ResultRow({
       </summary>
       <EstimateNotice tariff={tariff} />
       <dl className="breakdown">
-        {lines.map(([label, amount]) => (
-          <div key={label}>
+        {billLines.map(([key, label]) => (
+          <div key={key}>
             <dt>{label}</dt>
-            <dd>{money(amount)}</dd>
+            <dd>{money(cost[key])}</dd>
           </div>
         ))}
         <div className="total">

@@ -1,6 +1,6 @@
 # Electricity comparison assumptions
 
-Reviewed 21 September 2026. The engine is in `src/lib/calculator.ts`; executable examples are in `tests/calculator.test.ts`.
+Reviewed 22 September 2026. The engine is in `src/lib/calculator.ts`; executable examples are in `tests/calculator.test.ts`.
 
 ## Scope
 
@@ -13,15 +13,30 @@ No PVPC hourly reconstruction, social-bonus beneficiary discount, self-consumpti
 1. Energy = sum of kWh × €/kWh for P1, P2 and P3. A flat tariff uses total kWh × its sole price.
 2. Power = (P1 kW × P1 price + P2 kW × P2 price) × billing days. If prices are in €/kW/year, divide by 365. For €/kW/month, divide by 30, using a 30-day billing month; supplier-specific proration may differ. The invoice-amount price reconstruction uses the same conversion in reverse. This applies to all three power price modes. A combined total price is charged once: 7.20 €/kW/month × 4 kW = €28.80 for 30 days, or €27.84 for 29 days. A price explicitly charged in each period applies to both powers; the same 7.20 rate with 4 kW in each period costs €55.68 for 29 days. Existing per-period tariffs retain that explicit interpretation; select the total-price mode when the quoted rate already includes both periods.
 3. Social-bonus **financing** = contract €/day × billing days. This is a charge, not a tax or a beneficiary discount. If included in the energy/power rates already, leave it zero to avoid duplication. Its default inclusion in the electricity-tax base follows DGT V2340-22 and article 97 LIE. A tariff can explicitly exclude financing from IEE to reproduce the treatment on a particular bill; this is a reconciliation setting, not a statement that the exclusion is the general tax rule. IVA still includes financing.
-4. IEE base = energy + power + financing (unless explicitly excluded for this tariff). IEE = base × user-selected rate. If enabled, enforce the domestic minimum €1/MWh = €0.001/kWh. Disable that floor only when reproducing a genuinely exempt/non-applicable case; setting the percentage to zero alone does not remove it.
-5. Meter rental = €/day × days; excluded from IEE.
-6. Supply IVA base = energy + power + financing + IEE + meter rental. Supply IVA = that base × user-selected IVA rate.
-7. Separate maintenance services = monthly pre-tax cost × 12 × days / 365. They do not incur IEE, and incur the general 21% IVA independently of a reduced supply IVA rate.
-8. Total = energy + power + financing + rental + services + IEE + supply IVA + services IVA.
+4. SNOEE cost = total kWh × manually entered pre-tax €/kWh, rounded once. Add it only if it is excluded from the entered energy prices; blank/zero means no additional charge.
+5. IEE base = energy + power + SNOEE + financing (unless financing is explicitly excluded for this tariff). IEE = base × user-selected rate. If enabled, enforce the domestic minimum €1/MWh = €0.001/kWh. Disable that floor only when reproducing a genuinely exempt/non-applicable case; setting the percentage to zero alone does not remove it.
+6. Meter rental = €/day × days; excluded from IEE.
+7. Supply IVA base = energy + power + financing + SNOEE + IEE + meter rental. Supply IVA = that base × user-selected IVA rate.
+8. Separate maintenance services = monthly pre-tax cost × 12 × days / 365. They do not incur IEE, and incur the general 21% IVA independently of a reduced supply IVA rate.
+9. Total = energy + power + financing + SNOEE + rental + services + IEE + supply IVA + services IVA.
 
 Each line is rounded to euro cents; suppliers using different rounding rules or monthly prorations may differ by cents. Turning off taxes removes only IEE and both IVA lines, retaining all non-tax costs.
 
 Required quantities and prices must be explicitly entered, including zero where appropriate. Blank inputs never count as free energy or missing power. Optional non-tax charges default to zero. General tax values are applied only by an explicit user action, not prefilled into an anonymous form.
+
+## Separately billed SNOEE cost
+
+SNOEE (Sistema Nacional de Obligaciones de Eficiencia Energética) imposes energy-saving obligations on suppliers; FNEE is the fund receiving monetary contributions. This is a supplier cost that may be passed through to the customer, not a consumer tax. See [MITECO's explanation](https://www.miteco.gob.es/es/energia/eficiencia/sistema-nacional-obligaciones-efe.html).
+
+Enter only the supplier's separate pre-tax price in €/kWh. There is no automatic estimate, universal reference rate or supplier detection. A separate informational invoice line alone does not justify adding it: the entered energy prices must exclude the cost. Flat and period tariffs both apply this price to total consumption; zero consumption produces a zero charge. Disabling taxes retains the SNOEE cost.
+
+The charge enters the IEE base and subsequently the supply IVA base. This applies the general supply-consideration rules in [AEAT's IEE guidance](https://www3.agenciatributaria.gob.es/static_files/Sede/Tema/II_especiales/electricidad/modelo_560/Ayuda_ImpFich2025.pdf) and [IVA base guidance](https://sede.agenciatributaria.gob.es/Sede/iva/calculo-iva-repercutido-clientes/calculo-base-imponible.html), supported by the tax-revenue treatment in [MITECO's 2026 preparatory memorandum, p. 14](https://www.miteco.gob.es/content/dam/miteco/es/energia/files-1/es-ES/Participacion/Documents/anexos/aeip-om-fnee-2026/20251218_Memoria%20OM_Obligaciones%202026.pdf). This is an inference from general rules; no binding ruling specifically addressing separately billed free-market SNOEE was found. There is no SNOEE-specific tax-exclusion toggle.
+
+The separate price and bill amount survive account saves, drafts, tariff history, bill snapshots and JSON export. Old tariffs add no charge and old bill breakdowns default to zero without changing their paid totals. Recorded amounts remain editable independently of tariff prices. Charts group SNOEE under other charges; result and bill breakdowns name it separately.
+
+“Calcular precios desde los importes” divides the pre-tax SNOEE amount by known, positive total consumption. All three consumption periods must be entered, using explicit zeroes where appropriate. Missing or zero total consumption prevents price reconstruction, but does not prevent recording an actual invoice amount. A blank amount leaves the tariff's existing price unchanged.
+
+Historical PVPC adds no separate SNOEE amount: [Orden TED/133/2026, fourth provision](https://boe.es/buscar/doc.php?id=BOE-A-2026-4522) already includes the regulated RFE contribution in variable commercialization. Adding another reference charge would duplicate it.
 
 ## Optional charge estimates
 
@@ -82,7 +97,7 @@ Using energy amounts €1.91/€1.13/€1.88, power amounts €11.25/€3.13, fi
 
 Bills may span calendar months. Start and end dates follow meter-reading boundaries: days between readings = end minus start. A draft from the comparator suggests today's date as the end and subtracts its billing days for the start; users must check both against their invoice. The separately stored consumption snapshot remains the calculation's original inputs. Old bills can retain unknown dates.
 
-The full paid amount is attributed to the selected reporting month; there is no unsupported allocation of kWh or costs across calendar months. Stacks show energy, power, other charges (financing/rental/services), taxes and legacy totals without a breakdown. Itemized amounts must sum to the paid total. Multiple bills in a month are aggregated and missing months remain missing. A text table presents the same monthly data.
+The full paid amount is attributed to the selected reporting month; there is no unsupported allocation of kWh or costs across calendar months. Stacks show energy, power, other charges (financing/SNOEE/rental/services), taxes and legacy totals without a breakdown. Itemized amounts must sum to the paid total. Multiple bills in a month are aggregated and missing months remain missing. A text table presents the same monthly data.
 
 The CNMC confirms that households can contract equal or different powers in the two periods: [CNMC power guidance](https://blog.cnmc.es/2023/06/23/panel-de-hogares-cnmc-por-que-tienes-contratada-mas-potencia-de-la-necesaria/).
 

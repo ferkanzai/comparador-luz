@@ -294,6 +294,7 @@ export default function BillForm({
                           energy: "0",
                           power: "0",
                           social: "0",
+                          snoee: "0",
                           meter: "0",
                           services: "0",
                           electricityTax: "0",
