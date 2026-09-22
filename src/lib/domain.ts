@@ -294,6 +294,26 @@ export const powerUnitLabels = {
 export const powerDayFactor = (unit: Tariff["powerUnit"]) =>
   unit === "month" ? 1 / 30 : unit === "year" ? 1 / 365 : 1;
 
+// Reference: 1 kW contracted in each period, without weighting by hours.
+export function comparablePowerPrice(t: Tariff, unit: Tariff["powerUnit"]) {
+  if (t.powerPeak === "" || (t.powerKind === "periods" && t.powerValley === ""))
+    return null;
+  const peak = numberOf(t.powerPeak);
+  const total =
+    t.powerKind === "periods"
+      ? peak + numberOf(t.powerValley)
+      : t.powerKind === "same"
+        ? peak * 2
+        : peak;
+  return (total * powerDayFactor(t.powerUnit)) / powerDayFactor(unit);
+}
+
+const powerPriceFormat = new Intl.NumberFormat("es-ES", {
+  maximumFractionDigits: 6,
+});
+export const formatPowerPrice = (price: number | null) =>
+  price === null ? "—" : powerPriceFormat.format(price);
+
 export function powerDescription(t: Tariff) {
   const unit = powerUnitLabels[t.powerUnit];
   const peak = t.powerPeak.replace(".", ",") || "—";

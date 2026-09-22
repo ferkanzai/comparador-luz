@@ -27,9 +27,13 @@ import { authClient } from "@/lib/auth-client";
 import { calculate, type Calculation } from "@/lib/calculator";
 import {
   changeCurrent,
+  comparablePowerPrice,
+  formatPowerPrice,
   money,
   newTariff,
+  numberOf,
   powerDescription,
+  powerUnitLabels,
   shortDate,
   today,
   type Bill,
@@ -46,6 +50,7 @@ import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
 import BillForm from "./bill-form";
 import { useWorkspace } from "./use-workspace";
+import { usePowerComparisonUnit } from "./use-power-comparison-unit";
 import { billFromCalculation, billLines } from "@/lib/bill-data";
 
 type Tab = "compare" | "history" | "bills";
@@ -141,6 +146,13 @@ export default function Dashboard({
     URL.revokeObjectURL(url);
   }
   const current = w.tariffs.find((t) => t.id === w.currentId);
+  const [powerComparisonUnit, setPowerComparisonUnit] = usePowerComparisonUnit(
+    current?.powerUnit ?? "day",
+  );
+  const unequalPower =
+    w.profile.peakKw !== "" &&
+    w.profile.valleyKw !== "" &&
+    numberOf(w.profile.peakKw) !== numberOf(w.profile.valleyKw);
   const results = w.tariffs
     .flatMap((t) => {
       const cost = calculate(t, w.profile);
@@ -495,6 +507,36 @@ export default function Dashboard({
                           Añadir tarifa
                         </button>
                       </div>
+                      {w.tariffs.length > 0 && (
+                        <div className="power-comparison-controls">
+                          <label className="inline-label">
+                            Comparar potencia en
+                            <select
+                              value={powerComparisonUnit}
+                              aria-describedby="power-comparison-convention"
+                              onChange={(event) => {
+                                const unit = event.target.value;
+                                if (
+                                  unit === "day" ||
+                                  unit === "month" ||
+                                  unit === "year"
+                                )
+                                  setPowerComparisonUnit(unit);
+                              }}
+                            >
+                              <option value="day">€/kW/día</option>
+                              <option value="month">€/kW/mes</option>
+                              <option value="year">€/kW/año</option>
+                            </select>
+                          </label>
+                          <span
+                            id="power-comparison-convention"
+                            className="small muted"
+                          >
+                            Mes = 30 días · Año = 365 días
+                          </span>
+                        </div>
+                      )}
                       {!w.tariffs.length ? (
                         <div className="panel">
                           <Empty
@@ -521,6 +563,8 @@ export default function Dashboard({
                               key={tariff.id}
                               tariff={tariff}
                               current={tariff.id === w.currentId}
+                              powerComparisonUnit={powerComparisonUnit}
+                              unequalPower={unequalPower}
                               index={i}
                               onReview={() => confirmPrices(tariff.id)}
                               onEdit={() => setEditing(tariff)}
@@ -1044,6 +1088,8 @@ export default function Dashboard({
 function TariffCard({
   tariff: t,
   current,
+  powerComparisonUnit,
+  unequalPower,
   index,
   onEdit,
   onReview,
@@ -1052,6 +1098,8 @@ function TariffCard({
 }: {
   tariff: Tariff;
   current: boolean;
+  powerComparisonUnit: Tariff["powerUnit"];
+  unequalPower: boolean;
   index: number;
   onEdit: () => void;
   onReview: () => void;
@@ -1107,9 +1155,27 @@ function TariffCard({
           </div>
         ))}
       </div>
-      <p className="small muted tariff-power">
-        Potencia: {powerDescription(t)}
-      </p>
+      <div className="tariff-power">
+        <div className="tariff-power-heading">
+          <span className="small muted">Potencia para comparar</span>
+          <strong>
+            {formatPowerPrice(comparablePowerPrice(t, powerComparisonUnit))}
+            <small> {powerUnitLabels[powerComparisonUnit]}</small>
+          </strong>
+        </div>
+        <p className="small muted tariff-power-reference">
+          Referencia: 1 kW en cada periodo · Sin impuestos
+        </p>
+        <p className="small muted">Precio original: {powerDescription(t)}</p>
+        {unequalPower && (
+          <p className="small tariff-power-notice">
+            Tus potencias P1 y P2 son distintas. Esta referencia no representa
+            tu coste de potencia; la estimación usa tus kW contratados.
+            {t.powerKind === "combined" &&
+              " Esta tarifa combinada requiere la misma potencia en P1 y P2 para calcular su coste."}
+          </p>
+        )}
+      </div>
       {Number(t.snoeeKwh.replace(",", ".")) > 0 && (
         <p className="small muted">
           Coste SNOEE: {t.snoeeKwh.replace(".", ",")} €/kWh, aparte de la
