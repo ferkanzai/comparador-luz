@@ -23,4 +23,6 @@
 
 The user explicitly accepted updating both sides of a shared boundary with a preview, while retaining independent editing for gaps and keeping saved bills unchanged.
 
-Implementation completed on the current branch. Validation: 79 domain/storage tests and 26 browser workflows passed with disposable local databases and no skips; lint, typechecking, and the production build passed. Triage role is retained separately from implementation completion.
+Implementation completed on the current branch. Validation: 80 domain/storage tests and 26 browser workflows passed with disposable local databases and no skips; lint, typechecking, and the production build passed. Triage role is retained separately from implementation completion.
+
+Final review: Standards and Spec reviews cleared after fixing workspace-capacity guards, removing the obsolete current-tariff transition, and consolidating period-correction parameters. Desktop and phone layouts were visually checked; the browser suite includes keyboard and accessibility checks.

@@ -85,7 +85,7 @@ export default function TariffHistory({
               {period.current && (
                 <span className="pill green">Tu tarifa actual</span>
               )}
-              Desde {shortDate(period.start)}
+              <div>Desde {shortDate(period.start)}</div>
               <span>
                 {period.current
                   ? "Hasta hoy"

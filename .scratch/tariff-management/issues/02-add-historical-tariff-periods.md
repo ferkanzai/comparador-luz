@@ -21,4 +21,6 @@
 
 The user approved direct history entry with gaps allowed and overlaps prohibited. Shared period-validation behavior should support later slices without requiring a separate broad refactor.
 
-Implementation completed on the current branch. Validation: 79 domain/storage tests and 26 browser workflows passed with disposable local databases and no skips; lint, typechecking, and the production build passed. Triage role is retained separately from implementation completion.
+Implementation completed on the current branch. Validation: 80 domain/storage tests and 26 browser workflows passed with disposable local databases and no skips; lint, typechecking, and the production build passed. Triage role is retained separately from implementation completion.
+
+Final review: Standards and Spec reviews cleared after fixing workspace-capacity guards, removing the obsolete current-tariff transition, and consolidating period-correction parameters. Desktop and phone layouts were visually checked; the browser suite includes keyboard and accessibility checks.
