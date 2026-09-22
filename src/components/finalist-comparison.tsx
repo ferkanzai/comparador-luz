@@ -11,6 +11,7 @@ import {
 import { estimatedCharges } from "@/lib/charge-estimates";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";
+import { TaxAssumptions } from "./profile-fields";
 
 export default function FinalistComparison({
   rows,
@@ -44,8 +45,7 @@ export default function FinalistComparison({
     <Modal title="Tus finalistas, frente a frente" onClose={onClose} wide>
       <div className="modal-body finalist-body">
         <p className="muted">
-          {profile.days || "—"} días ·{" "}
-          {profile.taxes ? "Con los impuestos elegidos" : "Sin impuestos"}
+          {profile.days || "—"} días · <TaxAssumptions profile={profile} />
           {simulation ? " · Simulación activa" : " · Tu perfil de consumo"}
         </p>
         <div

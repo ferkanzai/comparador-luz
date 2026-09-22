@@ -263,6 +263,18 @@ test("account autosave isolates simulations, reports failures and resets transie
   });
   expect(signup.ok()).toBeTruthy();
   const data = comparisonFixture();
+  data.history = [
+    {
+      id: crypto.randomUUID(),
+      start: "2025-01-01",
+      end: "2026-01-01",
+      tariff: {
+        ...data.tariffs[0],
+        name: "Contrato anterior",
+        energyPeak: "0.25",
+      },
+    },
+  ];
   const saved = await page.request.put("/api/workspace", {
     headers: { origin: "http://localhost:3000" },
     data: { data, version: 0 },
@@ -275,6 +287,24 @@ test("account autosave isolates simulations, reports failures and resets transie
   });
   await expect(table).toBeVisible();
   await page
+    .getByRole("checkbox", { name: "Comparar Casa 24h", exact: true })
+    .uncheck();
+  await page
+    .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+    .check();
+  await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("article")).toContainText("Contrato anterior");
+  await expect(page.getByRole("article")).toContainText("0.25 €/kWh");
+  await expect(
+    page.getByRole("heading", { name: "Casa 24h", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("article")).toContainText("Contrato anterior");
+  await page.getByRole("button", { name: "Comparador", exact: true }).click();
+  await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
   await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
@@ -284,6 +314,18 @@ test("account autosave isolates simulations, reports failures and resets transie
       exact: true,
     }),
   ).toBeDisabled();
+  await page.getByRole("button", { name: "Restablecer", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Guardar este periodo como factura",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByLabel("Total pagado", { exact: true })).toHaveValue(
+    "110.35",
+  );
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
   await page
     .getByRole("button", { name: "Editar Clara Fija", exact: true })
     .click();
@@ -388,6 +430,26 @@ test("account autosave isolates simulations, reports failures and resets transie
       exact: true,
     }),
   ).not.toBeChecked();
+  await page
+    .getByRole("button", {
+      name: "Guardar este periodo como factura",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByLabel("Total pagado", { exact: true })).toHaveValue(
+    "130.35",
+  );
+  await page
+    .getByRole("button", { name: "Guardar factura", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByText("Guardado en tu cuenta", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
+  await expect(page.getByRole("main")).toContainText("130,35");
+  await expect(page.getByRole("main")).toContainText("600");
 });
 
 test("keeps names anchored on a phone, exposes rates by scrolling and supports keyboard selection", async ({
@@ -631,6 +693,24 @@ test("shows tax-inclusive totals with pre-tax rates and a reconciling other-char
     name: "Comparativa de tarifas",
     exact: true,
   });
+  const assumptions = page.getByLabel("Impuestos de la comparación", {
+    exact: true,
+  });
+  await expect(assumptions).toContainText("IVA 21 %");
+  await expect(assumptions).toContainText("IEE 5,11269632 %");
+  await expect(assumptions).toContainText("Mínimo IEE 0,001 €/kWh");
+  await page
+    .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Ver comparación (2)", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByLabel("Impuestos de la comparación", { exact: true }),
+  ).toContainText("IVA 21 %");
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
   const row = table.getByRole("row").filter({ hasText: "Casa 24h" });
   await expect(row).toContainText("140,35");
   await expect(row).toContainText("30,00");
@@ -640,6 +720,20 @@ test("shows tax-inclusive totals with pre-tax rates and a reconciling other-char
     .click();
   await expect(page.getByRole("dialog")).toContainText("5,64");
   await expect(page.getByRole("dialog")).toContainText("24,36");
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Editar perfil", exact: true })
+    .click();
+  await page
+    .getByRole("checkbox", {
+      name: "Aplicar mínimo doméstico IEE (0,001 €/kWh)",
+      exact: true,
+    })
+    .uncheck();
+  await page
+    .getByRole("button", { name: "Volver a la comparativa", exact: true })
+    .click();
+  await expect(assumptions).toContainText("Mínimo IEE desactivado");
 });
 
 test("starts with no sample tariffs and lets the first tariff be the current reference", async ({
@@ -667,4 +761,72 @@ test("starts with no sample tariffs and lets the first tariff be the current ref
   await expect(table).toContainText("Tu tarifa actual");
   await expect(table).not.toContainText("Menor coste");
   await expect(table).toContainText("Completa los precios");
+});
+
+test("keeps column headings visible while scrolling both comparison tables", async ({
+  page,
+}) => {
+  await openComparison(page);
+  for (const finalists of [false, true]) {
+    if (finalists) {
+      await page
+        .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+        .check();
+      await page
+        .getByRole("button", { name: "Ver comparación (2)", exact: true })
+        .click();
+    }
+    const table = page.getByRole("table", {
+      name: finalists ? "Comparación de finalistas" : "Comparativa de tarifas",
+      exact: true,
+    });
+    const region = table.locator("..");
+    await region.scrollIntoViewIfNeeded();
+    const header = table.getByRole("columnheader").first();
+    const before = await header.boundingBox();
+    await region.evaluate((element) => {
+      element.scrollTop = 350;
+    });
+    expect(
+      await region.evaluate((element) => element.scrollTop),
+    ).toBeGreaterThan(100);
+    const after = await header.boundingBox();
+    expect(Math.abs(after!.y - before!.y)).toBeLessThan(2);
+  }
+});
+
+test("conserves a rounding-sensitive total through simulation and adoption", async ({
+  page,
+}) => {
+  const data = comparisonFixture();
+  Object.assign(data.profile, { peakKwh: "1", flatKwh: "1", valleyKwh: "1" });
+  await openComparison(page, data);
+  await page
+    .getByRole("button", { name: "Simular consumo", exact: true })
+    .click();
+  await page.getByLabel("Consumo total simulado", { exact: true }).fill("1.01");
+  const simulation = page.getByRole("region", {
+    name: "Simulación de consumo",
+  });
+  await expect(
+    simulation.getByText("0,336667 kWh", { exact: true }),
+  ).toHaveCount(2);
+  await expect(simulation).toContainText("0,336666 kWh");
+  await page
+    .getByRole("button", { name: "Usar este consumo", exact: true })
+    .click();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Editar perfil", exact: true })
+    .click();
+  const values = await Promise.all(
+    ["P1 · Punta", "P2 · Llano", "P3 · Valle"].map((period) =>
+      page.getByLabel(`Consumo ${period}`, { exact: true }).inputValue(),
+    ),
+  );
+  expect(values).toEqual(["0.336667", "0.336667", "0.336666"]);
+  expect(values.reduce((sum, value) => sum + Number(value), 0)).toBeCloseTo(
+    1.01,
+    6,
+  );
 });

@@ -133,3 +133,21 @@ export function TaxFields({
     </div>
   );
 }
+
+export function TaxAssumptions({ profile }: { profile: Profile }) {
+  return (
+    <span aria-label="Impuestos de la comparación">
+      {profile.taxes ? (
+        <>
+          IVA {profile.vat.replace(".", ",") || "—"} % · IEE{" "}
+          {profile.electricityTax.replace(".", ",") || "—"} % ·{" "}
+          {profile.minimumTax
+            ? "Mínimo IEE 0,001 €/kWh"
+            : "Mínimo IEE desactivado"}
+        </>
+      ) : (
+        "Sin impuestos"
+      )}
+    </span>
+  );
+}

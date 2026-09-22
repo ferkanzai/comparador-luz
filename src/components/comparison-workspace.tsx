@@ -33,7 +33,7 @@ import ComparisonTable, {
   type TariffActions,
 } from "./comparison-table";
 import { usePowerComparisonUnit } from "./use-power-comparison-unit";
-import { ProfileFields, TaxFields } from "./profile-fields";
+import { ProfileFields, TaxFields, TaxAssumptions } from "./profile-fields";
 import { Empty, Modal } from "./ui";
 import FinalistComparison from "./finalist-comparison";
 import PvpcComparison from "./pvpc-comparison";
@@ -233,8 +233,8 @@ export default function ComparisonWorkspace({
             <div className="comparison-toolbar">
               <p>
                 {profile.days || "—"} días ·{" "}
-                {profile.taxes ? "Con los impuestos elegidos" : "Sin impuestos"}{" "}
-                <span>
+                <TaxAssumptions profile={profile} />{" "}
+                <span className="comparison-mode">
                   {simulation
                     ? "Simulación activa · Costes hipotéticos"
                     : "Ordenadas por coste estimado"}
@@ -308,7 +308,8 @@ export default function ComparisonWorkspace({
                 días.
               </p>
               <span className="scroll-hint">
-                Desliza para ver todos los precios ↔
+                Desliza dentro de la tabla para ver todas las tarifas y precios
+                ↕ ↔
               </span>
             </div>
             {unequalPower && (
