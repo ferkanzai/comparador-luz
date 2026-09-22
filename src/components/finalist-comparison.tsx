@@ -2,6 +2,10 @@ import { type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import { money, shortDate, type Profile, type Tariff } from "@/lib/domain";
 import { billLines } from "@/lib/bill-data";
+import CostCategoryLabel, {
+  billLineCategories,
+  type CostCategory,
+} from "./cost-category-label";
 import {
   CostDifference,
   EnergyRates,
@@ -33,9 +37,16 @@ export default function FinalistComparison({
   const detailRow = (
     label: string,
     value: (row: ComparisonRow) => ReactNode,
+    category?: CostCategory,
   ) => (
     <tr key={label}>
-      <th scope="row">{label}</th>
+      <th scope="row">
+        {category ? (
+          <CostCategoryLabel category={category}>{label}</CostCategoryLabel>
+        ) : (
+          label
+        )}
+      </th>
       {rows.map((row) => (
         <td key={row.tariff.id}>{value(row)}</td>
       ))}
@@ -101,26 +112,45 @@ export default function FinalistComparison({
                 ),
               )}
               {billLines.map(([key, label]) =>
-                detailRow(label, ({ cost }) => (cost ? money(cost[key]) : "—")),
-              )}
-              {detailRow("Energía · precios sin impuestos", ({ tariff }) => (
-                <EnergyRates tariff={tariff} />
-              ))}
-              {detailRow("Potencia · precios sin impuestos", ({ tariff }) => (
-                <PowerRates tariff={tariff} unit={unit} />
-              ))}
-              {detailRow("Referencia de potencia", () => (
-                <span className="small muted">
-                  1 kW en cada periodo. El coste del periodo usa tus kW
-                  contratados.
-                </span>
-              ))}
-              {detailRow("Cargos estimados", ({ tariff }) =>
-                estimatedCharges(tariff) ? (
-                  <EstimateNotice tariff={tariff} />
-                ) : (
-                  "Ninguno"
+                detailRow(
+                  label,
+                  ({ cost }) => (cost ? money(cost[key]) : "—"),
+                  billLineCategories[key],
                 ),
+              )}
+              {detailRow(
+                "Energía · precios sin impuestos",
+                ({ tariff }) => (
+                  <EnergyRates tariff={tariff} />
+                ),
+                "energy",
+              )}
+              {detailRow(
+                "Potencia · precios sin impuestos",
+                ({ tariff }) => (
+                  <PowerRates tariff={tariff} unit={unit} />
+                ),
+                "power",
+              )}
+              {detailRow(
+                "Referencia de potencia",
+                () => (
+                  <span className="small muted">
+                    1 kW en cada periodo. El coste del periodo usa tus kW
+                    contratados.
+                  </span>
+                ),
+                "power",
+              )}
+              {detailRow(
+                "Cargos estimados",
+                ({ tariff }) =>
+                  estimatedCharges(tariff) ? (
+                    <EstimateNotice tariff={tariff} />
+                  ) : (
+                    "Ninguno"
+                  ),
+                "other",
               )}
               {detailRow("Validez de la oferta", ({ tariff }) =>
                 tariff.validUntil

@@ -11,6 +11,7 @@ import {
 import { type Calculation, cents } from "@/lib/calculator";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import { billLines } from "@/lib/bill-data";
+import CostCategoryLabel, { billLineCategories } from "./cost-category-label";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";
 
@@ -132,13 +133,22 @@ export default function ComparisonTable({
               Total del periodo <small>y diferencia con tu tarifa actual</small>
             </th>
             <th scope="col">
-              Energía <small>coste y precios sin impuestos</small>
+              <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
+              <small>coste y precios sin impuestos</small>
             </th>
             <th scope="col">
-              Potencia <small>coste y precios sin impuestos</small>
+              <CostCategoryLabel category="power">Potencia</CostCategoryLabel>
+              <small>coste y precios sin impuestos</small>
             </th>
             <th scope="col">
-              Otros cargos <small>e impuestos elegidos</small>
+              <CostCategoryLabel category="other">
+                Otros cargos
+              </CostCategoryLabel>
+              <small>
+                <CostCategoryLabel category="taxes">
+                  e impuestos elegidos
+                </CostCategoryLabel>
+              </small>
             </th>
             <th scope="col">
               <span className="sr-only">Acciones</span>
@@ -296,7 +306,11 @@ export function TariffDetails({
             <dl className="breakdown">
               {billLines.map(([key, label]) => (
                 <div key={key}>
-                  <dt>{label}</dt>
+                  <dt>
+                    <CostCategoryLabel category={billLineCategories[key]}>
+                      {label}
+                    </CostCategoryLabel>
+                  </dt>
                   <dd>{money(cost[key])}</dd>
                 </div>
               ))}
