@@ -1,0 +1,3 @@
+# Separate comparison candidates, contract periods, and bill snapshots
+
+Comparison candidates are editable experiments, while recorded contract periods describe the household's actual terms during dated intervals; copying a recorded tariff back into comparison must create an independent candidate. Correcting a contract record repairs that period, whereas a real price change starts a new period, and neither operation rewrites tariff snapshots already attached to bills. We accept explicit copying and separate corrections rather than propagating edits through shared tariff identity, because otherwise experimentation or fixing one record can silently change contract history and recorded invoices.

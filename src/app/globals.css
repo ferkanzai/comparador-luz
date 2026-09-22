@@ -1455,6 +1455,82 @@ details.form-section > .field {
 .history-item details p {
   margin-top: 8px;
 }
+.tariff-history-actions,
+.tariff-record-actions,
+.tariff-choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.tariff-history-actions {
+  justify-content: flex-end;
+}
+.tariff-record-actions {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 16px;
+  gap: 12px 24px;
+}
+.tariff-record-actions .text-link {
+  font-size: 0.8125rem;
+}
+.tariff-choice-list {
+  margin: 20px 0;
+}
+.history-item > div {
+  min-width: 0;
+}
+.history-item.current-history {
+  border-left: 3px solid var(--green);
+  margin-bottom: 0;
+}
+.history-date .pill {
+  display: inline-flex;
+  margin: 0 0 14px;
+}
+.history-price-comparison {
+  padding: 24px;
+  margin-bottom: 20px;
+  min-width: 0;
+}
+.history-price-comparison > div > p {
+  margin: 16px 0;
+}
+.history-comparison-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 20px 0;
+  padding: 0;
+  border: 0;
+}
+.history-comparison-selection small {
+  display: block;
+  color: var(--muted);
+}
+.history-price-comparison .finalist-table {
+  width: 100%;
+}
+.history-price-comparison .comparison-scroll {
+  margin-top: 16px;
+}
+@media (max-width: 700px) {
+  .tariff-history-actions {
+    justify-content: flex-start;
+  }
+  .history-price-comparison {
+    padding: 18px 12px;
+  }
+  .history-comparison-selection {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .tariff-record-actions {
+    gap: 16px;
+  }
+}
 .bill-chart {
   padding: 25px;
   margin-bottom: 23px;

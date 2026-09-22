@@ -24,25 +24,31 @@ A named set of pre-tax energy and power prices, optional charges, and offer info
 _Avoid_: Bill, monthly payment.
 
 **Offer (oferta)**:
-A manually entered tariff considered as a candidate for comparison. Its presence does not establish that it is available to every household or that the app has verified its prices.
+A manually entered tariff considered as a candidate for comparison, distinct from a recorded period in which the household actually held a contract. Its presence does not establish that it is available to every household or that the app has verified its prices.
 
 **Current tariff (tarifa actual)**:
 The tariff the household designates as its current contract and comparison baseline, with the date its current terms began. Selecting it records the household's situation; it does not initiate a supplier switch.
 _Avoid_: Cheapest tariff, recommended tariff.
 
-**Price confirmation date (precios comprobados)**:
-The date the user records having checked a tariff's prices. It is separate from the start of the contract and the offer's expiry, and does not turn estimated charges into confirmed amounts.
+**Tariff period (período de una tarifa)**:
+The interval during which the household actually had a particular set of contracted terms, beginning on its start date and ending at its end-date boundary, or remaining open for the current tariff. Recorded periods may leave gaps in the household's known history but do not overlap.
 
 **Offer expiry (validez de la oferta)**:
-The last date an offer remains eligible for comparison. An expired candidate is excluded from the ranking, while the current tariff remains the baseline even if its offer date has expired.
+The optional last date an offer remains eligible for comparison. An expired candidate is excluded from the ranking, while an undated candidate remains eligible and the current tariff remains the baseline even if its offer date has expired.
 _Avoid_: Contract end date.
 
 **Tariff history (historial de tarifas)**:
-The previous terms of the household's current tariff, preserved with start and change dates when the current tariff is replaced or updated. The end date marks the change, not an additional billable day.
+The tariffs and price terms the household actually had during previous dated periods, including periods recorded retrospectively. The end date marks the change, not an additional billable day.
 _Avoid_: Bill history, offer archive.
 
+**Tariff correction (corrección de datos de una tarifa)**:
+A repair to a recorded tariff's inaccurate information, describing the same actual contract period rather than a new change in contracted prices.
+
+**Tariff price change (cambio de precios de una tarifa)**:
+A real change in the household's contracted prices from a specified date, beginning a new period while preserving the previous terms.
+
 **Tariff snapshot**:
-An independent copy of tariff terms attached to a history entry or bill. Later edits to, or removal of, the live tariff do not change those recorded terms.
+An independent copy of tariff terms attached to a history entry or bill. Changes to a comparison candidate do not alter recorded contract periods, and corrections to a current or historical tariff do not alter copies already attached to bills.
 
 ### Consumption and prices
 

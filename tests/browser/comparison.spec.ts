@@ -313,16 +313,26 @@ test("account autosave isolates simulations, reports failures and resets transie
     .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
     .check();
   await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
-  await expect(page.getByRole("article")).toHaveCount(1);
-  await expect(page.getByRole("article")).toContainText("Contrato anterior");
-  await expect(page.getByRole("article")).toContainText("0.25 €/kWh");
+  await expect(
+    page.getByRole("article").filter({ hasText: "Contrato anterior" }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("article").filter({ hasText: "Contrato anterior" }),
+  ).toContainText("Contrato anterior");
+  await expect(
+    page.getByRole("article").filter({ hasText: "Contrato anterior" }),
+  ).toContainText("0,25 €/kWh");
   await expect(
     page.getByRole("heading", { name: "Casa 24h", exact: true }),
   ).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
-  await expect(page.getByRole("article")).toHaveCount(1);
-  await expect(page.getByRole("article")).toContainText("Contrato anterior");
+  await expect(
+    page.getByRole("article").filter({ hasText: "Contrato anterior" }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("article").filter({ hasText: "Contrato anterior" }),
+  ).toContainText("Contrato anterior");
   expect(initialWorkspaceReads).toHaveLength(0);
   await page.getByRole("button", { name: "Comparador", exact: true }).click();
   await page
@@ -529,7 +539,7 @@ test("keeps names anchored on a phone, exposes rates by scrolling and supports k
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-test("preserves normalized power units and makes manual price review explicit in details", async ({
+test("preserves normalized power units and shows optional offer expiry without personal review", async ({
   page,
 }) => {
   await openComparison(page);
@@ -550,17 +560,15 @@ test("preserves normalized power units and makes manual price review explicit in
   ).toHaveValue("month");
   await table.getByRole("button", { name: "Clara Fija", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toContainText("La aplicación no los comprueba");
-  await page
-    .getByRole("button", { name: "He revisado estos precios", exact: true })
-    .click();
   await expect(
-    dialog.getByRole("button", {
-      name: "He revisado estos precios",
-      exact: true,
-    }),
+    dialog.getByText("Última revisión por ti", { exact: false }),
   ).toHaveCount(0);
-  await expect(dialog).not.toContainText("Sin fecha registrada");
+  await expect(
+    dialog.getByRole("button", { name: "He revisado estos precios" }),
+  ).toHaveCount(0);
+  await expect(
+    table.getByRole("row").filter({ hasText: "Oferta caducada" }),
+  ).toContainText("Caducada · 1 ene 2026");
   await page.getByRole("button", { name: "Cerrar", exact: true }).click();
   await page.reload();
   await expect(
@@ -632,10 +640,11 @@ test("preserves tariff duplication, deletion and current-contract designation", 
   ).toHaveCount(0);
   await table.getByRole("button", { name: "Clara Fija", exact: true }).click();
   await page
-    .getByRole("button", { name: "Es mi tarifa actual", exact: true })
+    .getByRole("button", { name: "Registrar como actual", exact: true })
     .click();
+  await page.getByLabel("Fecha de inicio", { exact: true }).fill("2026-06-01");
   await page
-    .getByRole("button", { name: "Usar como tarifa actual", exact: true })
+    .getByRole("button", { name: "Guardar período", exact: true })
     .click();
   await expect(
     table.getByRole("row").filter({ hasText: "Clara Fija" }),
@@ -643,7 +652,7 @@ test("preserves tariff duplication, deletion and current-contract designation", 
   await page.reload();
   await expect(
     table.getByRole("row").filter({ hasText: "Casa 24h" }),
-  ).not.toContainText("Tu tarifa actual");
+  ).toHaveCount(0);
 });
 
 test("retains the expired current tariff as baseline and excludes incompatible combined power", async ({
@@ -771,6 +780,7 @@ test("starts with no sample tariffs and lets the first tariff be the current ref
   await page.getByLabel("Precio las 24 horas", { exact: true }).fill("0.20");
   await page.getByLabel("P1 · Punta", { exact: true }).fill("0.08");
   await page.getByLabel("P2 · Valle", { exact: true }).fill("0.02");
+  await page.getByLabel("Fecha de inicio", { exact: true }).fill("2026-01-01");
   await page
     .getByRole("button", { name: "Aplicar tarifa", exact: true })
     .click();

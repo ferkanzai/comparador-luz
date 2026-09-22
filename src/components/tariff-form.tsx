@@ -1,9 +1,8 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { ArrowRight, Copy } from "lucide-react";
 import {
   tariffSchema,
-  today,
   money,
   powerUnitLabels,
   type Profile,
@@ -26,21 +25,31 @@ export default function TariffForm({
   initial,
   initialProfile,
   firstTariff,
-  isCurrent,
-  currentSince,
   invoiceDraft = false,
   duplicatedFrom,
+  record,
   onSave,
   onClose,
 }: {
   initial: Tariff;
   initialProfile: Profile;
-  firstTariff: boolean;
-  isCurrent: boolean;
-  currentSince: string;
+  firstTariff?: boolean;
   invoiceDraft?: boolean;
   duplicatedFrom?: string;
-  onSave: (
+  record?: {
+    title: string;
+    start: string;
+    end?: string;
+    onSave: (
+      tariff: Tariff,
+      start: string,
+      end: string,
+      moveBoundary: boolean,
+    ) => void;
+    correction?: boolean;
+    preview?: (start: string, end: string, moveBoundary: boolean) => ReactNode;
+  };
+  onSave?: (
     t: Tariff,
     since: string,
     profile: Profile,
@@ -49,9 +58,11 @@ export default function TariffForm({
   onClose: () => void;
 }) {
   const [profile, setProfile] = useState(initialProfile);
-  const [makeCurrent, setMakeCurrent] = useState(firstTariff);
+  const [makeCurrent, setMakeCurrent] = useState(firstTariff ?? false);
   const [tariff, setTariff] = useState(initial);
-  const [since, setSince] = useState(today());
+  const [since, setSince] = useState(record?.start ?? "");
+  const [until, setUntil] = useState(record?.end ?? "");
+  const [moveBoundary, setMoveBoundary] = useState(false);
   const [error, setError] = useState("");
   const update = (key: keyof Tariff, value: string | boolean) =>
     setTariff((t) => ({
@@ -83,23 +94,23 @@ export default function TariffForm({
       setError(result.error.issues[0].message);
       return;
     }
-    if (isCurrent && (since < currentSince || since > today())) {
-      setError(
-        "La fecha debe estar entre el inicio del contrato actual y hoy.",
-      );
-      return;
+    try {
+      if (record) record.onSave(result.data, since, until, moveBoundary);
+      else onSave?.(result.data, since, profile, makeCurrent);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Revisa los datos.");
     }
-    onSave(result.data, since, profile, makeCurrent);
   }
   const cost = calculate(tariff, profile);
   return (
     <Modal
       title={
-        duplicatedFrom
+        record?.title ??
+        (duplicatedFrom
           ? "Duplicar tarifa"
           : initial.name
             ? "Editar tarifa"
-            : "Añadir una tarifa"
+            : "Añadir una tarifa")
       }
       onClose={onClose}
       wide
@@ -123,6 +134,51 @@ export default function TariffForm({
           oferta, con todos sus decimales. Usa 0 cuando un término no tenga
           coste.
         </p>
+        {record && (
+          <section className="form-section">
+            <div className="form-grid two">
+              <Field
+                label="Fecha de inicio"
+                type="date"
+                value={since}
+                onChange={setSince}
+                required
+              />
+              {record.end !== undefined && (
+                <Field
+                  label="Fecha de fin"
+                  type="date"
+                  value={until}
+                  onChange={setUntil}
+                  required
+                />
+              )}
+            </div>
+            {record.correction && (
+              <>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={moveBoundary}
+                    onChange={(e) => setMoveBoundary(e.target.checked)}
+                  />
+                  Ajustar también los períodos contiguos
+                </label>
+                <p className="small muted">
+                  Corregimos este período sin registrar un cambio de precios.
+                  Las facturas guardadas conservan su propia copia: corrígelas
+                  en Mis facturas si lo necesitas.
+                </p>
+              </>
+            )}
+            {record.preview?.(since, until, moveBoundary)}
+            <p className="small muted">
+              La fecha de fin marca el cambio: si la siguiente tarifa empieza el
+              1 de junio, la anterior termina en esa misma fecha. Ese día
+              pertenece a la nueva tarifa.
+            </p>
+          </section>
+        )}
         {firstTariff && (
           <label className="checkbox">
             <input
@@ -376,16 +432,11 @@ export default function TariffForm({
             factura que lo excluye; el cargo seguirá sujeto a IVA.
           </p>
           <details className="form-section">
-            <summary>Fechas, enlace y condiciones</summary>
+            <summary>Validez y condiciones</summary>
             <div className="form-grid two">
               <Field
-                label="Última revisión por ti"
-                value={tariff.checkedOn}
-                onChange={(v) => update("checkedOn", v)}
-                type="date"
-              />
-              <Field
                 label="Oferta válida hasta"
+                hint="Si la oferta tiene una fecha límite para contratarla, indícala aquí. No es la fecha de fin de tu contrato."
                 value={tariff.validUntil}
                 onChange={(v) => update("validUntil", v)}
                 type="date"
@@ -410,68 +461,73 @@ export default function TariffForm({
             </label>
           </details>
         </section>
-        <section className="form-section">
-          <h3>
-            {invoiceDraft
-              ? "04 / Tu factura de referencia"
-              : "04 / Perfil compartido de consumo"}
-          </h3>
-          <p className="small muted">
-            {invoiceDraft
-              ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
-              : "Estos datos pertenecen a tu perfil compartido. Al cambiarlos aquí, cambiarán para todas las tarifas; no incluyen simulaciones sin adoptar."}
-          </p>
-          <ProfileFields value={profile} onChange={setProfile} />
-          <TaxFields value={profile} onChange={setProfile} />
-        </section>
-        <InvoicePrices tariff={tariff} profile={profile} onApply={setTariff} />
-        <section
-          className="tariff-preview form-section"
-          aria-label="Resultado de esta tarifa"
-        >
-          <h3>Así quedaría tu factura</h3>
-          <EstimateNotice tariff={tariff} />
-          {cost ? (
-            <>
-              <strong className="big-amount">{money(cost.total)}</strong>
+        {!record && (
+          <>
+            <section className="form-section">
+              <h3>
+                {invoiceDraft
+                  ? "04 / Tu factura de referencia"
+                  : "04 / Perfil compartido de consumo"}
+              </h3>
               <p className="small muted">
-                {profile.days} días ·{" "}
-                {profile.taxes ? "Con impuestos" : "Sin impuestos"}
+                {invoiceDraft
+                  ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
+                  : "Estos datos pertenecen a tu perfil compartido. Al cambiarlos aquí, cambiarán para todas las tarifas; no incluyen simulaciones sin adoptar."}
               </p>
-              <dl className="bill-breakdown">
-                {billLines.map(([key, label]) => (
-                  <div key={key}>
-                    <dt>{label}</dt>
-                    <dd>{money(cost[key])}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="small muted">
-                Base IEE: {money(cost.electricityBase)} · Base IVA:{" "}
-                {money(cost.vatBase)}
-              </p>
-            </>
-          ) : (
-            <p className="notice">
-              Completa los precios, el consumo, los kW y los días. Si incluyes
-              impuestos, indica también sus porcentajes. El precio de potencia
-              combinado requiere los mismos kW en ambos períodos.
-            </p>
-          )}
-        </section>
-        {isCurrent && (
-          <div className="notice">
-            <strong>
-              Conservaremos los precios anteriores en tu historial.
-            </strong>
-            <Field
-              label="Nuevos precios desde"
-              type="date"
-              value={since}
-              onChange={setSince}
-              required
+              <ProfileFields value={profile} onChange={setProfile} />
+              <TaxFields value={profile} onChange={setProfile} />
+            </section>
+            <InvoicePrices
+              tariff={tariff}
+              profile={profile}
+              onApply={setTariff}
             />
-          </div>
+            <section
+              className="tariff-preview form-section"
+              aria-label="Resultado de esta tarifa"
+            >
+              <h3>Así quedaría tu factura</h3>
+              <EstimateNotice tariff={tariff} />
+              {cost ? (
+                <>
+                  <strong className="big-amount">{money(cost.total)}</strong>
+                  <p className="small muted">
+                    {profile.days} días ·{" "}
+                    {profile.taxes ? "Con impuestos" : "Sin impuestos"}
+                  </p>
+                  <dl className="bill-breakdown">
+                    {billLines.map(([key, label]) => (
+                      <div key={key}>
+                        <dt>{label}</dt>
+                        <dd>{money(cost[key])}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="small muted">
+                    Base IEE: {money(cost.electricityBase)} · Base IVA:{" "}
+                    {money(cost.vatBase)}
+                  </p>
+                </>
+              ) : (
+                <p className="notice">
+                  Completa los precios, el consumo, los kW y los días. Si
+                  incluyes impuestos, indica también sus porcentajes. El precio
+                  de potencia combinado requiere los mismos kW en ambos
+                  períodos.
+                </p>
+              )}
+            </section>
+          </>
+        )}
+        {firstTariff && makeCurrent && (
+          <Field
+            label="Fecha de inicio"
+            type="date"
+            value={since}
+            onChange={setSince}
+            required
+            hint="Fecha en la que empezaron estas condiciones de tu contrato actual."
+          />
         )}
         {error && (
           <p role="alert" className="notice error">
@@ -483,7 +539,11 @@ export default function TariffForm({
             Cancelar
           </button>
           <button className="button primary" type="submit">
-            {duplicatedFrom ? "Crear tarifa" : "Aplicar tarifa"}
+            {record
+              ? "Guardar período"
+              : duplicatedFrom
+                ? "Crear tarifa"
+                : "Aplicar tarifa"}
             <ArrowRight size={16} />
           </button>
         </div>

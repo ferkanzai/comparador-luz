@@ -1,12 +1,12 @@
 # Luz en claro
 
-A Spanish electricity comparison dashboard for a weekly manual review of your household tariff.
+A Spanish electricity dashboard for comparing offers and recording your household contracts and bills.
 
 - Guest comparison with empty forms, no sample prices, and no account requirement.
 - Better Auth email-code login or email/password with immediate signup sessions, email verification and password recovery.
 - Relational PostgreSQL persistence with account-scoped foreign keys, row-level security and atomic versioned saves.
-- Saved consumption, current tariff, manually entered offers, review dates and offer expiry.
-- Historical price snapshots when changing providers or updating current prices.
+- Saved consumption, current tariff, manually entered offers and optional offer expiry.
+- Dated contract history, with separate corrections and real price changes.
 - Bills with actual date ranges, consumption snapshots, editable breakdowns, immediate saving, monthly stacked charts and JSON export.
 - Optional IVA and IEE, social-bonus financing, separately billed SNOEE costs, meter rental and maintenance services, with visible breakdowns.
 - Spanish number formatting, decimal commas, keyboard-accessible dialogs and responsive layouts.
@@ -28,9 +28,9 @@ Start with your current tariff or your consumption. Every tariff uses one shared
 
 Use **Editar perfil** to change the shared inputs. **Simular consumo** accepts punta, llano and valle kWh directly, like an invoice, and shows their calculated total on the right (below on a phone). Simulations apply to every result but stay outside autosave and export until you choose **Usar este consumo**. **Restablecer** returns to the underlying profile. Reset or adopt a simulation before creating a bill from the comparison, then check the actual invoice figures.
 
-Guest edits are saved in this browser; signed-in edits also synchronize automatically to the account. Price review is a personal record inside tariff details: **He revisado estos precios** records today's date on an undated tariff without fetching or validating prices. Existing review dates remain visible and editable in tariff details.
+Guest edits are saved in this browser; signed-in edits also synchronize automatically to the account. Optional **Oferta válida hasta** sits inside collapsed offer details and appears in the comparison table when supplied. Expired candidates remain visible but unranked; the current contract remains the baseline. Legacy personal-review dates are preserved in storage but no longer appear in the interface.
 
-**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este período como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
+**Mis tarifas** lets you add current and previous contract periods, correct mistakes, register real price changes, and remove mistakenly entered records. Gaps are allowed; new or corrected periods cannot overlap. A shared change date can be corrected on both adjoining periods with a preview. Corrections never rewrite saved bills. Expand **Comparar precios** to compare up to three recorded periods with power prices in a common unit. **Registrar como actual/anterior** records a comparator candidate as a contract; **Volver a comparar** creates an independent candidate from recorded prices. **Mis facturas** records actual paid amounts. Use **Guardar este período como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
 
 ## Stack
 

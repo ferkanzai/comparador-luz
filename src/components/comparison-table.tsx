@@ -6,6 +6,7 @@ import {
   powerDescription,
   powerUnitLabels,
   shortDate,
+  today,
   type Tariff,
 } from "@/lib/domain";
 import { type Calculation, cents } from "@/lib/calculator";
@@ -24,8 +25,8 @@ export type TariffActions = {
   onEdit: (tariff: Tariff) => void;
   onDuplicate: (tariff: Tariff) => void;
   onCurrent: (tariff: Tariff) => void;
+  onHistorical?: (tariff: Tariff) => void;
   onRemove: (tariff: Tariff) => void;
-  onReview: (tariff: Tariff) => void;
 };
 
 export function EnergyRates({ tariff }: { tariff: Tariff }) {
@@ -198,6 +199,14 @@ export default function ComparisonTable({
                       </span>
                     )}
                   </div>
+                  {tariff.validUntil && (
+                    <span className="comparison-provider">
+                      {!current && tariff.validUntil < today()
+                        ? "Caducada"
+                        : "Oferta válida hasta"}{" "}
+                      · {shortDate(tariff.validUntil)}
+                    </span>
+                  )}
                 </th>
                 <td>
                   {cost ? (
@@ -322,44 +331,32 @@ export function TariffDetails({
           </>
         )}
         <EstimateNotice tariff={tariff} />
-        <h3>Oferta y revisión personal</h3>
-        <p className="small">
-          Validez de la oferta:{" "}
-          {tariff.validUntil
-            ? shortDate(tariff.validUntil)
-            : "Sin fecha indicada"}
-        </p>
-        <p className="small">
-          Última revisión por ti:{" "}
-          {tariff.checkedOn
-            ? shortDate(tariff.checkedOn)
-            : "Sin fecha registrada"}
-        </p>
-        {!tariff.checkedOn && (
-          <>
-            <p className="small muted">
-              Registra que has revisado los precios en tu factura o en la
-              oferta. La aplicación no los comprueba.
-            </p>
-            <button
-              className="button secondary small-button"
-              onClick={() => actions.onReview(tariff)}
+        <details className="form-section">
+          <summary>Validez y condiciones</summary>
+          <p className="small">
+            Oferta válida hasta:{" "}
+            {tariff.validUntil
+              ? shortDate(tariff.validUntil)
+              : "Sin fecha indicada"}
+          </p>
+          <p className="small muted">
+            Es la fecha límite para contratar la oferta, no la fecha de fin de
+            tu contrato.
+          </p>
+          {tariff.notes && (
+            <p className="tariff-detail-notes">{tariff.notes}</p>
+          )}
+          {tariff.url && (
+            <a
+              href={tariff.url}
+              className="text-link"
+              target="_blank"
+              rel="noreferrer"
             >
-              He revisado estos precios
-            </button>
-          </>
-        )}
-        {tariff.notes && <p className="tariff-detail-notes">{tariff.notes}</p>}
-        {tariff.url && (
-          <a
-            href={tariff.url}
-            className="text-link"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Ver oferta original <ExternalLink size={15} />
-          </a>
-        )}
+              Ver oferta original <ExternalLink size={15} />
+            </a>
+          )}
+        </details>
         <div className="tariff-detail-actions">
           <button
             className="button secondary"
@@ -369,7 +366,7 @@ export function TariffDetails({
             }}
           >
             <Pencil size={16} />
-            Editar tarifa
+            {current ? "Corregir datos" : "Editar tarifa"}
           </button>
           <button
             className="button secondary"
@@ -381,6 +378,17 @@ export function TariffDetails({
             <Copy size={16} />
             Duplicar
           </button>
+          {!current && actions.onHistorical && (
+            <button
+              className="button secondary"
+              onClick={() => {
+                onClose();
+                actions.onHistorical?.(tariff);
+              }}
+            >
+              Registrar como anterior
+            </button>
+          )}
           {!current && (
             <>
               <button
@@ -390,7 +398,7 @@ export function TariffDetails({
                   actions.onCurrent(tariff);
                 }}
               >
-                Es mi tarifa actual
+                Registrar como actual
               </button>
               <button
                 className="text-link danger"

@@ -11,28 +11,27 @@ import {
   ExternalLink,
   History,
   LogOut,
-  Pencil,
   Receipt,
   ShieldCheck,
   SlidersHorizontal,
   Zap,
 } from "lucide-react";
 import {
-  changeCurrent,
   newTariff,
-  powerDescription,
-  shortDate,
   today,
   type Bill,
   type Profile,
   type Tariff,
   type Workspace,
 } from "@/lib/domain";
-import { Brand, Empty, Field, Modal } from "./ui";
-import EstimateNotice from "./estimate-notice";
+import { Brand, Empty, Modal } from "./ui";
 import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
+import type { TariffRecordDraft } from "./tariff-record-form";
+import { recordCurrent } from "@/lib/tariff-periods";
 
+const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
+const TariffHistory = dynamic(() => import("./tariff-history"));
 const TariffForm = dynamic(() => import("./tariff-form"));
 const BillForm = dynamic(() => import("./bill-form"));
 const Bills = dynamic(() => import("./bills"), {
@@ -84,8 +83,9 @@ export default function Dashboard({
     tariff: Tariff;
     duplicatedFrom?: string;
   } | null>(null);
-  const [switchTo, setSwitchTo] = useState<string | null>(null);
-  const [switchDate, setSwitchDate] = useState(today);
+  const [recordDraft, setRecordDraft] = useState<TariffRecordDraft | null>(
+    null,
+  );
   const [taxHelp, setTaxHelp] = useState(false);
   function update(next: Workspace) {
     workspace.update(next);
@@ -99,43 +99,21 @@ export default function Dashboard({
     makeCurrent: boolean,
   ) {
     const old = w.tariffs.find((t) => t.id === tariff.id);
-    const isCurrent = old && old.id === w.currentId;
-    update({
-      ...w,
-      tariffs: old
-        ? w.tariffs.map((t) => (t.id === tariff.id ? tariff : t))
-        : [...w.tariffs, tariff],
-      history: isCurrent
-        ? [
-            ...w.history,
-            {
-              id: crypto.randomUUID(),
-              tariff: structuredClone(old),
-              start: w.currentSince || since,
-              end: since,
-            },
-          ]
-        : w.history,
-      profile: nextProfile,
-      currentId: makeCurrent && !w.currentId ? tariff.id : w.currentId,
-      currentSince:
-        isCurrent || (makeCurrent && !w.currentId) ? since : w.currentSince,
-    });
+    const next = { ...w, profile: nextProfile };
+    update(
+      makeCurrent && !w.currentId
+        ? recordCurrent(next, tariff, since)
+        : {
+            ...next,
+            tariffs: old
+              ? w.tariffs.map((t) => (t.id === tariff.id ? tariff : t))
+              : [...w.tariffs, tariff],
+          },
+    );
     setEditing(null);
     setMessage(
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
     );
-  }
-  function confirmPrices(id: string) {
-    if (!w.tariffs.some((t) => !t.checkedOn && t.id === id)) return;
-    const next = {
-      ...w,
-      tariffs: w.tariffs.map((t) =>
-        !t.checkedOn && t.id === id ? { ...t, checkedOn: today() } : t,
-      ),
-    };
-    update(next);
-    setMessage("Has registrado tu revisión de precios de hoy.");
   }
   function exportData() {
     const blob = new Blob(
@@ -149,7 +127,6 @@ export default function Dashboard({
     a.click();
     URL.revokeObjectURL(url);
   }
-  const current = w.tariffs.find((t) => t.id === w.currentId);
   return (
     <>
       <a href="#main" className="skip-link">
@@ -418,11 +395,20 @@ export default function Dashboard({
                         },
                         duplicatedFrom: tariff.name,
                       }),
-                    onReview: (tariff) => confirmPrices(tariff.id),
-                    onCurrent: (tariff) => {
-                      setSwitchTo(tariff.id);
-                      setSwitchDate(today());
-                    },
+                    onCurrent: (tariff) =>
+                      setRecordDraft({
+                        tariff,
+                        kind: "current",
+                        title: "Registrar como actual",
+                      }),
+                    onHistorical: user
+                      ? (tariff) =>
+                          setRecordDraft({
+                            tariff,
+                            kind: "historical",
+                            title: "Registrar como anterior",
+                          })
+                      : undefined,
                     onRemove: (tariff) => {
                       if (
                         window.confirm(
@@ -485,81 +471,12 @@ export default function Dashboard({
             ) : tab === "bills" ? (
               <Bills workspace={w} update={update} />
             ) : (
-              <>
-                <div className="section-heading">
-                  <div>
-                    <span className="eyebrow">CADA CAMBIO CUENTA</span>
-                    <h2>Tu recorrido, tarifa a tarifa.</h2>
-                    <p className="muted">
-                      Al cambiar de compañía o editar tus precios actuales,
-                      guardamos una copia de los anteriores.
-                    </p>
-                  </div>
-                </div>
-                {current && (
-                  <div className="panel current-history">
-                    <span className="pill green">Tu tarifa actual</span>
-                    <h3>{current.name}</h3>
-                    <p>
-                      {current.provider} · Desde {shortDate(w.currentSince)}
-                    </p>
-                    <button
-                      className="text-link"
-                      onClick={() => setEditing({ tariff: current })}
-                    >
-                      Actualizar precios
-                      <Pencil size={15} />
-                    </button>
-                  </div>
-                )}
-                {!w.history.length ? (
-                  <div className="panel">
-                    <Empty
-                      icon={<History size={26} />}
-                      title="Cada nueva etapa quedará aquí."
-                    >
-                      Marca una tarifa como actual en el comparador. Cuando
-                      cambies tus precios, podrás volver a consultar los
-                      anteriores.
-                    </Empty>
-                  </div>
-                ) : (
-                  <div className="history-list">
-                    {[...w.history].reverse().map((h) => (
-                      <article className="panel history-item" key={h.id}>
-                        <div className="history-date">
-                          {shortDate(h.start)}
-                          <span>hasta {shortDate(h.end)} (cambio)</span>
-                        </div>
-                        <div>
-                          <h3>{h.tariff.name}</h3>
-                          <p className="muted">{h.tariff.provider}</p>
-                          <EstimateNotice tariff={h.tariff} />
-                          <p className="small">
-                            {h.tariff.kind === "fixed"
-                              ? `${h.tariff.energyPeak} €/kWh · Precio único`
-                              : `P1 ${h.tariff.energyPeak} · P2 ${h.tariff.energyFlat} · P3 ${h.tariff.energyValley} €/kWh`}
-                          </p>
-                          <details>
-                            <summary className="small">
-                              Ver todos los precios
-                            </summary>
-                            <p className="small">
-                              Potencia: {powerDescription(h.tariff)}
-                              <br />
-                              Alquiler: {h.tariff.meterDay || "0"} €/día · Bono
-                              social: {h.tariff.socialDay || "0"} €/día · Coste
-                              SNOEE: {h.tariff.snoeeKwh || "0"} €/kWh ·{" "}
-                              Servicios: {h.tariff.servicesMonth || "0"} €/mes
-                            </p>
-                            <p className="small muted">{h.tariff.notes}</p>
-                          </details>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </>
+              <TariffHistory
+                key={workspace.generation}
+                workspace={w}
+                update={update}
+                onCompare={() => setTab("compare")}
+              />
             )}
           </fieldset>
         )}
@@ -594,64 +511,40 @@ export default function Dashboard({
           }}
         />
       )}
-      {editing && (
-        <TariffForm
-          initial={editing.tariff}
-          duplicatedFrom={editing.duplicatedFrom}
-          initialProfile={w.profile}
-          firstTariff={!w.currentId && !editing.duplicatedFrom}
-          isCurrent={editing.tariff.id === w.currentId}
-          currentSince={w.currentSince}
-          onSave={saveTariff}
-          onClose={() => setEditing(null)}
-        />
-      )}
-      {switchTo && (
-        <Modal
-          title="Tu nueva tarifa de referencia"
-          onClose={() => setSwitchTo(null)}
-        >
-          <form
-            className="modal-body"
-            onSubmit={(e) => {
-              e.preventDefault();
-              try {
-                update(changeCurrent(w, switchTo, switchDate));
-                setSwitchTo(null);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : "Revisa la fecha.");
-              }
+      {editing &&
+        (editing.tariff.id === w.currentId ? (
+          <TariffRecordForm
+            workspace={w}
+            draft={{
+              tariff: editing.tariff,
+              kind: "correction",
+              periodId: w.currentId!,
+              title: "Corregir datos",
             }}
-          >
-            <p>
-              Compararemos las ofertas con{" "}
-              <strong>{w.tariffs.find((t) => t.id === switchTo)?.name}</strong>.{" "}
-              {current &&
-                "Los precios de tu tarifa anterior quedarán en el historial."}
-            </p>
-            <Field
-              label="Fecha de inicio"
-              type="date"
-              value={switchDate}
-              onChange={setSwitchDate}
-              required
-            />
-            <p className="small muted">
-              Esta acción solo cambia tu referencia en el comparador. No
-              contrata ni cambia tu compañía.
-            </p>
-            {error && (
-              <p role="alert" className="notice error">
-                {error}
-              </p>
-            )}
-            <div className="modal-actions">
-              <button className="button primary" type="submit">
-                Usar como tarifa actual
-              </button>
-            </div>
-          </form>
-        </Modal>
+            update={update}
+            onClose={() => setEditing(null)}
+          />
+        ) : (
+          <TariffForm
+            initial={editing.tariff}
+            duplicatedFrom={editing.duplicatedFrom}
+            initialProfile={w.profile}
+            firstTariff={
+              !w.currentId &&
+              !editing.duplicatedFrom &&
+              !w.tariffs.some((t) => t.id === editing.tariff.id)
+            }
+            onSave={saveTariff}
+            onClose={() => setEditing(null)}
+          />
+        ))}
+      {recordDraft && (
+        <TariffRecordForm
+          workspace={w}
+          draft={recordDraft}
+          update={update}
+          onClose={() => setRecordDraft(null)}
+        />
       )}
       {taxHelp && (
         <Modal

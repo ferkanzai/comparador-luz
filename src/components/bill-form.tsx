@@ -427,8 +427,6 @@ export default function BillForm({
           invoiceDraft
           initialProfile={newInvoiceProfile(editing)}
           firstTariff={false}
-          isCurrent={false}
-          currentSince=""
           onClose={() => setCreatingTariff(null)}
           onSave={(tariff, _since, profile) => {
             setPendingTariff(tariff);
