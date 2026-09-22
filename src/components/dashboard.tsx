@@ -6,35 +6,21 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  BarChart3,
-  Check,
-  ChevronDown,
-  CircleHelp,
-  Copy,
   Download,
   ExternalLink,
   History,
-  Leaf,
   LogOut,
   Pencil,
-  Plus,
   Receipt,
   ShieldCheck,
   SlidersHorizontal,
-  Trash2,
   Zap,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { calculate, type Calculation } from "@/lib/calculator";
 import {
   changeCurrent,
-  comparablePowerPrice,
-  formatPowerPrice,
-  money,
   newTariff,
-  numberOf,
   powerDescription,
-  powerUnitLabels,
   shortDate,
   today,
   type Bill,
@@ -43,16 +29,12 @@ import {
   type Workspace,
 } from "@/lib/domain";
 import { Brand, Empty, Field, Modal } from "./ui";
-import TariffForm from "./tariff-form";
 import EstimateNotice from "./estimate-notice";
-import PvpcComparison from "./pvpc-comparison";
-import { estimatedCharges } from "@/lib/charge-estimates";
-import { ProfileFields, TaxFields } from "./profile-fields";
+import TariffForm from "./tariff-form";
 import Bills from "./bills";
 import BillForm from "./bill-form";
 import { useWorkspace } from "./use-workspace";
-import { usePowerComparisonUnit } from "./use-power-comparison-unit";
-import { billFromCalculation, billLines } from "@/lib/bill-data";
+import ComparisonWorkspace from "./comparison-workspace";
 
 type Tab = "compare" | "history" | "bills";
 export default function Dashboard({
@@ -80,7 +62,6 @@ export default function Dashboard({
   } | null>(null);
   const [switchTo, setSwitchTo] = useState<string | null>(null);
   const [switchDate, setSwitchDate] = useState(today);
-  const [taxesOpen, setTaxesOpen] = useState(false);
   const [taxHelp, setTaxHelp] = useState(false);
   function update(next: Workspace) {
     workspace.update(next);
@@ -121,21 +102,16 @@ export default function Dashboard({
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
     );
   }
-  function confirmPrices(id?: string) {
-    if (!w.tariffs.some((t) => !t.checkedOn && (!id || t.id === id))) return;
+  function confirmPrices(id: string) {
+    if (!w.tariffs.some((t) => !t.checkedOn && t.id === id)) return;
     const next = {
       ...w,
-      reviewedOn: id ? w.reviewedOn : today(),
       tariffs: w.tariffs.map((t) =>
-        !t.checkedOn && (!id || t.id === id) ? { ...t, checkedOn: today() } : t,
+        !t.checkedOn && t.id === id ? { ...t, checkedOn: today() } : t,
       ),
     };
     update(next);
-    setMessage(
-      id
-        ? "Precios confirmados hoy."
-        : "Precios pendientes confirmados a día de hoy.",
-    );
+    setMessage("Has registrado tu revisión de precios de hoy.");
   }
   function exportData() {
     const blob = new Blob(
@@ -150,26 +126,6 @@ export default function Dashboard({
     URL.revokeObjectURL(url);
   }
   const current = w.tariffs.find((t) => t.id === w.currentId);
-  const [powerComparisonUnit, setPowerComparisonUnit] = usePowerComparisonUnit(
-    current?.powerUnit ?? "day",
-  );
-  const unequalPower =
-    w.profile.peakKw !== "" &&
-    w.profile.valleyKw !== "" &&
-    numberOf(w.profile.peakKw) !== numberOf(w.profile.valleyKw);
-  const results = w.tariffs
-    .flatMap((t) => {
-      const cost = calculate(t, w.profile);
-      return cost &&
-        (!t.validUntil || t.validUntil >= today() || t.id === w.currentId)
-        ? [{ tariff: t, cost }]
-        : [];
-    })
-    .sort((a, b) => a.cost.total - b.cost.total);
-  const baseline = results.find((r) => r.tariff.id === w.currentId);
-  const best = results[0];
-  const saving =
-    baseline && best ? Math.max(0, baseline.cost.total - best.cost.total) : 0;
   return (
     <>
       <a href="#main" className="skip-link">
@@ -228,7 +184,9 @@ export default function Dashboard({
         </div>
       </header>
       <main id="main" className="shell">
-        <section className="hero">
+        <section
+          className={`hero ${tab === "compare" && w.tariffs.length ? "hero-compact" : ""}`}
+        >
           <div>
             <div className="eyebrow">
               <span className="live-dot" /> TU ENERGÍA. TUS NÚMEROS.
@@ -324,9 +282,7 @@ export default function Dashboard({
               <ShieldCheck size={16} />
               {!user
                 ? "Tus datos se guardan automáticamente en este dispositivo."
-                : w.reviewedOn
-                  ? `Última revisión: ${shortDate(w.reviewedOn)}`
-                  : "Los cambios se guardan automáticamente."}
+                : "Los cambios se guardan automáticamente."}
             </span>
             <button
               className="button secondary small-button"
@@ -416,357 +372,42 @@ export default function Dashboard({
           <fieldset className="workspace-content" disabled={busy}>
             {tab === "compare" ? (
               <>
-                <div className="comparison-layout">
-                  <div className="comparison-main">
-                    <section className="panel consumption">
-                      <div className="panel-heading">
-                        <div>
-                          <SlidersHorizontal size={20} aria-hidden="true" />
-                          <h2>Tu consumo y tus impuestos</h2>
-                        </div>
-                        <span className="pill neutral">2.0TD · Hogar</span>
-                      </div>
-                      <p className="muted">
-                        Usaremos estos datos para todas las tarifas. También
-                        puedes completarlos al añadir tu tarifa actual.
-                      </p>
-                      <ProfileFields
-                        value={w.profile}
-                        onChange={(profile) => update({ ...w, profile })}
-                      />
-                      <button
-                        className="tax-toggle"
-                        onClick={() => setTaxesOpen(!taxesOpen)}
-                        aria-expanded={taxesOpen}
-                      >
-                        <span>
-                          <SlidersHorizontal size={16} />
-                          Impuestos y cálculo completo
-                          <span
-                            className={`pill ${w.profile.taxes ? "green" : "neutral"}`}
-                          >
-                            {w.profile.taxes
-                              ? "Con impuestos"
-                              : "Sin impuestos"}
-                          </span>
-                        </span>
-                        <ChevronDown
-                          size={16}
-                          className={taxesOpen ? "rotate" : ""}
-                        />
-                      </button>
-                      {taxesOpen && (
-                        <div className="tax-panel">
-                          <TaxFields
-                            value={w.profile}
-                            onChange={(profile) => update({ ...w, profile })}
-                          />
-                          <button
-                            className="text-link"
-                            onClick={() => setTaxHelp(true)}
-                          >
-                            <CircleHelp size={15} />
-                            Cómo calculamos los impuestos
-                          </button>
-                        </div>
-                      )}
-                      {user && (
-                        <div className="consumption-bill-action">
-                          <button
-                            className="button secondary full"
-                            disabled={!baseline}
-                            onClick={() => {
-                              if (baseline)
-                                setBillDraft(
-                                  billFromCalculation(
-                                    baseline.tariff,
-                                    w.profile,
-                                    baseline.cost,
-                                  ),
-                                );
-                            }}
-                          >
-                            <Receipt size={17} /> Guardar este periodo como
-                            factura
-                          </button>
-                          <p className="small muted">
-                            {baseline
-                              ? "Revisa el total real antes de añadirlo a tu historial."
-                              : "Añade tu tarifa actual y completa los datos para copiar el consumo y el desglose."}
-                          </p>
-                        </div>
-                      )}
-                    </section>
-                    <section className="tariffs-section">
-                      <div className="section-heading compact">
-                        <div className="heading-number">
-                          <Zap size={20} aria-hidden="true" />
-                          <h2>Tus tarifas, frente a frente</h2>
-                        </div>
-                        <button
-                          className="button secondary small-button"
-                          onClick={() => setEditing({ tariff: newTariff() })}
-                        >
-                          <Plus size={16} />
-                          Añadir tarifa
-                        </button>
-                      </div>
-                      {w.tariffs.length > 0 && (
-                        <div className="power-comparison-controls">
-                          <label className="inline-label">
-                            Comparar potencia en
-                            <select
-                              value={powerComparisonUnit}
-                              aria-describedby="power-comparison-convention"
-                              onChange={(event) => {
-                                const unit = event.target.value;
-                                if (
-                                  unit === "day" ||
-                                  unit === "month" ||
-                                  unit === "year"
-                                )
-                                  setPowerComparisonUnit(unit);
-                              }}
-                            >
-                              <option value="day">€/kW/día</option>
-                              <option value="month">€/kW/mes</option>
-                              <option value="year">€/kW/año</option>
-                            </select>
-                          </label>
-                          <span
-                            id="power-comparison-convention"
-                            className="small muted"
-                          >
-                            Mes = 30 días · Año = 365 días
-                          </span>
-                        </div>
-                      )}
-                      {!w.tariffs.length ? (
-                        <div className="panel">
-                          <Empty
-                            icon={<Zap size={26} />}
-                            title="Empecemos por tu tarifa actual."
-                            action={
-                              <button
-                                className="button primary"
-                                onClick={() =>
-                                  setEditing({ tariff: newTariff() })
-                                }
-                              >
-                                <Plus size={16} />
-                                Añadir mi primera tarifa
-                              </button>
-                            }
-                          >
-                            Ten tu última factura a mano. Añade tus precios y
-                            después las ofertas que quieras comparar.
-                          </Empty>
-                        </div>
-                      ) : (
-                        <div className="tariff-list">
-                          {w.tariffs.map((tariff, i) => (
-                            <TariffCard
-                              key={tariff.id}
-                              tariff={tariff}
-                              current={tariff.id === w.currentId}
-                              powerComparisonUnit={powerComparisonUnit}
-                              unequalPower={unequalPower}
-                              index={i}
-                              onReview={() => confirmPrices(tariff.id)}
-                              onEdit={() => setEditing({ tariff })}
-                              onDuplicate={() =>
-                                setEditing({
-                                  tariff: {
-                                    ...structuredClone(tariff),
-                                    id: crypto.randomUUID(),
-                                    name: `${tariff.name.slice(0, 92)} (copia)`,
-                                  },
-                                  duplicatedFrom: tariff.name,
-                                })
-                              }
-                              onSelect={() => {
-                                setSwitchTo(tariff.id);
-                                setSwitchDate(today());
-                              }}
-                              onRemove={() => {
-                                if (
-                                  window.confirm(
-                                    `¿Eliminar ${tariff.name} de la comparativa?`,
-                                  )
-                                )
-                                  update({
-                                    ...w,
-                                    tariffs: w.tariffs.filter(
-                                      (t) => t.id !== tariff.id,
-                                    ),
-                                  });
-                              }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                    <PvpcComparison profile={w.profile} current={current} />
-                  </div>
-                  <aside className="results-column">
-                    <section className="results-panel">
-                      <div className="section-inline">
-                        <span className="eyebrow">LA FOTO COMPLETA</span>
-                        <BarChart3 size={20} />
-                      </div>
-                      <h2>Los números hablan.</h2>
-                      <p className="small">
-                        {results.length
-                          ? `${w.profile.days} días · ${w.profile.taxes ? "Con impuestos" : "Sin impuestos"}`
-                          : "Tu próxima oportunidad de ahorro empieza aquí."}
-                      </p>
-                      {!results.length ? (
-                        <div className="result-empty">
-                          <div className="estimate-placeholder">
-                            —<span> €</span>
-                          </div>
-                          <p>
-                            Añade una tarifa y completa tu consumo, potencia y
-                            días
-                            {w.profile.taxes
-                              ? ", junto con los tipos de impuestos,"
-                              : ""}{" "}
-                            para ver el resultado.
-                          </p>
-                          <span>
-                            <ShieldCheck size={15} />
-                            Tus datos, con los supuestos a la vista
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="result-summary">
-                            <span>
-                              {baseline
-                                ? saving > 0
-                                  ? "Podrías ahorrar este periodo"
-                                  : "Tu tarifa actual, este periodo"
-                                : "El menor coste del periodo"}
-                            </span>
-                            <div className="result-amount">
-                              {money(
-                                baseline && saving > 0
-                                  ? saving
-                                  : (baseline?.cost.total ?? best.cost.total),
-                              )}
-                            </div>
-                            <span>
-                              {baseline && saving > 0
-                                ? `con ${best.tariff.name}`
-                                : best.tariff.name}
-                            </span>
-                          </div>
-                          {(estimatedCharges(best.tariff) ||
-                            (baseline &&
-                              estimatedCharges(baseline.tariff))) && (
-                            <p className="estimate-note small">
-                              Costes y ahorro aproximados: hay cargos estimados
-                              en las tarifas comparadas.
-                            </p>
-                          )}
-                          {user && baseline && (
-                            <button
-                              className="button bill-save full"
-                              onClick={() =>
-                                setBillDraft(
-                                  billFromCalculation(
-                                    baseline.tariff,
-                                    w.profile,
-                                    baseline.cost,
-                                  ),
-                                )
-                              }
-                            >
-                              <Receipt size={18} /> Guardar como factura
-                            </button>
-                          )}
-                          {results.map((r, i) => (
-                            <ResultRow
-                              key={r.tariff.id}
-                              tariff={r.tariff}
-                              cost={r.cost}
-                              current={r.tariff.id === w.currentId}
-                              best={i === 0 && results.length > 1}
-                              max={Math.max(
-                                ...results.map((r) => r.cost.total),
-                                1,
-                              )}
-                              baseline={baseline?.cost.total}
-                            />
-                          ))}
-                          {baseline && results.length > 1 && (
-                            <div className="annual-saving">
-                              <Leaf size={18} />
-                              <div>
-                                <strong>
-                                  {saving > 0
-                                    ? `${money((saving * 365) / baseline.cost.days)} / año`
-                                    : "Ya tienes la tarifa más barata"}
-                                </strong>
-                                <span>
-                                  {saving > 0
-                                    ? "Ahorro extrapolado si mantienes este consumo y precios todo el año. No es una previsión."
-                                    : "Entre las tarifas que has comparado, ninguna mejora tu precio actual para este consumo."}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                          {!baseline && (
-                            <p className="result-footnote">
-                              Marca tu tarifa actual para calcular cuánto
-                              ahorrarías al cambiar.
-                            </p>
-                          )}
-                          {results.length < w.tariffs.length && (
-                            <p className="result-footnote">
-                              Las tarifas incompletas o con ofertas caducadas no
-                              entran en el ranking.
-                            </p>
-                          )}
-                        </>
-                      )}
-                      <div className="results-footer">
-                        <span className="status-dot" />
-                        Se recalcula con cada cambio
-                      </div>
-                    </section>
-                    <div className="weekly-card">
-                      <div className="section-inline">
-                        <span className="eyebrow">TU REVISIÓN SEMANAL</span>
-                        <ArrowUpRight size={18} aria-hidden="true" />
-                      </div>
-                      <h3>¿Hay algo mejor ahí fuera?</h3>
-                      <p>
-                        Busca una oferta, copia sus precios y comprueba si te
-                        compensa con tu consumo. Si una tarifa aún no tiene
-                        fecha de confirmación, añádela tras comprobar sus
-                        precios.
-                      </p>
-                      <a
-                        className="text-link"
-                        href="https://comparador.cnmc.gob.es/"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Explorar ofertas en la CNMC
-                        <ExternalLink size={14} />
-                      </a>
-                      {user && w.tariffs.some((t) => !t.checkedOn) && (
-                        <button
-                          className="button secondary full small-button"
-                          onClick={() => confirmPrices()}
-                        >
-                          <Check size={15} /> Confirmar precios pendientes
-                        </button>
-                      )}
-                    </div>
-                  </aside>
-                </div>
+                <ComparisonWorkspace
+                  key={`${user?.id ?? "guest"}:${workspace.generation}`}
+                  data={w}
+                  onProfile={(profile) => update({ ...w, profile })}
+                  onAdd={() => setEditing({ tariff: newTariff() })}
+                  onMethod={() => setTaxHelp(true)}
+                  onBill={user ? setBillDraft : undefined}
+                  actions={{
+                    onEdit: (tariff) => setEditing({ tariff }),
+                    onDuplicate: (tariff) =>
+                      setEditing({
+                        tariff: {
+                          ...structuredClone(tariff),
+                          id: crypto.randomUUID(),
+                          name: `${tariff.name.slice(0, 92)} (copia)`,
+                        },
+                        duplicatedFrom: tariff.name,
+                      }),
+                    onReview: (tariff) => confirmPrices(tariff.id),
+                    onCurrent: (tariff) => {
+                      setSwitchTo(tariff.id);
+                      setSwitchDate(today());
+                    },
+                    onRemove: (tariff) => {
+                      if (
+                        window.confirm(
+                          `¿Eliminar ${tariff.name} de la comparativa?`,
+                        )
+                      )
+                        update({
+                          ...w,
+                          tariffs: w.tariffs.filter((t) => t.id !== tariff.id),
+                        });
+                    },
+                  }}
+                />
                 {!user && (
                   <section className="signup-banner">
                     <div className="signup-icon">
@@ -1099,214 +740,5 @@ export default function Dashboard({
         </span>
       )}
     </>
-  );
-}
-
-function TariffCard({
-  tariff: t,
-  current,
-  powerComparisonUnit,
-  unequalPower,
-  index,
-  onEdit,
-  onDuplicate,
-  onReview,
-  onSelect,
-  onRemove,
-}: {
-  tariff: Tariff;
-  current: boolean;
-  powerComparisonUnit: Tariff["powerUnit"];
-  unequalPower: boolean;
-  index: number;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onReview: () => void;
-  onSelect: () => void;
-  onRemove: () => void;
-}) {
-  const expired = t.validUntil && t.validUntil < today();
-  return (
-    <article className={`panel tariff-card ${current ? "is-current" : ""}`}>
-      <div className="tariff-top">
-        <div className={`tariff-avatar avatar-${index % 4}`}>
-          {(t.provider || t.name).slice(0, 2).toUpperCase()}
-        </div>
-        <div className="tariff-title">
-          <span className="small muted">
-            {t.provider || "Comercializadora sin indicar"}
-          </span>
-          <h3>{t.name}</h3>
-        </div>
-        {current && <span className="pill green">Tu tarifa actual</span>}
-        <button
-          className="icon-button"
-          onClick={onEdit}
-          aria-label={`Editar ${t.name}`}
-        >
-          <Pencil size={16} />
-        </button>
-        {!current && (
-          <button
-            className="icon-button danger"
-            onClick={onRemove}
-            aria-label={`Eliminar ${t.name}`}
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-      </div>
-      <div className="tariff-prices">
-        {(t.kind === "fixed"
-          ? [["Precio las 24 h", t.energyPeak]]
-          : [
-              ["Punta", t.energyPeak],
-              ["Llano", t.energyFlat],
-              ["Valle", t.energyValley],
-            ]
-        ).map(([label, value]) => (
-          <div key={label}>
-            <span>{label}</span>
-            <strong>
-              {value.replace(".", ",") || "—"}
-              <small> €/kWh</small>
-            </strong>
-          </div>
-        ))}
-      </div>
-      <div className="tariff-power">
-        <div className="tariff-power-heading">
-          <span className="small muted">Potencia para comparar</span>
-          <strong>
-            {formatPowerPrice(comparablePowerPrice(t, powerComparisonUnit))}
-            <small> {powerUnitLabels[powerComparisonUnit]}</small>
-          </strong>
-        </div>
-        <p className="small muted tariff-power-reference">
-          Referencia: 1 kW en cada periodo · Sin impuestos
-        </p>
-        <p className="small muted">Precio original: {powerDescription(t)}</p>
-        {unequalPower && (
-          <p className="small tariff-power-notice">
-            Tus potencias P1 y P2 son distintas. Esta referencia no representa
-            tu coste de potencia; la estimación usa tus kW contratados.
-            {t.powerKind === "combined" &&
-              " Esta tarifa combinada requiere la misma potencia en P1 y P2 para calcular su coste."}
-          </p>
-        )}
-      </div>
-      {Number(t.snoeeKwh.replace(",", ".")) > 0 && (
-        <p className="small muted">
-          Coste SNOEE: {t.snoeeKwh.replace(".", ",")} €/kWh, aparte de la
-          energía
-        </p>
-      )}
-      <div className="tariff-bottom">
-        <span>
-          {expired
-            ? "Oferta caducada"
-            : t.checkedOn
-              ? `Precios comprobados: ${shortDate(t.checkedOn)}`
-              : "Precios aún sin comprobar"}
-        </span>
-        <div>
-          <button
-            type="button"
-            className="link-button tariff-duplicate"
-            onClick={onDuplicate}
-            aria-label={`Duplicar ${t.name}`}
-          >
-            <Copy size={15} aria-hidden="true" />
-            Duplicar
-          </button>
-          {t.url && (
-            <a
-              className="text-link"
-              href={t.url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Ver oferta ${t.name}`}
-            >
-              <ExternalLink size={14} />
-            </a>
-          )}
-          {!current && (
-            <button className="link-button" onClick={onSelect}>
-              Es mi tarifa actual
-              <ArrowRight size={14} />
-            </button>
-          )}
-        </div>
-      </div>
-      <EstimateNotice tariff={t} />
-      {!t.checkedOn && (
-        <button
-          type="button"
-          className="link-button tariff-review"
-          onClick={onReview}
-        >
-          <Check size={16} /> Confirmar precios a día de hoy
-        </button>
-      )}
-      {t.notes && <p className="tariff-notes small muted">{t.notes}</p>}
-    </article>
-  );
-}
-function ResultRow({
-  tariff,
-  cost,
-  current,
-  best,
-  max,
-  baseline,
-}: {
-  tariff: Tariff;
-  cost: Calculation;
-  current: boolean;
-  best: boolean;
-  max: number;
-  baseline?: number;
-}) {
-  return (
-    <details className="result-row">
-      <summary>
-        <div className="result-row-top">
-          <span>
-            {tariff.name}
-            {current && <small>Actual</small>}
-            {estimatedCharges(tariff) && <small>Aproximado</small>}
-            {best && <small className="best-tag">Menor coste</small>}
-          </span>
-          <strong>{money(cost.total)}</strong>
-        </div>
-        <div className="result-bar">
-          <span
-            style={{ width: `${Math.max(2, (cost.total / max) * 100)}%` }}
-            className={best ? "best" : ""}
-          />
-        </div>
-        <div className="result-row-caption">
-          <span>
-            {baseline !== undefined && !current
-              ? `${cost.total <= baseline ? "Ahorras" : "Pagas más"} ${money(Math.abs(baseline - cost.total))}`
-              : "Ver desglose"}
-          </span>
-          <ChevronDown size={13} />
-        </div>
-      </summary>
-      <EstimateNotice tariff={tariff} />
-      <dl className="breakdown">
-        {billLines.map(([key, label]) => (
-          <div key={key}>
-            <dt>{label}</dt>
-            <dd>{money(cost[key])}</dd>
-          </div>
-        ))}
-        <div className="total">
-          <dt>Total del periodo</dt>
-          <dd>{money(cost.total)}</dd>
-        </div>
-      </dl>
-    </details>
   );
 }

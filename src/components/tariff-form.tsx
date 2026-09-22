@@ -379,7 +379,7 @@ export default function TariffForm({
             <summary>Fechas, enlace y condiciones</summary>
             <div className="form-grid two">
               <Field
-                label="Oferta revisada el"
+                label="Última revisión por ti"
                 value={tariff.checkedOn}
                 onChange={(v) => update("checkedOn", v)}
                 type="date"
@@ -411,11 +411,15 @@ export default function TariffForm({
           </details>
         </section>
         <section className="form-section">
-          <h3>04 / Tu factura de referencia</h3>
+          <h3>
+            {invoiceDraft
+              ? "04 / Tu factura de referencia"
+              : "04 / Perfil compartido de consumo"}
+          </h3>
           <p className="small muted">
             {invoiceDraft
               ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
-              : "Completa aquí lo que falte. Estos datos se usarán para comparar todas las tarifas."}
+              : "Estos datos pertenecen a tu perfil compartido. Al cambiarlos aquí, cambiarán para todas las tarifas; no incluyen simulaciones sin adoptar."}
           </p>
           <ProfileFields value={profile} onChange={setProfile} />
           <TaxFields value={profile} onChange={setProfile} />

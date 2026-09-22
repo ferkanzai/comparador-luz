@@ -13,6 +13,9 @@ The household's collection of comparison inputs, tariffs, current tariff, price 
 The billing days, consumption by energy period, contracted power by power period, and tax assumptions used to compare tariffs on the same basis. It describes an entered scenario, not necessarily a calendar month or a measured hourly consumption curve.
 _Avoid_: User profile, account profile.
 
+**Consumption simulation (simulación de consumo)**:
+A temporary variation of the comparison profile's total consumption or distribution across energy periods, used to compare every tariff on the same hypothetical basis. It becomes part of the household's comparison profile only when explicitly adopted; it is not recorded consumption from a bill.
+
 **Supplier (comercializadora)**:
 The company offering the tariff or named on the bill; “provider” refers to this same role. It is distinct from the electricity distributor that operates the local network.
 

@@ -24,7 +24,11 @@ Vercel deployments automatically run database migrations before building through
 
 ## Daily workflow
 
-Start with your current tariff or your consumption. The tariff editor includes consumption, taxes and a live breakdown; the first tariff can become your reference immediately. Add an offer to compare it. Draft comparisons survive refresh and account navigation in the same browser tab. Signing in recovers guest consumption and offers alongside account data. In your account, click **Guardar cambios** to persist your work beyond the tab. For weekly checks, add new offers or update prices that have changed. Tariffs without a confirmation date show **Confirmar precios a día de hoy**; the bulk action **Confirmar precios pendientes** confirms only undated tariffs. Confirmed tariffs show their existing date instead of a confirmation button. For signed-in users these dates save immediately.
+Start with your current tariff or your consumption. Every tariff uses one shared comparison profile. The comparison table shows estimated period totals, savings, energy and power costs, original unit prices, and other charges. Power quotes can be compared in a shared day/month/year unit. On a phone, scroll the table horizontally while tariff names remain visible. Select up to three tariffs for an optional detailed comparison; selection does not change your current contract.
+
+Use **Editar perfil** to change the shared inputs. **Simular consumo** lets you change total kWh while retaining its period distribution, or change the percentages while retaining the total. Simulations apply to every result but stay outside autosave and export until you choose **Usar este consumo**. **Restablecer** returns to the underlying profile. Reset or adopt a simulation before creating a bill from the comparison, then check the actual invoice figures.
+
+Guest edits are saved in this browser; signed-in edits also synchronize automatically to the account. Price review is a personal record inside tariff details: **He revisado estos precios** records today's date on an undated tariff without fetching or validating prices. Existing review dates remain visible and editable in tariff details.
 
 **Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este periodo como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
 
@@ -40,3 +44,15 @@ pnpm build
 ```
 
 The account and relational storage integration tests run only with explicitly configured disposable local PostgreSQL databases; see [the setup guide](docs/SETUP.md) and [database model, migration and isolation tests](docs/DATABASE.md). Existing JSON workspace installations require a maintenance-window migration before deploying this version.
+
+## Comparison browser tests
+
+`pnpm test:browser` exercises the comparison through browser controls, with synthetic tariffs in isolated browser contexts. It covers the table, simulation reset/adoption, tariff edits, finalist selection, mobile scrolling, accessibility and retained pricing behavior. Install the browser once with `pnpm exec playwright install chromium`. Reports and screenshots go under `output/playwright/`.
+
+The signed-in autosave/failure/conflict scenario additionally requires a disposable local PostgreSQL database whose name ends in `_test`. Migrate that database using the existing setup instructions, stop any dev server on port 3000, and run:
+
+```sh
+COMPARISON_TEST_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55433/luz_redesign_test pnpm test:browser
+```
+
+The test runner starts its own server with that database and console-only email; it refuses to reuse another server in account-test mode. Without the variable, the account scenario is explicitly skipped. Synthetic data is test-only and is never installed in production or shown to new guests.
