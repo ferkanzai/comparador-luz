@@ -1,8 +1,8 @@
 import { test } from "node:test";
+import { recordCurrent } from "../src/lib/tariff-periods";
 import assert from "node:assert/strict";
 import { calculate } from "../src/lib/calculator";
 import {
-  changeCurrent,
   emptyWorkspace,
   newTariff,
   powerDayFactor,
@@ -129,14 +129,18 @@ test("changing provider preserves a deep copy of previous prices and valid dates
     currentId: tariff.id,
     currentSince: "2025-01-01",
   };
-  const changed = changeCurrent(w, next.id, "2025-02-01");
-  assert.equal(changed.currentId, next.id);
+  const changed = recordCurrent(w, next, "2025-02-01");
+  assert.notEqual(changed.currentId, next.id);
+  assert.equal(
+    changed.tariffs.find((t) => t.id === changed.currentId)?.name,
+    "Next",
+  );
   assert.equal(changed.history.length, 1);
   assert.equal(changed.history[0].tariff.energyPeak, "0.2");
   assert.notEqual(changed.history[0].tariff, tariff);
-  assert.throws(() => changeCurrent(w, next.id, "2024-01-01"));
-  assert.throws(() => changeCurrent(w, next.id, "2099-01-01"));
-  assert.throws(() => changeCurrent(w, crypto.randomUUID(), "2025-02-01"));
+  assert.throws(() => recordCurrent(w, next, "2024-01-01"));
+  assert.throws(() => recordCurrent(w, next, "2099-01-01"));
+  assert.throws(() => recordCurrent(w, { ...next, name: "" }, "2025-02-01"));
 });
 test("workspace rejects unsafe URLs, invalid dates, duplicate ids, and broken current references", () => {
   assert.equal(
@@ -335,14 +339,14 @@ test("opt-in estimates use dated pre-tax references and survive workspace snapsh
     16.32,
   );
   const next = { ...tariff, id: crypto.randomUUID() };
-  const changed = changeCurrent(
+  const changed = recordCurrent(
     {
       ...emptyWorkspace(),
       tariffs: [t, next],
       currentId: t.id,
       currentSince: "2026-07-01",
     },
-    next.id,
+    next,
     "2026-09-01",
   );
   const restored = workspaceSchema.parse(JSON.parse(JSON.stringify(changed)));

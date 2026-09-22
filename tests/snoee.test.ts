@@ -1,8 +1,8 @@
 import { test } from "node:test";
+import { recordCurrent } from "../src/lib/tariff-periods";
 import assert from "node:assert/strict";
 import {
   billSchema,
-  changeCurrent,
   emptyWorkspace,
   newTariff,
   tariffSchema,
@@ -147,7 +147,7 @@ test("SNOEE prices and amounts survive history, JSON exports and browser draft r
     profile,
     calculate(tariff, profile)!,
   );
-  const changed = changeCurrent(
+  const changed = recordCurrent(
     {
       ...emptyWorkspace(),
       profile,
@@ -156,7 +156,7 @@ test("SNOEE prices and amounts survive history, JSON exports and browser draft r
       currentId: tariff.id,
       currentSince: "2026-07-01",
     },
-    next.id,
+    next,
     "2026-09-01",
   );
   const exported = workspaceSchema.parse(JSON.parse(JSON.stringify(changed)));

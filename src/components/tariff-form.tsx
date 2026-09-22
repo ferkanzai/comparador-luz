@@ -21,6 +21,7 @@ import {
   socialEstimate2026,
 } from "@/lib/charge-estimates";
 import EstimateNotice from "./estimate-notice";
+import type { PeriodCorrection } from "@/lib/tariff-periods";
 export default function TariffForm({
   initial,
   initialProfile,
@@ -40,14 +41,9 @@ export default function TariffForm({
     title: string;
     start: string;
     end?: string;
-    onSave: (
-      tariff: Tariff,
-      start: string,
-      end: string,
-      moveBoundary: boolean,
-    ) => void;
+    onSave: (tariff: Tariff, dates: PeriodCorrection) => void;
     correction?: boolean;
-    preview?: (start: string, end: string, moveBoundary: boolean) => ReactNode;
+    preview?: (dates: PeriodCorrection) => ReactNode;
   };
   onSave?: (
     t: Tariff,
@@ -95,7 +91,8 @@ export default function TariffForm({
       return;
     }
     try {
-      if (record) record.onSave(result.data, since, until, moveBoundary);
+      if (record)
+        record.onSave(result.data, { start: since, end: until, moveBoundary });
       else onSave?.(result.data, since, profile, makeCurrent);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Revisa los datos.");
@@ -171,7 +168,7 @@ export default function TariffForm({
                 </p>
               </>
             )}
-            {record.preview?.(since, until, moveBoundary)}
+            {record.preview?.({ start: since, end: until, moveBoundary })}
             <p className="small muted">
               La fecha de fin marca el cambio: si la siguiente tarifa empieza el
               1 de junio, la anterior termina en esa misma fecha. Ese día

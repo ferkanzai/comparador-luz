@@ -36,6 +36,41 @@ test("backfills an independent historical period, permits gaps and rejects overl
   );
 });
 
+test("rejects record additions at storage limits before changing any workspace data", () => {
+  const t = { ...newTariff(), name: "Contract" };
+  const full = emptyWorkspace();
+  full.tariffs = Array.from({ length: 100 }, () => ({
+    ...t,
+    id: crypto.randomUUID(),
+  }));
+  assert.throws(() => recordCurrent(full, t, "2025-01-01"), /100 tarifas/);
+  assert.equal(full.tariffs.length, 100);
+  assert.equal(full.currentId, null);
+  // Recording an existing candidate consumes its slot, so it still fits.
+  assert.equal(
+    recordCurrent(full, full.tariffs[0], "2025-01-01").tariffs.length,
+    100,
+  );
+  const historyFull = emptyWorkspace();
+  historyFull.history = Array.from({ length: 500 }, () => ({
+    id: crypto.randomUUID(),
+    tariff: t,
+    start: "2024-01-01",
+    end: "2024-01-01",
+  }));
+  assert.throws(
+    () => recordHistorical(historyFull, t, "2025-01-01", "2025-06-01"),
+    /500 períodos/,
+  );
+  const current = recordCurrent(historyFull, t, "2025-01-01");
+  assert.throws(
+    () => recordCurrent(current, { ...t, energyPeak: "0.2" }, "2025-06-01"),
+    /500 períodos/,
+  );
+  assert.equal(current.history.length, 500);
+  assert.equal(current.currentSince, "2025-01-01");
+});
+
 test("preserves legacy date problems while allowing unrelated history and explicit repairs", () => {
   const t = { ...newTariff(), name: "Old terms" };
   const w = emptyWorkspace();
@@ -66,13 +101,10 @@ test("preserves legacy date problems while allowing unrelated history and explic
       .length,
     3,
   );
-  const repaired = correctPeriod(
-    added,
-    w.history[0].id,
-    t,
-    "2023-12-01",
-    "2024-01-01",
-  );
+  const repaired = correctPeriod(added, w.history[0].id, t, {
+    start: "2023-12-01",
+    end: "2024-01-01",
+  });
   assert.equal(repaired.history[0].start, "2023-12-01");
   assert.equal(repaired.history.length, 4);
   assert.throws(() => recordCurrent(repaired, t, "2024-04-15"), /solapa/);
@@ -100,18 +132,19 @@ test("moving both sides of a boundary rejects collisions with a third period ato
   const before = structuredClone(c);
   assert.throws(
     () =>
-      correctPeriod(c, c.history[0].id, t, "2025-01-01", "2025-08-01", true),
+      correctPeriod(c, c.history[0].id, t, {
+        start: "2025-01-01",
+        end: "2025-08-01",
+        moveBoundary: true,
+      }),
     /posterior|solapa/,
   );
   assert.deepEqual(c, before);
-  const corrected = correctPeriod(
-    c,
-    c.history[0].id,
-    t,
-    "2025-01-01",
-    "2025-04-01",
-    true,
-  );
+  const corrected = correctPeriod(c, c.history[0].id, t, {
+    start: "2025-01-01",
+    end: "2025-04-01",
+    moveBoundary: true,
+  });
   assert.equal(corrected.history[0].end, "2025-04-01");
   assert.equal(corrected.history[1].start, "2025-04-01");
   assert.equal(corrected.history[2].start, "2025-07-01");
@@ -180,9 +213,7 @@ test("corrects a shared boundary and prices without adding history or changing r
     b,
     current.id,
     { ...current.tariff, energyPeak: "0.15" },
-    "2025-06-05",
-    "",
-    true,
+    { start: "2025-06-05", end: "", moveBoundary: true },
   );
   assert.equal(corrected.history.length, 1);
   assert.equal(corrected.history[0].end, "2025-06-05");
@@ -191,17 +222,19 @@ test("corrects a shared boundary and prices without adding history or changing r
   assert.equal(corrected.bills[0].tariff?.energyPeak, "0.2");
   assert.equal(b.currentSince, "2025-06-01");
   assert.throws(
-    () => correctPeriod(b, current.id, current.tariff, "2025-05-01", "", false),
+    () =>
+      correctPeriod(b, current.id, current.tariff, {
+        start: "2025-05-01",
+        end: "",
+        moveBoundary: false,
+      }),
     /solapa/,
   );
-  const gap = correctPeriod(
-    b,
-    current.id,
-    current.tariff,
-    "2025-06-05",
-    "",
-    false,
-  );
+  const gap = correctPeriod(b, current.id, current.tariff, {
+    start: "2025-06-05",
+    end: "",
+    moveBoundary: false,
+  });
   assert.equal(gap.history[0].end, "2025-06-01");
 });
 

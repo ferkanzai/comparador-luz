@@ -1,6 +1,12 @@
 import * as z from "zod";
 import { tariffSchema, today, type Tariff, type Workspace } from "./domain";
 
+export type PeriodCorrection = {
+  start: string;
+  end: string;
+  moveBoundary?: boolean;
+};
+
 export type TariffPeriod = {
   id: string;
   start: string;
@@ -62,6 +68,14 @@ export function periodProblem(
 }
 
 function validateChanges(w: Workspace, ids: string[]) {
+  if (w.tariffs.length > 100)
+    throw new Error(
+      "El comparador admite hasta 100 tarifas. Elimina una oferta antes de añadir otra.",
+    );
+  if (w.history.length > 500)
+    throw new Error(
+      "El historial admite hasta 500 períodos. Elimina un registro antes de añadir otro.",
+    );
   const periods = tariffPeriods(w);
   for (const period of periods.filter((p) => ids.includes(p.id))) {
     const problem = periodProblem(period, periods);
@@ -122,10 +136,9 @@ export function correctPeriod(
   w: Workspace,
   id: string,
   tariff: Tariff,
-  start: string,
-  end: string,
-  moveBoundary = false,
+  correction: PeriodCorrection,
 ): Workspace {
+  const { start, end, moveBoundary = false } = correction;
   const periods = tariffPeriods(w);
   const original = periods.find((p) => p.id === id);
   if (!original)
@@ -186,17 +199,16 @@ export function correctPeriod(
 export function comparePeriod(w: Workspace, id: string): Workspace {
   const period = tariffPeriods(w).find((p) => p.id === id);
   if (!period) throw new Error("Ese período ya no existe.");
-  if (w.tariffs.length >= 100)
-    throw new Error(
-      "El comparador admite hasta 100 tarifas. Elimina una oferta antes de añadir otra.",
-    );
-  return {
-    ...w,
-    tariffs: [
-      ...w.tariffs,
-      { ...structuredClone(period.tariff), id: crypto.randomUUID() },
-    ],
-  };
+  return validateChanges(
+    {
+      ...w,
+      tariffs: [
+        ...w.tariffs,
+        { ...structuredClone(period.tariff), id: crypto.randomUUID() },
+      ],
+    },
+    [],
+  );
 }
 
 export function removePeriod(w: Workspace, id: string): Workspace {

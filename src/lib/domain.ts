@@ -241,36 +241,6 @@ export const today = () =>
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
-export function changeCurrent(w: Workspace, id: string, on: string): Workspace {
-  if (!w.tariffs.some((t) => t.id === id))
-    throw new Error("Selecciona una tarifa válida.");
-  if (
-    !date.safeParse(on).success ||
-    on > today() ||
-    (w.currentSince && on < w.currentSince)
-  )
-    throw new Error(
-      "La fecha debe estar entre el inicio de tu contrato actual y hoy.",
-    );
-  if (w.currentId === id) return w;
-  const old = w.tariffs.find((t) => t.id === w.currentId);
-  return {
-    ...w,
-    currentId: id,
-    currentSince: on,
-    history: old
-      ? [
-          ...w.history,
-          {
-            id: crypto.randomUUID(),
-            start: w.currentSince || on,
-            end: on,
-            tariff: structuredClone(old),
-          },
-        ]
-      : w.history,
-  };
-}
 export const money = (n: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(
     n,

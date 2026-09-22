@@ -2,18 +2,17 @@
 import { shortDate, type Tariff, type Workspace } from "@/lib/domain";
 import {
   correctPeriod,
+  type PeriodCorrection,
   recordCurrent,
   recordHistorical,
   tariffPeriods,
 } from "@/lib/tariff-periods";
 import TariffForm from "./tariff-form";
 
-export type TariffRecordDraft = {
-  tariff: Tariff;
-  kind: "historical" | "current" | "correction";
-  title: string;
-  periodId?: string;
-};
+export type TariffRecordDraft = { tariff: Tariff; title: string } & (
+  | { kind: "historical" | "current"; periodId?: never }
+  | { kind: "correction"; periodId: string }
+);
 
 export default function TariffRecordForm({
   workspace,
@@ -28,18 +27,12 @@ export default function TariffRecordForm({
 }) {
   const periods = tariffPeriods(workspace);
   const original = periods.find((p) => p.id === draft.periodId);
-  function preview(start: string, end: string, moveBoundary: boolean) {
+  function preview(dates: PeriodCorrection) {
+    const { start, end } = dates;
     if (!original || (start === original.start && end === original.end))
       return null;
     try {
-      const next = correctPeriod(
-        workspace,
-        original.id,
-        draft.tariff,
-        start,
-        end,
-        moveBoundary,
-      );
+      const next = correctPeriod(workspace, original.id, draft.tariff, dates);
       const changed = tariffPeriods(next).filter((p) => {
         const before = periods.find((old) => old.id === p.id);
         return before && (before.start !== p.start || before.end !== p.end);
@@ -77,17 +70,11 @@ export default function TariffRecordForm({
             : (original?.end ?? ""),
         correction: draft.kind === "correction",
         preview: draft.kind === "correction" ? preview : undefined,
-        onSave: (tariff, start, end, moveBoundary) => {
+        onSave: (tariff, dates) => {
+          const { start, end } = dates;
           const next =
             draft.kind === "correction"
-              ? correctPeriod(
-                  workspace,
-                  draft.periodId!,
-                  tariff,
-                  start,
-                  end,
-                  moveBoundary,
-                )
+              ? correctPeriod(workspace, draft.periodId, tariff, dates)
               : draft.kind === "current"
                 ? recordCurrent(workspace, tariff, start)
                 : recordHistorical(workspace, tariff, start, end);
