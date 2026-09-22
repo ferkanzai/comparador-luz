@@ -1078,6 +1078,7 @@ small {
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .tariff-bottom > span {
   font-size: 0.875rem;
@@ -1087,9 +1088,34 @@ small {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .tariff-bottom .link-button {
   font-size: 0.875rem;
+}
+.tariff-duplicate {
+  min-height: 44px;
+}
+.tariff-copy-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #c9d8ba;
+  border-radius: 10px;
+  background: #f2f5ed;
+  overflow-wrap: anywhere;
+}
+.tariff-copy-notice > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--green);
+}
+.tariff-copy-notice p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
 }
 .tariff-notes {
   border-top: 1px solid var(--line);

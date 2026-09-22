@@ -10,6 +10,7 @@ import {
   Check,
   ChevronDown,
   CircleHelp,
+  Copy,
   Download,
   ExternalLink,
   History,
@@ -73,7 +74,10 @@ export default function Dashboard({
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("compare");
   const [billDraft, setBillDraft] = useState<Bill | null>(null);
-  const [editing, setEditing] = useState<Tariff | null>(null);
+  const [editing, setEditing] = useState<{
+    tariff: Tariff;
+    duplicatedFrom?: string;
+  } | null>(null);
   const [switchTo, setSwitchTo] = useState<string | null>(null);
   const [switchDate, setSwitchDate] = useState(today);
   const [taxesOpen, setTaxesOpen] = useState(false);
@@ -501,7 +505,7 @@ export default function Dashboard({
                         </div>
                         <button
                           className="button secondary small-button"
-                          onClick={() => setEditing(newTariff())}
+                          onClick={() => setEditing({ tariff: newTariff() })}
                         >
                           <Plus size={16} />
                           Añadir tarifa
@@ -545,7 +549,9 @@ export default function Dashboard({
                             action={
                               <button
                                 className="button primary"
-                                onClick={() => setEditing(newTariff())}
+                                onClick={() =>
+                                  setEditing({ tariff: newTariff() })
+                                }
                               >
                                 <Plus size={16} />
                                 Añadir mi primera tarifa
@@ -567,7 +573,17 @@ export default function Dashboard({
                               unequalPower={unequalPower}
                               index={i}
                               onReview={() => confirmPrices(tariff.id)}
-                              onEdit={() => setEditing(tariff)}
+                              onEdit={() => setEditing({ tariff })}
+                              onDuplicate={() =>
+                                setEditing({
+                                  tariff: {
+                                    ...structuredClone(tariff),
+                                    id: crypto.randomUUID(),
+                                    name: `${tariff.name.slice(0, 92)} (copia)`,
+                                  },
+                                  duplicatedFrom: tariff.name,
+                                })
+                              }
                               onSelect={() => {
                                 setSwitchTo(tariff.id);
                                 setSwitchDate(today());
@@ -820,7 +836,7 @@ export default function Dashboard({
                     </p>
                     <button
                       className="text-link"
-                      onClick={() => setEditing(current)}
+                      onClick={() => setEditing({ tariff: current })}
                     >
                       Actualizar precios
                       <Pencil size={15} />
@@ -911,10 +927,11 @@ export default function Dashboard({
       )}
       {editing && (
         <TariffForm
-          initial={editing}
+          initial={editing.tariff}
+          duplicatedFrom={editing.duplicatedFrom}
           initialProfile={w.profile}
-          firstTariff={!w.currentId}
-          isCurrent={editing.id === w.currentId}
+          firstTariff={!w.currentId && !editing.duplicatedFrom}
+          isCurrent={editing.tariff.id === w.currentId}
           currentSince={w.currentSince}
           onSave={saveTariff}
           onClose={() => setEditing(null)}
@@ -1092,6 +1109,7 @@ function TariffCard({
   unequalPower,
   index,
   onEdit,
+  onDuplicate,
   onReview,
   onSelect,
   onRemove,
@@ -1102,6 +1120,7 @@ function TariffCard({
   unequalPower: boolean;
   index: number;
   onEdit: () => void;
+  onDuplicate: () => void;
   onReview: () => void;
   onSelect: () => void;
   onRemove: () => void;
@@ -1191,6 +1210,15 @@ function TariffCard({
               : "Precios aún sin comprobar"}
         </span>
         <div>
+          <button
+            type="button"
+            className="link-button tariff-duplicate"
+            onClick={onDuplicate}
+            aria-label={`Duplicar ${t.name}`}
+          >
+            <Copy size={15} aria-hidden="true" />
+            Duplicar
+          </button>
           {t.url && (
             <a
               className="text-link"

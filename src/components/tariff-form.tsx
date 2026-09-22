@@ -1,6 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Copy } from "lucide-react";
 import {
   tariffSchema,
   today,
@@ -29,6 +29,7 @@ export default function TariffForm({
   isCurrent,
   currentSince,
   invoiceDraft = false,
+  duplicatedFrom,
   onSave,
   onClose,
 }: {
@@ -38,6 +39,7 @@ export default function TariffForm({
   isCurrent: boolean;
   currentSince: string;
   invoiceDraft?: boolean;
+  duplicatedFrom?: string;
   onSave: (
     t: Tariff,
     since: string,
@@ -92,11 +94,30 @@ export default function TariffForm({
   const cost = calculate(tariff, profile);
   return (
     <Modal
-      title={initial.name ? "Editar tarifa" : "Añadir una tarifa"}
+      title={
+        duplicatedFrom
+          ? "Duplicar tarifa"
+          : initial.name
+            ? "Editar tarifa"
+            : "Añadir una tarifa"
+      }
       onClose={onClose}
       wide
     >
       <form onSubmit={submit} className="modal-body">
+        {duplicatedFrom && (
+          <div className="tariff-copy-notice">
+            <Copy size={20} aria-hidden="true" />
+            <div>
+              <strong>A partir de {duplicatedFrom}</strong>
+              <p>
+                La copia conserva los precios, las fechas y las condiciones.
+                Revisa los datos y dale un nombre antes de guardarla como una
+                nueva tarifa.
+              </p>
+            </div>
+          </div>
+        )}
         <p className="muted">
           Copia los precios <strong>sin impuestos</strong> de tu factura u
           oferta, con todos sus decimales. Usa 0 cuando un término no tenga
@@ -458,7 +479,7 @@ export default function TariffForm({
             Cancelar
           </button>
           <button className="button primary" type="submit">
-            Aplicar tarifa
+            {duplicatedFrom ? "Crear tarifa" : "Aplicar tarifa"}
             <ArrowRight size={16} />
           </button>
         </div>
