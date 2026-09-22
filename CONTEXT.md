@@ -50,7 +50,7 @@ An independent copy of tariff terms attached to a history entry or bill. Later e
 The quantity of electricity used over a period, measured in kWh. A recorded zero is known consumption; an unknown quantity is not zero.
 _Avoid_: Contracted power, kW consumption.
 
-**Energy periods (periodos de energía)**:
+**Energy periods (períodos de energía)**:
 The three consumption categories: P1 punta, P2 llano, and P3 valle. Their kWh sum to the total consumption.
 
 **Contracted power (potencia contratada)**:
@@ -61,7 +61,7 @@ _Avoid_: Energy consumption, kWh capacity.
 A single €/kWh price applied to total consumption across all energy periods. It is a unit price, not a fixed monthly bill or unlimited consumption allowance.
 _Avoid_: Flat monthly fee.
 
-**Energy prices by period (precios por periodos)**:
+**Energy prices by period (precios por períodos)**:
 Separate €/kWh prices applied to consumption in P1 punta, P2 llano, and P3 valle.
 
 **Power price (precio de potencia)**:
@@ -106,7 +106,7 @@ A meter-rental or social-bonus-financing amount the user explicitly adopts from 
 
 ### Estimates and savings
 
-**Estimated period cost (coste estimado del periodo)**:
+**Estimated period cost (coste estimado del período)**:
 The calculated cost of a tariff under the comparison profile, including its selected charges and tax assumptions. It is an estimate for the entered duration, not a recorded bill or proof of payment.
 
 **Tariff ranking (comparativa de tarifas)**:
@@ -125,7 +125,7 @@ A separate estimate using the last complete calendar month's published retail PV
 A user-recorded supplier invoice with a reporting month and net amount paid, optionally including billing dates, consumption, charge breakdown, and tariff and profile snapshots. “Invoice” names the same concept here; amounts initially copied from a comparison are draft estimates to check against the actual invoice.
 _Avoid_: Calculation result, tariff.
 
-**Billing period (periodo facturado)**:
+**Billing period (período facturado)**:
 The interval between a bill's start and end meter-reading dates, with duration equal to end minus start. It may cross calendar months and is distinct from the month chosen for reporting.
 
 **Reporting month (mes de la factura)**:

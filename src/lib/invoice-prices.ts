@@ -38,17 +38,17 @@ export function invoicePriceQuantities(
       "Potencia valle",
       numberOf(profile.valleyKw) * days * powerDayFactor(tariff.powerUnit),
     ],
-    ["socialDay", "Bono social del periodo", days],
+    ["socialDay", "Bono social del período", days],
     [
       "snoeeKwh",
-      "Coste SNOEE del periodo",
+      "Coste SNOEE del período",
       consumption.every(
         (value) => value !== "" && decimal().safeParse(value).success,
       )
         ? consumption.reduce((total, value) => total + numberOf(value), 0)
         : NaN,
     ],
-    ["meterDay", "Alquiler del periodo", days],
+    ["meterDay", "Alquiler del período", days],
   ];
 }
 

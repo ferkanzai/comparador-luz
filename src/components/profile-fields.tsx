@@ -57,11 +57,11 @@ export function ProfileFields({
         <div className={`form-grid ${samePower ? "two" : "three"}`}>
           {field(
             "peakKw",
-            samePower ? "Potencia en ambos periodos" : "Potencia P1 · Punta",
+            samePower ? "Potencia en ambos períodos" : "Potencia P1 · Punta",
             "kW",
           )}
           {!samePower && field("valleyKw", "Potencia P2 · Valle", "kW")}
-          {field("days", "Días del periodo", "días")}
+          {field("days", "Días del período", "días")}
         </div>
       </div>
     </>

@@ -35,7 +35,7 @@ export default function BillConsumptionFields({
             )
           }
         />
-        Tengo el consumo por periodos
+        Tengo el consumo por períodos
       </label>
       {bill.consumption ? (
         <>
@@ -65,7 +65,7 @@ export default function BillConsumptionFields({
             ))}
           </div>
           <p className="small" role="status">
-            Total de los periodos:{" "}
+            Total de los períodos:{" "}
             <strong>
               {consumptionTotal(bill.consumption) === null
                 ? "Pendiente"
@@ -73,7 +73,7 @@ export default function BillConsumptionFields({
             </strong>
           </p>
           <p className="small muted">
-            Sumamos los tres periodos automáticamente. Usa 0 cuando no haya
+            Sumamos los tres períodos automáticamente. Usa 0 cuando no haya
             consumo; deja desactivado el reparto si solo conoces el total.
           </p>
         </>

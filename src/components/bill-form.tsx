@@ -96,7 +96,7 @@ export default function BillForm({
             {editing.tariff && <EstimateNotice tariff={editing.tariff} />}
             <div className="form-grid two">
               <Field
-                label="Inicio del periodo"
+                label="Inicio del período"
                 type="date"
                 value={editing.periodStart}
                 onChange={(periodStart) =>
@@ -104,7 +104,7 @@ export default function BillForm({
                 }
               />
               <Field
-                label="Fin del periodo"
+                label="Fin del período"
                 type="date"
                 value={editing.periodEnd}
                 onChange={(periodEnd) =>
@@ -138,7 +138,7 @@ export default function BillForm({
             <div className="form-grid two">
               <Field
                 label="Mes para el gráfico"
-                hint="Por defecto, el mes en que termina el periodo. Puedes cambiarlo."
+                hint="Por defecto, el mes en que termina el período. Puedes cambiarlo."
                 type="month"
                 required
                 value={editing.month}
@@ -253,7 +253,7 @@ export default function BillForm({
                         }}
                       >
                         <option value="" disabled>
-                          Selecciona la tarifa y el periodo
+                          Selecciona la tarifa y el período
                         </option>
                         {[...w.history]
                           .sort((a, b) => b.end.localeCompare(a.end))

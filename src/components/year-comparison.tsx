@@ -294,7 +294,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
         <p className="small muted">
           Cada factura cuenta en su mes de registro, aunque abarque otras
           fechas. Un mes con facturas no garantiza que estén registradas todas
-          las del periodo.
+          las del período.
         </p>
       </div>
     </section>

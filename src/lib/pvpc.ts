@@ -126,7 +126,7 @@ export function summarizePvpc(
     }),
   );
   if (pvpcPeriods.some((p) => counts[p] === 0))
-    throw new Error("Faltan periodos PVPC.");
+    throw new Error("Faltan períodos PVPC.");
   return pvpcMonthSchema.parse({
     month,
     days: dates.length,

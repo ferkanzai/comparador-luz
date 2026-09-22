@@ -130,7 +130,7 @@ export default function ComparisonTable({
           <tr>
             <th scope="col">Tarifa</th>
             <th scope="col">
-              Total del periodo <small>y diferencia con tu tarifa actual</small>
+              Total del período <small>y diferencia con tu tarifa actual</small>
             </th>
             <th scope="col">
               <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
@@ -297,12 +297,12 @@ export function TariffDetails({
         <EnergyRates tariff={tariff} />
         <PowerRates tariff={tariff} unit={unit} />
         <p className="small muted">
-          Referencia de potencia: 1 kW en cada periodo. El coste usa tus kW
+          Referencia de potencia: 1 kW en cada período. El coste usa tus kW
           contratados.
         </p>
         {cost && (
           <>
-            <h3>Desglose del periodo</h3>
+            <h3>Desglose del período</h3>
             <dl className="breakdown">
               {billLines.map(([key, label]) => (
                 <div key={key}>
@@ -315,7 +315,7 @@ export function TariffDetails({
                 </div>
               ))}
               <div className="total">
-                <dt>Total del periodo</dt>
+                <dt>Total del período</dt>
                 <dd>{money(cost.total)}</dd>
               </div>
             </dl>

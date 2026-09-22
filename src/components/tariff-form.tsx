@@ -158,7 +158,7 @@ export default function TariffForm({
                 className={tariff.kind === "periods" ? "selected" : ""}
                 onClick={() => update("kind", "periods")}
               >
-                3 periodos
+                3 períodos
               </button>
               <button
                 type="button"
@@ -211,7 +211,7 @@ export default function TariffForm({
                 Un precio total de potencia: se cobra una vez
               </option>
               <option value="same">
-                El mismo precio por periodo: se cobra en punta y en valle
+                El mismo precio por período: se cobra en punta y en valle
               </option>
             </select>
           </label>
@@ -221,7 +221,7 @@ export default function TariffForm({
               tariff.powerKind === "combined"
                 ? "Precio total de potencia (P1 + P2)"
                 : tariff.powerKind === "same"
-                  ? "Precio de cada periodo"
+                  ? "Precio de cada período"
                   : "P1 · Punta",
               powerUnitLabels[tariff.powerUnit],
               true,
@@ -236,10 +236,10 @@ export default function TariffForm({
           </div>
           <p className="small muted">
             {tariff.powerKind === "combined"
-              ? "Multiplicamos el precio total por tus kW una sola vez. Requiere los mismos kW en ambos periodos; si son distintos, introduce los dos precios."
+              ? "Multiplicamos el precio total por tus kW una sola vez. Requiere los mismos kW en ambos períodos; si son distintos, introduce los dos precios."
               : tariff.powerKind === "same"
                 ? "Este precio se cobra dos veces: por los kW de punta y por los de valle. Si tu oferta indica un precio total de potencia, elige «Un precio total de potencia»."
-                : "La tarifa 2.0TD tiene dos periodos de potencia, aunque tengas los mismos kW contratados."}
+                : "La tarifa 2.0TD tiene dos períodos de potencia, aunque tengas los mismos kW contratados."}
           </p>
           {tariff.powerUnit === "month" && (
             <p className="notice small">
@@ -455,7 +455,7 @@ export default function TariffForm({
             <p className="notice">
               Completa los precios, el consumo, los kW y los días. Si incluyes
               impuestos, indica también sus porcentajes. El precio de potencia
-              combinado requiere los mismos kW en ambos periodos.
+              combinado requiere los mismos kW en ambos períodos.
             </p>
           )}
         </section>

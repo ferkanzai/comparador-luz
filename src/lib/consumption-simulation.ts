@@ -18,14 +18,14 @@ export function readSimulation(simulation: ConsumptionSimulation): {
     return {
       consumption: null,
       error:
-        "Completa los tres periodos. Escribe 0 si no has consumido en uno de ellos.",
+        "Completa los tres períodos. Escribe 0 si no has consumido en uno de ellos.",
     };
   const result = consumptionSchema.safeParse(simulation);
   if (!result.success)
     return {
       consumption: null,
       error:
-        "Introduce entre 0 y 1.000.000 kWh en cada periodo, con coma o punto decimal.",
+        "Introduce entre 0 y 1.000.000 kWh en cada período, con coma o punto decimal.",
     };
   return { consumption: result.data, error: "" };
 }

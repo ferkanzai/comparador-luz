@@ -650,17 +650,17 @@ export default function Dashboard({
           <div className="modal-body method">
             <p>
               Estimación para hogares 2.0TD de Península y Baleares con precios
-              fijos o por periodos, siempre introducidos sin impuestos.
+              fijos o por períodos, siempre introducidos sin impuestos.
             </p>
             <ol>
               <li>
-                <strong>Energía:</strong> kWh de cada periodo × su precio.
+                <strong>Energía:</strong> kWh de cada período × su precio.
               </li>
               <li>
                 <strong>Potencia:</strong> kW contratados × precio × días. Los
                 precios anuales se dividen entre 365; los mensuales se dividen
                 entre 30. Un precio total de potencia se aplica una sola vez; un
-                precio por periodo se aplica por separado a punta y valle.
+                precio por período se aplica por separado a punta y valle.
               </li>
               <li>
                 <strong>Financiación del bono social:</strong> cargo diario de
@@ -702,13 +702,13 @@ export default function Dashboard({
             </p>
             <p>
               Tipos generales de referencia: IVA 21 % e IEE 5,11269632 %.
-              Revisión: 22/09/2026. Usa los tipos de tu factura para periodos
+              Revisión: 22/09/2026. Usa los tipos de tu factura para períodos
               con medidas temporales. No se aplica automáticamente un tipo por
               fecha.
             </p>
             <p>
               PVPC se muestra aparte como referencia histórica con medias por
-              periodo del último mes completo; no reconstruye tu factura horaria
+              período del último mes completo; no reconstruye tu factura horaria
               ni predice precios futuros. No simula compensación solar,
               descuentos del bono social, IGIC, IPSI, penalizaciones ni
               promociones temporales. Introduce precios netos de descuentos y

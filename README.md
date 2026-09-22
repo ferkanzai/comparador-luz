@@ -30,7 +30,7 @@ Use **Editar perfil** to change the shared inputs. **Simular consumo** accepts p
 
 Guest edits are saved in this browser; signed-in edits also synchronize automatically to the account. Price review is a personal record inside tariff details: **He revisado estos precios** records today's date on an undated tariff without fetching or validating prices. Existing review dates remain visible and editable in tariff details.
 
-**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este periodo como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
+**Mis tarifas** preserves previous contract prices. **Mis facturas** records actual paid amounts. Use **Guardar este período como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
 
 ## Stack
 

@@ -95,7 +95,7 @@ export default function FinalistComparison({
               </tr>
             </thead>
             <tbody>
-              {detailRow("Total del periodo", ({ tariff, cost, reason }) =>
+              {detailRow("Total del período", ({ tariff, cost, reason }) =>
                 cost ? (
                   <>
                     <strong className="comparison-amount">
@@ -136,7 +136,7 @@ export default function FinalistComparison({
                 "Referencia de potencia",
                 () => (
                   <span className="small muted">
-                    1 kW en cada periodo. El coste del periodo usa tus kW
+                    1 kW en cada período. El coste del período usa tus kW
                     contratados.
                   </span>
                 ),

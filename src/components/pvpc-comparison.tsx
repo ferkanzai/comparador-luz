@@ -108,7 +108,7 @@ export default function PvpcComparison({
       </p>
       {ineligible ? (
         <p className="notice">
-          PVPC requiere un máximo de 10 kW en cada periodo. Tus potencias
+          PVPC requiere un máximo de 10 kW en cada período. Tus potencias
           superan ese límite.
         </p>
       ) : !data ? (
@@ -147,7 +147,7 @@ export default function PvpcComparison({
           </dl>
           <p className="small muted">
             Medias sin impuestos. Suponemos el mismo consumo en cada hora dentro
-            de cada periodo.
+            de cada período.
           </p>
           <label className="auth-label">
             Alquiler para esta estimación
@@ -219,15 +219,15 @@ export default function PvpcComparison({
                 </p>
                 <p className="small muted">
                   Aplicamos las medias de {monthLabel} a tu consumo y días,
-                  aunque tu factura corresponda a otro periodo. Sin tu curva
+                  aunque tu factura corresponda a otro período. Sin tu curva
                   horaria no podemos reconstruir la factura PVPC real. Hogares
-                  de Península y Baleares, hasta 10 kW por periodo.
+                  de Península y Baleares, hasta 10 kW por período.
                 </p>
               </details>
             </>
           ) : (
             <p className="notice">
-              Completa arriba el consumo por periodos, los kW y los días. Si
+              Completa arriba el consumo por períodos, los kW y los días. Si
               activas impuestos, indica sus porcentajes. Revisa también el
               alquiler elegido.
             </p>

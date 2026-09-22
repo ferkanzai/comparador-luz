@@ -304,7 +304,7 @@ export default function ComparisonWorkspace({
             <div className="comparison-footnotes">
               <p>
                 Precios unitarios sin impuestos. Potencia para comparar:
-                referencia de 1 kW en cada periodo. Mes = 30 días · Año = 365
+                referencia de 1 kW en cada período. Mes = 30 días · Año = 365
                 días.
               </p>
               <span className="scroll-hint">
@@ -334,7 +334,7 @@ export default function ComparisonWorkspace({
             }}
           >
             <Receipt size={16} />
-            Guardar este periodo como factura
+            Guardar este período como factura
           </button>
           <p className="small muted">
             {simulation

@@ -194,7 +194,7 @@ test("keeps an experiment out of tariff edits and preserves other profile change
   await page
     .getByRole("button", { name: "Editar perfil", exact: true })
     .click();
-  await page.getByLabel("Días del periodo", { exact: true }).fill("31");
+  await page.getByLabel("Días del período", { exact: true }).fill("31");
   await page
     .getByRole("button", { name: "Volver a la comparativa", exact: true })
     .click();
@@ -209,7 +209,7 @@ test("keeps an experiment out of tariff edits and preserves other profile change
     .getByRole("button", { name: "Editar perfil", exact: true })
     .click();
   await expect(
-    page.getByLabel("Días del periodo", { exact: true }),
+    page.getByLabel("Días del período", { exact: true }),
   ).toHaveValue("31");
 });
 
@@ -320,14 +320,14 @@ test("account autosave isolates simulations, reports failures and resets transie
   await enterConsumption(page, "120", "180", "300");
   await expect(
     page.getByRole("button", {
-      name: "Guardar este periodo como factura",
+      name: "Guardar este período como factura",
       exact: true,
     }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Restablecer", exact: true }).click();
   await page
     .getByRole("button", {
-      name: "Guardar este periodo como factura",
+      name: "Guardar este período como factura",
       exact: true,
     })
     .click();
@@ -385,7 +385,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   await page
     .getByRole("button", { name: "Editar perfil", exact: true })
     .click();
-  await page.getByLabel("Días del periodo", { exact: true }).fill("31");
+  await page.getByLabel("Días del período", { exact: true }).fill("31");
   await page
     .getByRole("button", { name: "Volver a la comparativa", exact: true })
     .click();
@@ -442,7 +442,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   ).not.toBeChecked();
   await page
     .getByRole("button", {
-      name: "Guardar este periodo como factura",
+      name: "Guardar este período como factura",
       exact: true,
     })
     .click();

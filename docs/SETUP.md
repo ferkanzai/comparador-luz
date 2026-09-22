@@ -63,7 +63,7 @@ Verify these flows on the production domain:
 - Add a tariff, mark it as current, enter consumption and click **Guardar cambios**.
 - Reload: the data remains. A second account starts empty.
 - Change current prices and inspect **Mis tarifas**.
-- From the comparator, use **Guardar este periodo como factura**. Check the period dates, reporting month and real amounts; **Guardar factura** persists immediately. Reload and check the stacked chart and breakdown. Hover, focus or tap a month to inspect it, then switch to **Evolución** for connected monthly totals (missing months remain gaps). Add a credit and check that the total decreases, tax amounts remain unchanged, and the credit survives refresh.
+- From the comparator, use **Guardar este período como factura**. Check the period dates, reporting month and real amounts; **Guardar factura** persists immediately. Reload and check the stacked chart and breakdown. Hover, focus or tap a month to inspect it, then switch to **Evolución** for connected monthly totals (missing months remain gaps). Add a credit and check that the total decreases, tax amounts remain unchanged, and the credit survives refresh.
 - Add or edit a bill under **Mis facturas** and reload without clicking **Guardar cambios**.
 - Request a password reset; confirm delivery and successful reset.
 
