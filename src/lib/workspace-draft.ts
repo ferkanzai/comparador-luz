@@ -17,8 +17,15 @@ const draftWorkspaceSchema = workspaceSchema.safeExtend({
 const draftSchema = z.object({
   data: draftWorkspaceSchema,
   version: z.number().int().nonnegative(),
+  base: workspaceSchema.optional(),
+  pending: workspaceSchema.optional(),
 });
-export type WorkspaceDraft = { data: Workspace; version: number };
+export type WorkspaceDraft = {
+  data: Workspace;
+  version: number;
+  base?: Workspace;
+  pending?: Workspace;
+};
 type DraftStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 const key = (owner: string) => `luz:comparison-draft:v1:${owner}`;
 export function readDraft(
@@ -52,6 +59,57 @@ export function removeDraft(storage: DraftStorage, owner: string) {
   } catch {
     /* The saved server version wins on reload. */
   }
+}
+export function migrateDraft(
+  storage: DraftStorage,
+  legacy: DraftStorage,
+  owner: string,
+): WorkspaceDraft | null {
+  const current = readDraft(storage, owner);
+  const previous = readDraft(legacy, owner);
+  if (current) {
+    removeDraft(legacy, owner);
+    return current;
+  }
+  if (previous && writeDraft(storage, owner, previous))
+    removeDraft(legacy, owner);
+  return previous;
+}
+
+// Clean local copies may lag another device. Only unsynced edits need recovery.
+export function recoverDraft(
+  server: { data: Workspace; version: number },
+  draft: WorkspaceDraft | null,
+) {
+  const equal = (a: Workspace | undefined, b: Workspace) =>
+    JSON.stringify(a) === JSON.stringify(b);
+  if (
+    !draft ||
+    (equal(draft.data, server.data) && !draft.pending) ||
+    (!draft.pending && equal(draft.base, draft.data))
+  )
+    return { ...server, saved: server.data, conflict: false };
+  // A request can finish after navigation or lose its response. Acknowledge only
+  // that exact snapshot; newer local edits must still be sent afterwards.
+  if (
+    draft?.pending &&
+    server.version === draft.version + 1 &&
+    equal(draft.pending, server.data)
+  )
+    return {
+      data: draft.data,
+      version: server.version,
+      saved: server.data,
+      conflict: false,
+    };
+  return {
+    data: draft.data,
+    version: draft.version,
+    saved:
+      draft.base ?? (draft.version === server.version ? server.data : null),
+    conflict: draft.version !== server.version,
+    pending: draft.pending,
+  };
 }
 export function mergeGuestComparison(
   account: Workspace,

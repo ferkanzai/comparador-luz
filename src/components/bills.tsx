@@ -27,7 +27,7 @@ export default function Bills({
   update,
 }: {
   workspace: Workspace;
-  update: (w: Workspace) => Promise<boolean>;
+  update: (w: Workspace) => void;
 }) {
   const [editing, setEditing] = useState<Bill | null>(null);
   const [year, setYear] = useState(today().slice(0, 4));
@@ -357,15 +357,11 @@ export default function Bills({
           workspace={w}
           onClose={() => setEditing(null)}
           onSave={async (bill, newTariff) => {
-            const saved = await update({
+            update({
               ...w,
               tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
               bills: [...w.bills.filter((b) => b.id !== bill.id), bill],
             });
-            if (!saved)
-              throw new Error(
-                "No se ha guardado la factura. Reinténtalo; tus datos siguen aquí.",
-              );
             setYear(bill.month.slice(0, 4));
             setView("months");
             setEditing(null);

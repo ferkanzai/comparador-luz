@@ -1,6 +1,6 @@
 "use client";
 import FeedbackNotice, { useFeedback } from "./feedback-notice";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowDownRight,
@@ -18,7 +18,6 @@ import {
   Pencil,
   Plus,
   Receipt,
-  Save,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
@@ -28,13 +27,11 @@ import { authClient } from "@/lib/auth-client";
 import { calculate, type Calculation } from "@/lib/calculator";
 import {
   changeCurrent,
-  emptyWorkspace,
   money,
   newTariff,
   powerDescription,
   shortDate,
   today,
-  workspaceSchema,
   type Bill,
   type Profile,
   type Tariff,
@@ -48,12 +45,7 @@ import { estimatedCharges } from "@/lib/charge-estimates";
 import { ProfileFields, TaxFields } from "./profile-fields";
 import Bills from "./bills";
 import BillForm from "./bill-form";
-import {
-  mergeGuestComparison,
-  readDraft,
-  writeDraft,
-  removeDraft,
-} from "@/lib/workspace-draft";
+import { useWorkspace } from "./use-workspace";
 import { billFromCalculation } from "@/lib/bill-data";
 
 type Tab = "compare" | "history" | "bills";
@@ -69,17 +61,8 @@ export default function Dashboard({
   } | null;
   accountsAvailable: boolean;
 }) {
-  const [w, setWorkspace] = useState<Workspace>(emptyWorkspace);
-  const [version, setVersion] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState("");
-  const [reload, setReload] = useState(0);
-  const [draftStored, setDraftStored] = useState(true);
-  const [conflict, setConflict] = useState<{
-    data: Workspace;
-    version: number;
-  } | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const workspace = useWorkspace(user?.id);
+  const { data: w, loaded, loadError, stored, status } = workspace;
   const [busy, setBusy] = useState(false);
   const { message, setMessage, dismiss } = useFeedback();
   const [error, setError] = useState("");
@@ -90,171 +73,10 @@ export default function Dashboard({
   const [switchDate, setSwitchDate] = useState(today);
   const [taxesOpen, setTaxesOpen] = useState(false);
   const [taxHelp, setTaxHelp] = useState(false);
-  useEffect(() => {
-    if (!user) {
-      try {
-        const draft = readDraft(sessionStorage, "guest");
-        if (draft) {
-          setWorkspace(draft.data);
-          setDirty(true);
-        }
-      } catch {
-        setDraftStored(false);
-      }
-      setLoaded(true);
-      return;
-    }
-    const controller = new AbortController();
-    fetch("/api/workspace", { signal: controller.signal, cache: "no-store" })
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error);
-        const data = workspaceSchema.parse(body.data);
-        let next = data;
-        let draftVersion = body.version;
-        try {
-          const own = readDraft(sessionStorage, user.id);
-          const guest = readDraft(sessionStorage, "guest");
-          if (own) {
-            // A stale draft must never overwrite a newer save from another tab/device.
-            if (
-              own.version !== body.version &&
-              JSON.stringify(own.data) !== JSON.stringify(data)
-            )
-              setConflict({ data, version: body.version });
-            next = own.data;
-            draftVersion =
-              JSON.stringify(own.data) === JSON.stringify(data)
-                ? body.version
-                : own.version;
-            setDirty(JSON.stringify(next) !== JSON.stringify(data));
-          }
-          if (guest) {
-            next = mergeGuestComparison(next, guest.data);
-            setDirty(true);
-            if (
-              writeDraft(sessionStorage, user.id, {
-                data: next,
-                version: draftVersion,
-              })
-            )
-              removeDraft(sessionStorage, "guest");
-            else setDraftStored(false);
-            setMessage(
-              "Tu comparación sigue aquí: hemos recuperado tu consumo y añadido tus ofertas. Tu contrato y tus facturas guardados se conservan. Pulsa Guardar cambios para llevar la comparación a tu cuenta.",
-            );
-          } else if (own && JSON.stringify(next) !== JSON.stringify(data)) {
-            setMessage(
-              "Hemos recuperado tu borrador. Pulsa Guardar cambios para guardarlo en tu cuenta.",
-            );
-          }
-        } catch {
-          setDraftStored(false);
-        }
-        setWorkspace(next);
-        setVersion(draftVersion);
-        setLoaded(true);
-        setLoadError("");
-      })
-      .catch((e) => {
-        if (!controller.signal.aborted)
-          setLoadError(
-            e instanceof Error
-              ? e.message
-              : "No se han podido cargar tus datos.",
-          );
-      });
-    return () => controller.abort();
-  }, [user, reload, setMessage]);
-  useEffect(() => {
-    if (!dirty || draftStored) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    const confirmNavigation = (event: MouseEvent) => {
-      const link =
-        event.target instanceof Element ? event.target.closest("a") : null;
-      if (
-        !link ||
-        link.target === "_blank" ||
-        link.hasAttribute("download") ||
-        link.getAttribute("href")?.startsWith("#")
-      )
-        return;
-      if (
-        !window.confirm(
-          "No se ha podido guardar tu borrador en el navegador. ¿Salir y perder estos cambios?",
-        )
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      } else window.removeEventListener("beforeunload", warn);
-    };
-    window.addEventListener("beforeunload", warn);
-    document.addEventListener("click", confirmNavigation, true);
-    return () => {
-      window.removeEventListener("beforeunload", warn);
-      document.removeEventListener("click", confirmNavigation, true);
-    };
-  }, [dirty, draftStored]);
-  function persistDraft(next: Workspace) {
-    let stored = false;
-    try {
-      stored = writeDraft(sessionStorage, user?.id ?? "guest", {
-        data: next,
-        version,
-      });
-    } catch {
-      /* Storage may be disabled by the browser. */
-    }
-    setDraftStored(stored);
-    return stored;
-  }
   function update(next: Workspace) {
-    setWorkspace(next);
-    setDirty(true);
+    workspace.update(next);
     setMessage("");
     setError("");
-    persistDraft(next);
-  }
-  async function save(next = w) {
-    if (conflict) return false;
-    setWorkspace(next);
-    setDirty(true);
-    persistDraft(next);
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const parsed = workspaceSchema.safeParse(next);
-      if (!parsed.success)
-        throw new Error(`Revisa los datos: ${parsed.error.issues[0].message}`);
-      const response = await fetch("/api/workspace", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: parsed.data, version }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error);
-      setWorkspace(parsed.data);
-      setVersion(body.version);
-      try {
-        removeDraft(sessionStorage, user!.id);
-      } catch {
-        /* Server save succeeded. */
-      }
-      setDirty(false);
-      setMessage("Todo guardado en tu cuenta.");
-      return true;
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "No se ha podido guardar. Tus cambios siguen aquí.",
-      );
-      return false;
-    } finally {
-      setBusy(false);
-    }
   }
   function saveTariff(
     tariff: Tariff,
@@ -290,7 +112,7 @@ export default function Dashboard({
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
     );
   }
-  async function confirmPrices(id?: string) {
+  function confirmPrices(id?: string) {
     if (!w.tariffs.some((t) => !t.checkedOn && (!id || t.id === id))) return;
     const next = {
       ...w,
@@ -299,13 +121,11 @@ export default function Dashboard({
         !t.checkedOn && (!id || t.id === id) ? { ...t, checkedOn: today() } : t,
       ),
     };
-    if (user) {
-      if (!(await save(next))) return;
-    } else update(next);
+    update(next);
     setMessage(
       id
         ? "Precios confirmados hoy."
-        : "Precios pendientes confirmados a día de hoy. La revisión está guardada.",
+        : "Precios pendientes confirmados a día de hoy.",
     );
   }
   function exportData() {
@@ -355,17 +175,9 @@ export default function Dashboard({
                   aria-label="Cerrar sesión"
                   disabled={busy}
                   onClick={async () => {
-                    if (
-                      dirty &&
-                      !window.confirm(
-                        "Tienes cambios sin guardar. ¿Cerrar sesión de todos modos?",
-                      )
-                    )
-                      return;
                     try {
                       const result = await authClient.signOut();
                       if (result.error) throw new Error();
-                      setDirty(false);
                       window.location.assign("/");
                     } catch {
                       setError(
@@ -459,80 +271,66 @@ export default function Dashboard({
               Mis facturas
             </button>
           </nav>
-          <span className="workspace-status">
-            <span className={`status-dot ${dirty ? "unsaved" : ""}`} />
-            {user
-              ? dirty
-                ? "Borrador · pendiente de guardar en tu cuenta"
-                : "Tu espacio personal"
-              : dirty && draftStored
-                ? "Borrador guardado en esta pestaña"
-                : "Comparación sin cuenta"}
+          <span
+            className="workspace-status"
+            title={workspace.error || undefined}
+          >
+            <span
+              className={`status-dot ${user && status !== "saved" ? "unsaved" : ""}`}
+            />
+            {!loaded
+              ? "Cargando…"
+              : status === "saved"
+                ? "Guardado en tu cuenta"
+                : !stored
+                  ? "No se pudo guardar en este dispositivo"
+                  : status === "local"
+                    ? "Guardado en este dispositivo"
+                    : status === "conflict"
+                      ? "Guardado aquí · revisa la versión de tu cuenta"
+                      : status === "error"
+                        ? "Guardado aquí · sin sincronizar"
+                        : status === "invalid"
+                          ? "Guardado aquí · completa los datos para sincronizar"
+                          : status === "saving"
+                            ? "Sincronizando…"
+                            : "Guardado aquí · pendiente de sincronizar"}
+            {status === "error" && (
+              <button className="link-button" onClick={workspace.retry}>
+                Reintentar
+              </button>
+            )}
           </span>
         </div>
-        {(user || dirty) && (
+        {loaded && (
           <div className="save-strip">
             <span>
               <ShieldCheck size={16} />
               {!user
-                ? "Tu comparación se conserva al entrar o crear una cuenta. Cierra la pestaña solo después de guardarla en tu cuenta o exportarla."
+                ? "Tus datos se guardan automáticamente en este dispositivo."
                 : w.reviewedOn
                   ? `Última revisión: ${shortDate(w.reviewedOn)}`
-                  : "Tus precios y facturas, solo para ti."}
+                  : "Los cambios se guardan automáticamente."}
             </span>
-            <div>
-              <button
-                className="button secondary small-button"
-                onClick={exportData}
-                disabled={!loaded}
-              >
-                <Download size={15} />
-                Exportar
-              </button>
-              {user && (tab !== "bills" || dirty) ? (
-                <button
-                  className="button primary small-button"
-                  onClick={() => save()}
-                  disabled={!loaded || busy || !dirty || !!conflict}
-                >
-                  <Save size={15} />
-                  {busy ? "Guardando…" : "Guardar cambios"}
-                </button>
-              ) : (
-                <span className="small muted">
-                  {user
-                    ? "Las facturas se guardan al confirmar."
-                    : "Sin cuenta · solo en esta pestaña"}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-        {!draftStored && dirty && (
-          <div className="notice error" role="alert">
-            El navegador no permite guardar el borrador. Exporta tus datos antes
-            de salir o guárdalos en tu cuenta.
-          </div>
-        )}
-        {conflict && (
-          <div className="notice" role="alert">
-            Tu cuenta tiene cambios más recientes. Estás viendo tu borrador, que
-            no se ha sobrescrito. Exporta lo que quieras conservar antes de
-            cargar la versión de tu cuenta.
             <button
               className="button secondary small-button"
-              onClick={() => {
-                setWorkspace(conflict.data);
-                setVersion(conflict.version);
-                setDirty(false);
-                try {
-                  removeDraft(sessionStorage, user!.id);
-                } catch {
-                  /* Storage unavailable. */
-                }
-                setConflict(null);
-                setMessage("Datos de tu cuenta cargados.");
-              }}
+              onClick={exportData}
+            >
+              <Download size={15} />
+              Exportar
+            </button>
+          </div>
+        )}
+        {status === "conflict" && (
+          <div className="notice">
+            Tu cuenta tiene cambios más recientes.{" "}
+            {stored
+              ? "Tus cambios siguen guardados en este dispositivo."
+              : "Tus cambios siguen abiertos en esta pestaña."}{" "}
+            Puedes exportarlos antes de cargar la versión de tu cuenta.
+            <button
+              className="button secondary small-button"
+              onClick={workspace.useAccountVersion}
             >
               Cargar versión de mi cuenta
             </button>
@@ -588,10 +386,7 @@ export default function Dashboard({
         {loadError && (
           <div className="notice error" role="alert">
             {loadError}{" "}
-            <button
-              className="link-button"
-              onClick={() => setReload((n) => n + 1)}
-            >
+            <button className="link-button" onClick={workspace.reload}>
               Reintentar
             </button>
           </div>
@@ -918,10 +713,11 @@ export default function Dashboard({
                       <History size={25} />
                     </div>
                     <div>
-                      <h3>La próxima vez, empieza donde lo dejaste.</h3>
+                      <h3>Tus datos, también en otros dispositivos.</h3>
                       <p>
-                        Guarda tus tarifas, conserva tus cambios de precios y
-                        sigue tus facturas mes a mes.
+                        Crea una cuenta para sincronizar tus tarifas y seguir
+                        tus facturas mes a mes. Sin cuenta, tu comparación se
+                        conserva en este navegador.
                       </p>
                     </div>
                     <Link href="/cuenta?mode=signup" className="button dark">
@@ -958,7 +754,7 @@ export default function Dashboard({
                 </Empty>
               </div>
             ) : tab === "bills" ? (
-              <Bills workspace={w} update={save} />
+              <Bills workspace={w} update={update} />
             ) : (
               <>
                 <div className="section-heading">
@@ -1057,21 +853,14 @@ export default function Dashboard({
           workspace={w}
           onClose={() => setBillDraft(null)}
           onSave={async (bill, newTariff) => {
-            if (
-              !(await save({
-                ...w,
-                tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
-                bills: [...w.bills, bill],
-              }))
-            )
-              throw new Error(
-                "No se ha guardado la factura. Tus datos siguen aquí; vuelve a intentarlo.",
-              );
+            update({
+              ...w,
+              tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
+              bills: [...w.bills, bill],
+            });
             setBillDraft(null);
             setTab("bills");
-            setMessage(
-              "Factura guardada en tu cuenta, con su consumo y desglose.",
-            );
+            setMessage("Factura añadida, con su consumo y desglose.");
           }}
         />
       )}

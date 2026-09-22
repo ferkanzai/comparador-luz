@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { emptyWorkspace, newTariff } from "../src/lib/domain";
 import {
   mergeGuestComparison,
+  migrateDraft,
   readDraft,
+  recoverDraft,
   writeDraft,
 } from "../src/lib/workspace-draft";
 
@@ -60,6 +62,72 @@ test("storage failure is reported instead of claiming a draft is saved", () => {
   assert.equal(
     writeDraft(storage, "guest", { data: emptyWorkspace(), version: 0 }),
     false,
+  );
+});
+
+test("session drafts migrate once and survive a new tab session", () => {
+  const local = memory();
+  const session = memory();
+  const data = emptyWorkspace();
+  data.profile.peakKwh = "42,";
+  writeDraft(session, "guest", { data, version: 0 });
+  assert.deepEqual(migrateDraft(local, session, "guest")?.data, data);
+  assert.equal(readDraft(session, "guest"), null);
+  assert.deepEqual(migrateDraft(local, memory(), "guest")?.data, data);
+  const stale = emptyWorkspace();
+  writeDraft(session, "guest", { data: stale, version: 0 });
+  assert.deepEqual(migrateDraft(local, session, "guest")?.data, data);
+});
+
+test("failed migration retains the session draft", () => {
+  const session = memory();
+  const local = {
+    ...memory(),
+    setItem: () => {
+      throw new Error("quota");
+    },
+  };
+  const draft = { data: emptyWorkspace(), version: 2 };
+  writeDraft(session, "alice", draft);
+  assert.deepEqual(migrateDraft(local, session, "alice"), draft);
+  assert.deepEqual(readDraft(session, "alice"), draft);
+});
+
+test("clean browser copies yield to the server; unsynced edits recover or conflict", () => {
+  const base = emptyWorkspace();
+  const next = { ...base, profile: { ...base.profile, days: "30" } };
+  assert.deepEqual(
+    recoverDraft({ data: next, version: 5 }, { data: base, base, version: 4 })
+      .data,
+    next,
+  );
+  const pending = recoverDraft(
+    { data: base, version: 4 },
+    { data: next, base, version: 4 },
+  );
+  assert.equal(pending.conflict, false);
+  assert.deepEqual(pending.data, next);
+  const conflict = recoverDraft(
+    { data: base, version: 5 },
+    { data: next, base, version: 4 },
+  );
+  assert.equal(conflict.conflict, true);
+  assert.deepEqual(conflict.data, next);
+});
+
+test("navigation during a save recovers subsequent edits, including a revert", () => {
+  const base = emptyWorkspace();
+  const sent = { ...base, profile: { ...base.profile, days: "30" } };
+  const draft = { data: base, base, pending: sent, version: 4 };
+  const recovered = recoverDraft({ data: sent, version: 5 }, draft);
+  assert.equal(recovered.conflict, false);
+  assert.equal(recovered.version, 5);
+  assert.deepEqual(recovered.data, base);
+  assert.deepEqual(recovered.saved, sent);
+  // If the request is still running, its snapshot must survive the reload too.
+  assert.deepEqual(
+    recoverDraft({ data: base, version: 4 }, draft).pending,
+    sent,
   );
 });
 
