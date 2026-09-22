@@ -1,6 +1,6 @@
 "use client";
 import FeedbackNotice, { useFeedback } from "./feedback-notice";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowDownRight,
@@ -55,6 +55,21 @@ export default function Dashboard({
   const { message, setMessage, dismiss } = useFeedback();
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("compare");
+  const navigation = useRef<HTMLElement>(null);
+  const previousTab = useRef(tab);
+  useEffect(() => {
+    if (previousTab.current === tab) return;
+    previousTab.current = tab;
+    // Wait until closing dialogs have restored the page's scroll lock.
+    const frame = requestAnimationFrame(() => {
+      navigation.current?.scrollIntoView({
+        block: "start",
+        behavior: "instant",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [tab]);
+
   const [billDraft, setBillDraft] = useState<Bill | null>(null);
   const [editing, setEditing] = useState<{
     tariff: Tariff;
@@ -184,42 +199,44 @@ export default function Dashboard({
         </div>
       </header>
       <main id="main" className="shell">
-        <section
-          className={`hero ${tab === "compare" && w.tariffs.length ? "hero-compact" : ""}`}
-        >
-          <div>
-            <div className="eyebrow">
-              <span className="live-dot" /> TU ENERGÍA. TUS NÚMEROS.
+        {user || w.tariffs.length ? (
+          <h1 className="workspace-title">Tu espacio de electricidad</h1>
+        ) : (
+          <section className="hero">
+            <div>
+              <div className="eyebrow">
+                <span className="live-dot" /> TU ENERGÍA. TUS NÚMEROS.
+              </div>
+              <h1>
+                Que tu próxima factura <br />
+                traiga <span>una buena noticia.</span>
+              </h1>
+              <p>
+                Compara con lo que consumes. Entiende lo que pagas.
+                <br className="desktop-break" /> Y elige cuándo te compensa
+                cambiar.
+              </p>
             </div>
-            <h1>
-              Que tu próxima factura <br />
-              traiga <span>una buena noticia.</span>
-            </h1>
-            <p>
-              Compara con lo que consumes. Entiende lo que pagas.
-              <br className="desktop-break" /> Y elige cuándo te compensa
-              cambiar.
-            </p>
-          </div>
-          <div className="hero-note">
-            <div className="note-mark">
-              <Zap size={21} />
+            <div className="hero-note">
+              <div className="note-mark">
+                <Zap size={21} />
+              </div>
+              <span className="eyebrow">UN HÁBITO QUE SUMA</span>
+              <p>
+                Un café.
+                <br />
+                Una comparativa.
+                <br />
+                <strong>Una decisión mejor.</strong>
+              </p>
+              <div className="small">
+                Tu revisión semanal de la luz <ArrowDownRight size={16} />
+              </div>
             </div>
-            <span className="eyebrow">UN HÁBITO QUE SUMA</span>
-            <p>
-              Un café.
-              <br />
-              Una comparativa.
-              <br />
-              <strong>Una decisión mejor.</strong>
-            </p>
-            <div className="small">
-              Tu revisión semanal de la luz <ArrowDownRight size={16} />
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
         <div className="workspace-bar">
-          <nav aria-label="Secciones del comparador">
+          <nav ref={navigation} aria-label="Secciones del comparador">
             <button
               aria-current={tab === "compare" ? "page" : undefined}
               className={tab === "compare" ? "active" : ""}

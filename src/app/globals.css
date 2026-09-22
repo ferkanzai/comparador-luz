@@ -115,6 +115,7 @@ fieldset:disabled {
 }
 ::selection {
   background: var(--lime);
+  color: var(--ink);
 }
 .muted {
   color: var(--muted);
@@ -371,6 +372,9 @@ small {
   display: grid;
   place-items: center;
   transform: rotate(-12deg);
+}
+.workspace-content {
+  min-height: calc(100dvh - 160px);
 }
 .workspace-bar {
   display: flex;
@@ -877,7 +881,7 @@ small {
   gap: 10px;
   font-size: 0.875rem;
   margin: 5px 0;
-  color: #c1cdb9;
+  color: var(--ink);
 }
 .breakdown dd {
   margin: 0;
@@ -886,7 +890,7 @@ small {
 .breakdown .total {
   border-top: 1px solid #52664b;
   padding-top: 8px;
-  color: var(--lime);
+  color: var(--green);
   font-weight: 600;
 }
 .annual-saving {
@@ -1237,6 +1241,9 @@ small {
 }
 .modal.wide {
   width: min(800px, calc(100vw - 32px));
+}
+.modal.finalist-modal {
+  width: min(1440px, calc(100vw - 32px));
 }
 .modal::backdrop {
   background: #152b2390;
@@ -3338,7 +3345,7 @@ button:disabled {
 .comparison-scroll {
   overflow: auto;
   max-height: 70vh;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -3601,6 +3608,18 @@ button:disabled {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.tariff-detail-actions .danger {
+  color: #a02d28;
+  padding: 9px 13px;
+  border: 1px solid #dba7a1;
+  border-radius: 8px;
+  background: #fff0ee;
+  text-decoration: none;
+}
+.tariff-detail-actions .danger:hover {
+  background: #f9dcd7;
+  border-color: #a02d28;
+}
 .tariff-detail-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3637,19 +3656,38 @@ button:disabled {
 }
 .simulator-inputs {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: minmax(0, 3fr) minmax(180px, 1fr);
   gap: 40px;
   margin: 20px 0;
 }
 .simulator-distribution {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
+}
+.simulator-total {
+  border-left: 1px solid var(--line);
+  padding-left: 24px;
+  align-self: stretch;
+}
+.simulator-total output {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.simulator-total small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.65rem;
 }
 .simulator-total > span {
   display: block;
-  margin-top: 8px;
-  font-size: 0.65rem;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 .simulator-inputs .input-wrap {
   min-height: 42px;
@@ -3662,27 +3700,6 @@ button:disabled {
 }
 .simulator-inputs label {
   font-size: 0.72rem;
-}
-.period-quantity {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
-  font-variant-numeric: tabular-nums;
-  margin-top: 8px;
-}
-.period-quantity::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  background: #a26838;
-  border-radius: 50%;
-}
-.period-1::before {
-  background: #868444;
-}
-.period-2::before {
-  background: #44816d;
 }
 .simulator-footer {
   border-top: 1px solid var(--line);
@@ -3830,7 +3847,7 @@ button:disabled {
   margin-top: 16px;
 }
 /* Returning households reach their working comparison directly. */
-.hero.hero-compact {
+.workspace-title {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -3839,10 +3856,10 @@ button:disabled {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.shell:has(.hero-compact) .workspace-bar {
+.shell:has(.workspace-title) .workspace-bar {
   margin-top: 16px;
 }
-.shell:has(.hero-compact) .save-strip {
+.shell:has(.workspace-title) .save-strip {
   margin-bottom: 16px;
   padding-top: 10px;
   padding-bottom: 10px;
@@ -3955,6 +3972,11 @@ button:disabled {
   .simulator-distribution {
     gap: 10px;
   }
+  .simulator-total {
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
   .simulator-footer {
     flex-direction: column;
     align-items: flex-start;
@@ -3986,15 +4008,15 @@ button:disabled {
     min-width: 195px;
     padding: 12px;
   }
-  .shell:has(.hero-compact) .save-strip {
+  .shell:has(.workspace-title) .save-strip {
     flex-direction: row;
     align-items: center;
     gap: 10px;
   }
-  .shell:has(.hero-compact) .save-strip > span {
+  .shell:has(.workspace-title) .save-strip > span {
     font-size: 0.68rem;
   }
-  .shell:has(.hero-compact) .save-strip > button {
+  .shell:has(.workspace-title) .save-strip > button {
     font-size: 0.7rem;
     padding: 8px 10px;
     flex-shrink: 0;

@@ -1,6 +1,17 @@
 import axe from "axe-core";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { comparisonFixture, openComparison } from "./comparison.fixture";
+
+async function enterConsumption(
+  page: Page,
+  punta: string,
+  llano: string,
+  valle: string,
+) {
+  await page.getByLabel("Punta simulado", { exact: true }).fill(punta);
+  await page.getByLabel("Llano simulado", { exact: true }).fill(llano);
+  await page.getByLabel("Valle simulado", { exact: true }).fill(valle);
+}
 
 test("compares eight tariffs in one table with costs, rates and honest exclusions", async ({
   page,
@@ -40,13 +51,10 @@ test("simulates total and distribution for every tariff, resets and explicitly a
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
-  const simulation = page.getByRole("region", {
-    name: "Simulación de consumo",
-  });
-  await expect(simulation).toContainText("120 kWh");
-  await expect(simulation).toContainText("180 kWh");
-  await expect(simulation).toContainText("300 kWh");
+  await enterConsumption(page, "120", "180", "300");
+  await expect(
+    page.getByLabel("Consumo total simulado", { exact: true }),
+  ).toHaveText("600 kWh");
   const table = page.getByRole("table", {
     name: "Comparativa de tarifas",
     exact: true,
@@ -54,9 +62,11 @@ test("simulates total and distribution for every tariff, resets and explicitly a
   await expect(
     table.getByRole("row").filter({ hasText: "Casa 24h" }),
   ).toContainText("130,35");
-  await page.getByLabel("Llano simulado", { exact: true }).fill("20");
-  await page.getByLabel("Valle simulado", { exact: true }).fill("60");
-  await expect(simulation).toContainText("360 kWh");
+  await page.getByLabel("Llano simulado", { exact: true }).fill("120");
+  await page.getByLabel("Valle simulado", { exact: true }).fill("360");
+  await expect(
+    page.getByLabel("Consumo total simulado", { exact: true }),
+  ).toHaveText("600 kWh");
   await expect(
     table.getByRole("row").filter({ hasText: "Luna Noche" }),
   ).toContainText("99,15");
@@ -64,7 +74,7 @@ test("simulates total and distribution for every tariff, resets and explicitly a
   await expect(
     table.getByRole("row").filter({ hasText: "Casa 24h" }),
   ).toContainText("110,35");
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page.reload();
   await expect(
     table.getByRole("row").filter({ hasText: "Casa 24h" }),
@@ -72,7 +82,7 @@ test("simulates total and distribution for every tariff, resets and explicitly a
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page
     .getByRole("button", { name: "Usar este consumo", exact: true })
     .click();
@@ -131,9 +141,9 @@ test("compares selected finalists without changing the contract and keeps select
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Punta simulado", { exact: true }).fill("10");
-  await page.getByLabel("Llano simulado", { exact: true }).fill("10");
-  await page.getByLabel("Valle simulado", { exact: true }).fill("80");
+  await page.getByLabel("Punta simulado", { exact: true }).fill("50");
+  await page.getByLabel("Llano simulado", { exact: true }).fill("50");
+  await page.getByLabel("Valle simulado", { exact: true }).fill("400");
   await expect(table.getByRole("row").nth(1)).toContainText("Luna Noche");
   await expect(table.getByRole("row").nth(1)).toContainText("67,35");
   await expect(
@@ -156,7 +166,7 @@ test("keeps an experiment out of tariff edits and preserves other profile change
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page
     .getByRole("button", { name: "Editar Clara Fija", exact: true })
     .click();
@@ -180,7 +190,7 @@ test("keeps an experiment out of tariff edits and preserves other profile change
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page
     .getByRole("button", { name: "Editar perfil", exact: true })
     .click();
@@ -203,43 +213,34 @@ test("keeps an experiment out of tariff edits and preserves other profile change
   ).toHaveValue("31");
 });
 
-test("withholds invalid simulations and requires an explicit distribution for zero consumption", async ({
+test("accepts invoice kWh, distinguishes missing values from zero and withholds invalid results", async ({
   page,
 }) => {
   const data = comparisonFixture();
-  data.profile.peakKwh = "0";
-  data.profile.flatKwh = "0";
-  data.profile.valleyKwh = "0";
+  Object.assign(data.profile, { peakKwh: "0", flatKwh: "0", valleyKwh: "0" });
   await openComparison(page, data);
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page
-    .getByLabel("Consumo total simulado", { exact: true })
-    .fill("100,5");
-  await expect(
-    page.getByRole("button", { name: "Usar este consumo", exact: true }),
-  ).toBeDisabled();
+  const total = page.getByLabel("Consumo total simulado", { exact: true });
+  await expect(total).toHaveText("0 kWh");
+  await page.getByLabel("Valle simulado", { exact: true }).fill("100,5");
+  await expect(total).toHaveText("100,5 kWh");
   const table = page.getByRole("table", {
     name: "Comparativa de tarifas",
     exact: true,
   });
-  await expect(table).not.toContainText("Menor coste");
-  for (const label of ["Punta simulado", "Llano simulado"])
-    await page.getByLabel(label, { exact: true }).fill("0");
-  await page.getByLabel("Valle simulado", { exact: true }).fill("100");
   await expect(
     table.getByRole("row").filter({ hasText: "Luna Noche" }),
   ).toContainText("18,39");
-  await page.getByLabel("Punta simulado", { exact: true }).fill("10");
-  await expect(
-    page.getByRole("status").filter({ hasText: "El reparto debe sumar" }),
-  ).toBeVisible();
-  await expect(table).not.toContainText("Menor coste");
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("-1");
-  await expect(
-    page.getByRole("button", { name: "Usar este consumo", exact: true }),
-  ).toBeDisabled();
+  for (const invalid of ["", "-1", "1000001"]) {
+    await page.getByLabel("Punta simulado", { exact: true }).fill(invalid);
+    await expect(
+      page.getByRole("button", { name: "Usar este consumo", exact: true }),
+    ).toBeDisabled();
+    await expect(total).toHaveText("— kWh");
+    await expect(table).not.toContainText("Menor coste");
+  }
   await page.getByRole("button", { name: "Restablecer", exact: true }).click();
   await expect(
     table.getByRole("row").filter({ hasText: "Luna Noche" }),
@@ -286,6 +287,15 @@ test("account autosave isolates simulations, reports failures and resets transie
     exact: true,
   });
   await expect(table).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Que tu próxima factura/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", {
+      name: "Tu espacio de electricidad",
+      exact: true,
+    }),
+  ).toHaveCount(1);
   await page
     .getByRole("checkbox", { name: "Comparar Casa 24h", exact: true })
     .uncheck();
@@ -307,7 +317,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await expect(
     page.getByRole("button", {
       name: "Guardar este periodo como factura",
@@ -325,7 +335,7 @@ test("account autosave isolates simulations, reports failures and resets transie
     "110.35",
   );
   await page.getByRole("button", { name: "Cerrar", exact: true }).click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page
     .getByRole("button", { name: "Editar Clara Fija", exact: true })
     .click();
@@ -345,7 +355,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page.route("**/api/workspace", async (route) => {
     if (route.request().method() === "PUT") await route.abort();
     else await route.continue();
@@ -388,7 +398,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("700");
+  await enterConsumption(page, "140", "210", "350");
   await table
     .getByRole("checkbox", { name: "Comparar Clara Guardada", exact: true })
     .check();
@@ -416,7 +426,7 @@ test("account autosave isolates simulations, reports failures and resets transie
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("800");
+  await enterConsumption(page, "160", "240", "400");
   releaseRead();
   await expect(
     page.getByRole("region", { name: "Simulación de consumo", exact: true }),
@@ -657,7 +667,7 @@ test("has accessible table, simulator and finalist interactions", async ({
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("600");
+  await enterConsumption(page, "120", "180", "300");
   await page.addScriptTag({ content: axe.source });
   const audit = () =>
     page.evaluate(async () => {
@@ -804,14 +814,10 @@ test("conserves a rounding-sensitive total through simulation and adoption", asy
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
-  await page.getByLabel("Consumo total simulado", { exact: true }).fill("1.01");
-  const simulation = page.getByRole("region", {
-    name: "Simulación de consumo",
-  });
+  await enterConsumption(page, "0.336667", "0.336667", "0.336666");
   await expect(
-    simulation.getByText("0,336667 kWh", { exact: true }),
-  ).toHaveCount(2);
-  await expect(simulation).toContainText("0,336666 kWh");
+    page.getByLabel("Consumo total simulado", { exact: true }),
+  ).toHaveText("1,01 kWh");
   await page
     .getByRole("button", { name: "Usar este consumo", exact: true })
     .click();
@@ -829,4 +835,121 @@ test("conserves a rounding-sensitive total through simulation and adoption", asy
     1.01,
     6,
   );
+});
+
+test("fits three finalists on desktop and audits the tariff breakdown contrast", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openComparison(page);
+  await page
+    .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+    .check();
+  await page
+    .getByRole("checkbox", { name: "Comparar Luna Noche", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Ver comparación (3)", exact: true })
+    .click();
+  const table = page.getByRole("table", {
+    name: "Comparación de finalistas",
+    exact: true,
+  });
+  expect(
+    await table
+      .locator("..")
+      .evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBeTruthy();
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ver desglose de Casa 24h", exact: true })
+    .click();
+  await page.addScriptTag({ content: axe.source });
+  const violations = await page.evaluate(async () => {
+    const engine = (window as typeof window & { axe: typeof axe }).axe;
+    return (
+      await engine.run(document, {
+        runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa"] },
+      })
+    ).violations.map((v) => v.id);
+  });
+  expect(violations).toEqual([]);
+  const total = page.getByRole("dialog").locator(".breakdown .total");
+  const selection = await total.evaluate((el) => ({
+    color: getComputedStyle(el, "::selection").color,
+    background: getComputedStyle(el, "::selection").backgroundColor,
+  }));
+  expect(selection.color).toBe("rgb(36, 61, 50)");
+  expect(selection.background).toBe("rgb(215, 238, 135)");
+});
+
+test("continues scrolling the page at both vertical edges of the overview table", async ({
+  page,
+}) => {
+  await openComparison(page);
+  const region = page
+    .getByRole("table", { name: "Comparativa de tarifas", exact: true })
+    .locator("..");
+  await region.scrollIntoViewIfNeeded();
+  const box = await region.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await region.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  const beforeDown = await page.evaluate(() => scrollY);
+  await page.mouse.wheel(0, 1);
+  await page.mouse.wheel(0, 400);
+  await expect
+    .poll(() => page.evaluate(() => scrollY))
+    .toBeGreaterThan(beforeDown);
+  await region.scrollIntoViewIfNeeded();
+  await region.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  const topBox = await region.boundingBox();
+  await page.mouse.move(
+    topBox!.x + topBox!.width / 2,
+    topBox!.y + topBox!.height / 2,
+  );
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  const beforeUp = await page.evaluate(() => scrollY);
+  await page.mouse.wheel(0, -400);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(beforeUp);
+});
+
+test("keeps section navigation in a consistent position across all three tabs", async ({
+  page,
+}) => {
+  await openComparison(page);
+  const navigation = page.getByRole("navigation", {
+    name: "Secciones del comparador",
+  });
+  for (const tab of [
+    "Mis tarifas",
+    "Mis facturas",
+    "Comparador",
+    "Mis facturas",
+    "Mis tarifas",
+    "Comparador",
+  ]) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await navigation.getByRole("button", { name: tab, exact: true }).click();
+    await expect(
+      navigation.getByRole("button", { name: tab, exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect
+      .poll(async () => Math.round((await navigation.boundingBox())!.y))
+      .toBe(0);
+  }
 });

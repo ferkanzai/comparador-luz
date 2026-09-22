@@ -42,7 +42,12 @@ export default function FinalistComparison({
     </tr>
   );
   return (
-    <Modal title="Tus finalistas, frente a frente" onClose={onClose} wide>
+    <Modal
+      title="Tus finalistas, frente a frente"
+      onClose={onClose}
+      wide
+      className="finalist-modal"
+    >
       <div className="modal-body finalist-body">
         <p className="muted">
           {profile.days || "—"} días · <TaxAssumptions profile={profile} />

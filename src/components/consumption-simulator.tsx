@@ -1,6 +1,6 @@
 import { RotateCcw, X } from "lucide-react";
 import type { ConsumptionSimulation } from "@/lib/consumption-simulation";
-import type { Consumption } from "@/lib/domain";
+import { numberOf, type Consumption } from "@/lib/domain";
 import { Field } from "./ui";
 
 export default function ConsumptionSimulator({
@@ -22,9 +22,16 @@ export default function ConsumptionSimulator({
   onAdopt: () => void;
   onClose: () => void;
 }) {
-  const periods = ["Punta", "Llano", "Valle"];
-  const quantities = consumption
-    ? [consumption.peakKwh, consumption.flatKwh, consumption.valleyKwh]
+  const periods = [
+    ["peakKwh", "Punta"],
+    ["flatKwh", "Llano"],
+    ["valleyKwh", "Valle"],
+  ] as const;
+  const total = consumption
+    ? Object.values(consumption).reduce(
+        (sum, value) => sum + numberOf(value),
+        0,
+      )
     : null;
   return (
     <section
@@ -45,45 +52,34 @@ export default function ConsumptionSimulator({
         </button>
       </div>
       <p className="small muted">
-        Sube o baja el total conservando el reparto, o cambia los porcentajes
-        sin cambiar los kWh. Se aplica a todas las tarifas.
+        Introduce los kWh de punta, llano y valle, como aparecen en tu factura.
+        El total se suma automáticamente y todas las tarifas se recalculan.
       </p>
       <div className="simulator-inputs">
-        <div className="simulator-total">
-          <Field
-            label="Consumo total simulado"
-            value={value.total}
-            onChange={(total) => onChange({ ...value, total })}
-            unit="kWh"
-            decimal
-            maxLength={24}
-          />
-          <span className="small muted">Para los mismos días del perfil</span>
-        </div>
         <div className="simulator-distribution">
-          {periods.map((period, index) => (
-            <div key={period}>
-              <Field
-                label={`${period} simulado`}
-                value={value.shares[index]}
-                onChange={(share) => {
-                  const shares: ConsumptionSimulation["shares"] = [
-                    ...value.shares,
-                  ];
-                  shares[index] = share;
-                  onChange({ ...value, shares });
-                }}
-                unit="%"
-                decimal
-                maxLength={24}
-              />
-              <span className={`period-quantity period-${index}`}>
-                {quantities
-                  ? `${quantities[index].replace(".", ",")} kWh`
-                  : "— kWh"}
-              </span>
-            </div>
+          {periods.map(([key, period]) => (
+            <Field
+              key={key}
+              label={`${period} simulado`}
+              value={value[key]}
+              onChange={(kwh) => onChange({ ...value, [key]: kwh })}
+              unit="kWh"
+              decimal
+              maxLength={24}
+            />
           ))}
+        </div>
+        <div className="simulator-total">
+          <span>Total simulado</span>
+          <output aria-label="Consumo total simulado">
+            {total === null
+              ? "—"
+              : total.toLocaleString("es-ES", {
+                  maximumFractionDigits: 6,
+                })}{" "}
+            kWh
+          </output>
+          <small>Para los mismos días del perfil</small>
         </div>
       </div>
       {error && (
