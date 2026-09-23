@@ -3,7 +3,9 @@ import axe from "axe-core";
 import type { Page } from "@playwright/test";
 import { comparisonFixture } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
-import type { Workspace } from "../../src/lib/domain";
+import { money, type Workspace } from "../../src/lib/domain";
+import { calculate } from "../../src/lib/calculator";
+import { billFromCalculation, billTotal } from "../../src/lib/bill-data";
 
 test.beforeEach(async () => {
   const url = process.env.COMPARISON_TEST_DATABASE_URL;
@@ -240,19 +242,26 @@ test("removes current and historical records only after confirmation without rea
   await page
     .getByRole("button", { name: "Eliminar registro de Casa 24h", exact: true })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("sin tarifa actual");
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Cancelar", exact: true })
-    .click();
+  const confirmation = page.getByRole("dialog", {
+    name: "Eliminar registro",
+    exact: true,
+  });
+  await expect(confirmation).toContainText("sin tarifa actual");
+  await expect(confirmation).toContainText("Casa 24h");
+  await expect(
+    confirmation.getByRole("button", { name: "Cancelar", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(confirmation).toHaveCount(0);
   await expect(page.getByRole("article")).toHaveCount(2);
   await page
     .getByRole("button", { name: "Eliminar registro de Casa 24h", exact: true })
     .click();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Eliminar registro", exact: true })
-    .click();
+  await page.keyboard.press("Tab");
+  await expect(
+    confirmation.getByRole("button", { name: "Eliminar registro", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(
     page.getByRole("button", { name: "Registrar tarifa actual", exact: true }),
@@ -270,6 +279,66 @@ test("removes current and historical records only after confirmation without rea
     .getByRole("button", { name: "Eliminar registro", exact: true })
     .click();
   await expect(page.getByRole("article")).toHaveCount(0);
+});
+
+test("deletes a bill only after keyboard confirmation and shows what it removes", async ({
+  page,
+}) => {
+  const data = comparisonFixture();
+  const contract = data.tariffs[0];
+  const cost = calculate(contract, data.profile)!;
+  const bill = (month: string, periodStart: string, periodEnd: string) => ({
+    ...billFromCalculation(contract, data.profile, cost),
+    month,
+    periodStart,
+    periodEnd,
+  });
+  const march = bill("2026-03", "2026-02-01", "2026-03-03");
+  const april = bill("2026-04", "2026-03-03", "2026-04-02");
+  data.bills = [march, april];
+  await openTariffs(page, data);
+  await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
+  const remove = page.getByRole("button", {
+    name: "Eliminar factura 2026-03",
+    exact: true,
+  });
+  const confirmation = page.getByRole("dialog", {
+    name: "Eliminar factura",
+    exact: true,
+  });
+  await remove.click();
+  await expect(confirmation).toContainText("Marzo 2026");
+  await expect(confirmation).toContainText("Compañía actual");
+  await expect(confirmation).toContainText(money(billTotal(march)));
+  await expect(confirmation).toContainText("resto de facturas se conservan");
+  await expect(
+    confirmation.getByRole("button", { name: "Cancelar", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(confirmation).toHaveCount(0);
+  await remove.click();
+  await page.keyboard.press("Enter");
+  await expect(confirmation).toHaveCount(0);
+  await expect(remove).toBeVisible();
+  await remove.click();
+  await page.keyboard.press("Tab");
+  await expect(
+    confirmation.getByRole("button", { name: "Eliminar factura", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(remove).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Eliminar factura 2026-04", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Guardado en tu cuenta", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Eliminar factura 2026-04", exact: true }),
+  ).toBeVisible();
+  await expect(remove).toHaveCount(0);
 });
 
 test("records a candidate as history and edits a comparison copy without changing the period", async ({

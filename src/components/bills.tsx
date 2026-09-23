@@ -19,6 +19,7 @@ import {
 } from "@/lib/bill-data";
 import { Empty } from "./ui";
 import BillForm from "./bill-form";
+import ConfirmDialog from "./confirm-dialog";
 import BillsChart from "./bills-chart";
 import YearComparison from "./year-comparison";
 import { invoiceYears } from "@/lib/year-comparison";
@@ -32,6 +33,8 @@ export default function Bills({
   update: (w: Workspace) => void;
 }) {
   const [editing, setEditing] = useState<Bill | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const removing = w.bills.find((b) => b.id === removingId);
   const [year, setYear] = useState(today().slice(0, 4));
   const [view, setView] = useState<"months" | "years">("months");
   const hasMultipleYears = invoiceYears(w.bills).length > 1;
@@ -330,10 +333,7 @@ export default function Bills({
                           <button
                             className="icon-button danger"
                             aria-label={`Eliminar factura ${b.month}`}
-                            onClick={() => {
-                              if (window.confirm("¿Eliminar esta factura?"))
-                                update(removeBill(w, b.id));
-                            }}
+                            onClick={() => setRemovingId(b.id)}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -346,6 +346,36 @@ export default function Bills({
             </div>
           )}
         </>
+      )}
+      {removing && (
+        <ConfirmDialog
+          title="Eliminar factura"
+          summary={
+            <>
+              <p className="muted">
+                {removing.provider} · {money(billTotal(removing))}
+              </p>
+              <h3>{billMonthLabel(removing.month)}</h3>
+            </>
+          }
+          consequence={
+            <>
+              <p>
+                Esta factura se eliminará de Mis facturas y de sus gráficos.
+              </p>
+              <p className="muted">
+                Tus tarifas, tu historial de contratos y el resto de facturas se
+                conservan.
+              </p>
+            </>
+          }
+          confirmLabel="Eliminar factura"
+          onConfirm={() => {
+            update(removeBill(w, removing.id));
+            setRemovingId(null);
+          }}
+          onClose={() => setRemovingId(null)}
+        />
       )}
       {editing && (
         <BillForm

@@ -25,6 +25,7 @@ import {
   removePeriod,
 } from "@/lib/tariff-periods";
 import { Empty, Modal } from "./ui";
+import ConfirmDialog from "./confirm-dialog";
 import EstimateNotice from "./estimate-notice";
 import CostCategoryLabel from "./cost-category-label";
 import { estimatedCharges } from "@/lib/charge-estimates";
@@ -285,41 +286,37 @@ export default function TariffHistory({
         </div>
       )}
       {removing && (
-        <Modal title="Eliminar registro" onClose={() => setRemovingId(null)}>
-          <div className="modal-body">
-            <p>
-              Eliminarás <strong>{removing.tariff.name}</strong>, desde{" "}
-              {shortDate(removing.start)}{" "}
-              {removing.current
-                ? "hasta hoy"
-                : `hasta ${shortDate(removing.end)}`}
-              .
-            </p>
-            <p>
-              {removing.current
-                ? "Te quedarás sin tarifa actual hasta que registres otra. No reactivaremos una tarifa anterior."
-                : "Quedará un hueco en tu historial. No cambiaremos las fechas de otras tarifas."}{" "}
-              Las facturas guardadas no cambian.
-            </p>
-            <div className="modal-actions">
-              <button
-                className="button secondary"
-                onClick={() => setRemovingId(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                className="button primary"
-                onClick={() => {
-                  update(removePeriod(workspace, removing.id));
-                  setRemovingId(null);
-                }}
-              >
-                Eliminar registro
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <ConfirmDialog
+          title="Eliminar registro"
+          summary={
+            <>
+              <p className="muted">
+                {removing.current ? "Tarifa actual" : "Tarifa anterior"} · desde{" "}
+                {shortDate(removing.start)}{" "}
+                {removing.current
+                  ? "hasta hoy"
+                  : `hasta ${shortDate(removing.end)}`}
+              </p>
+              <h3>{removing.tariff.name}</h3>
+            </>
+          }
+          consequence={
+            <>
+              <p>
+                {removing.current
+                  ? "Te quedarás sin tarifa actual hasta que registres otra. No reactivaremos una tarifa anterior."
+                  : "Quedará un hueco en tu historial. No cambiaremos las fechas de otras tarifas."}
+              </p>
+              <p className="muted">Las facturas guardadas no cambian.</p>
+            </>
+          }
+          confirmLabel="Eliminar registro"
+          onConfirm={() => {
+            update(removePeriod(workspace, removing.id));
+            setRemovingId(null);
+          }}
+          onClose={() => setRemovingId(null)}
+        />
       )}
       {choosing && (
         <Modal

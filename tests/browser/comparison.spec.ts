@@ -655,9 +655,11 @@ test("preserves tariff duplication, deletion and current-contract designation", 
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(1);
   await expect(confirmation).toContainText("Clara Fija (copia)");
-  await confirmation
-    .getByRole("button", { name: "Eliminar tarifa", exact: true })
-    .click();
+  await page.keyboard.press("Tab");
+  await expect(
+    confirmation.getByRole("button", { name: "Eliminar tarifa", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(table.getByRole("row")).toHaveCount(9);
   await expect(
     page.getByRole("button", {

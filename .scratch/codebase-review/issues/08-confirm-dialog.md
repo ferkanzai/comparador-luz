@@ -8,6 +8,8 @@
 
 **Effort:** S–M
 
+**Implementation:** complete
+
 ## Why
 
 Deletion is confirmed three different ways:
@@ -20,7 +22,17 @@ Deletion is confirmed three different ways:
 
 ## Checklist
 
-- [ ] `ConfirmDialog` takes a title, a summary slot, a consequence text, a confirm label and `onConfirm`. It focuses "Cancelar" first and uses danger styling for the confirm button.
-- [ ] Use it for tariff deletion, history-record removal and bill deletion. Remove `window.confirm`.
-- [ ] Bill deletion shows the month, supplier and amount, and says what's preserved.
-- [ ] Browser tests cover confirming and cancelling each deletion with the keyboard.
+- [x] `ConfirmDialog` takes a title, a summary slot, a consequence text, a confirm label and `onConfirm`. It focuses "Cancelar" first and uses danger styling for the confirm button.
+- [x] Use it for tariff deletion, history-record removal and bill deletion. Remove `window.confirm`.
+- [x] Bill deletion shows the month, supplier and amount, and says what's preserved.
+- [x] Browser tests cover confirming and cancelling each deletion with the keyboard.
+
+## Comments
+
+Implemented in `src/components/confirm-dialog.tsx`, based on the tariff deletion dialog from `d18a33e`. Its CSS classes were renamed from `tariff-delete-*` to `confirm-*`, and the styles are unchanged. All three deletions now share the same layout: a danger icon, a summary (a small muted line above a heading), a consequence paragraph, a muted "what's preserved" line, and "Cancelar" (focused) next to a red confirm button.
+
+- **History records:** the summary says whether the record is the current or a previous tariff and gives its dates. The confirm button is now danger-styled instead of green.
+- **Bills:** the summary shows supplier · total, and the heading is the month. The consequence says the bill leaves Mis facturas and its charts, and that tariffs, contract history and other bills are kept.
+- **Shared save path:** the second paragraph of this ticket asked for one save path for `BillForm`. Ticket 07 already did that with `saveBill`, used by both the dashboard and Mis facturas. The three `TariffRecordForm` mounts already share the `tariff-periods` functions.
+
+Tests: the tariff and history tests now cancel with Enter on the focused "Cancelar" (or Escape) and confirm with Tab then Enter. A new signed-in test covers bill deletion: the summary content, Escape, Enter on Cancelar, keyboard confirm, and that the deletion persists after a reload. Phone screenshots of all three dialogs look consistent. Typecheck, lint and the browser suite (31) pass.
