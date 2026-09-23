@@ -8,6 +8,8 @@
 
 **Effort:** S
 
+**Implementation:** complete
+
 ## Why
 
 - `tariff-history.tsx` and `finalist-comparison.tsx` import display components from the comparison table file. Changing the table then risks changing the history ledger.
@@ -15,6 +17,14 @@
 
 ## Checklist
 
-- [ ] New file `tariff-rates.tsx` (kebab-case file name, PascalCase components). Update the imports.
-- [ ] Add a `decimalComma(value: string)` helper, or extend `tariff-price-format.ts`, and use it everywhere the inline replace appears.
-- [ ] No visual change. Browser suite passes.
+- [x] New file `tariff-rates.tsx` (kebab-case file name, PascalCase components). Update the imports.
+- [x] Add a `decimalComma(value: string)` helper, or extend `tariff-price-format.ts`, and use it everywhere the inline replace appears.
+- [x] No visual change. Browser suite passes.
+
+## Comments
+
+Implemented. `EnergyRates`, `PowerRates` and `CostDifference` now live in `src/components/tariff-rates.tsx`. `tariff-history.tsx` and `finalist-comparison.tsx` import them from there, and take only the `ComparisonRow` type from the table.
+
+`decimalComma` lives in `domain.ts` rather than `tariff-price-format.ts`, because `domain.ts` needs it for `powerDescription` and `tariff-price-format.ts` already imports from `domain.ts`. It includes the "—" fallback that every call site repeated. It replaces all the inline replacements, including two extra ones in `profile-fields.tsx` (`TaxAssumptions`) and one in `tariff-history.tsx`.
+
+Validation: unit tests, and the 28-test browser suite.

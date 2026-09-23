@@ -12,6 +12,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import {
+  decimalComma,
   newTariff,
   shortDate,
   powerDescription,
@@ -28,7 +29,7 @@ import EstimateNotice from "./estimate-notice";
 import CostCategoryLabel from "./cost-category-label";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import { formatTariffPrice } from "@/lib/tariff-price-format";
-import { EnergyRates } from "./comparison-table";
+import { EnergyRates } from "./tariff-rates";
 import TariffPriceComparison from "./tariff-price-comparison";
 
 import type { TariffRecordDraft } from "./tariff-record-form";
@@ -96,7 +97,7 @@ export default function TariffHistory({
                   period.tariff.energyValley,
                 ];
           const roundedEnergy = energyValues.some(
-            (v) => formatTariffPrice(v) !== (v.replace(".", ",") || "—"),
+            (v) => formatTariffPrice(v) !== decimalComma(v),
           );
           return (
             <article className="tariff-record" key={period.id}>

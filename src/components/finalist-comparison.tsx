@@ -6,12 +6,8 @@ import CostCategoryLabel, {
   billLineCategories,
   type CostCategory,
 } from "./cost-category-label";
-import {
-  CostDifference,
-  EnergyRates,
-  PowerRates,
-  type ComparisonRow,
-} from "./comparison-table";
+import type { ComparisonRow } from "./comparison-table";
+import { CostDifference, EnergyRates, PowerRates } from "./tariff-rates";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";

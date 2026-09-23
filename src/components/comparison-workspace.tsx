@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { calculate } from "@/lib/calculator";
 import {
+  decimalComma,
   numberOf,
   profileSchema,
   today,
@@ -146,9 +147,9 @@ export default function ComparisonWorkspace({
             {total === null ? "—" : quantity(total)} <small>kWh</small>
           </strong>
           <span>
-            Punta {profile.peakKwh.replace(".", ",") || "—"} · Llano{" "}
-            {profile.flatKwh.replace(".", ",") || "—"} · Valle{" "}
-            {profile.valleyKwh.replace(".", ",") || "—"}
+            Punta {decimalComma(profile.peakKwh)} · Llano{" "}
+            {decimalComma(profile.flatKwh)} · Valle{" "}
+            {decimalComma(profile.valleyKwh)}
           </span>
         </div>
         <div className="profile-stat">
@@ -156,8 +157,8 @@ export default function ComparisonWorkspace({
             {profile.days || "—"} <small>días</small>
           </strong>
           <span>
-            P1 {profile.peakKw.replace(".", ",") || "—"} / P2{" "}
-            {profile.valleyKw.replace(".", ",") || "—"} kW ·{" "}
+            P1 {decimalComma(profile.peakKw)} / P2{" "}
+            {decimalComma(profile.valleyKw)} kW ·{" "}
             {profile.taxes ? "Con impuestos" : "Sin impuestos"}
           </span>
         </div>

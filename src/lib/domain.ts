@@ -13,6 +13,8 @@ export const decimal = (max = 1_000_000) =>
     );
 export const numberOf = (s: string) =>
   s === "" ? 0 : Number(s.replace(",", "."));
+/** Shows an entered decimal string as typed, with a Spanish comma; empty is unknown. */
+export const decimalComma = (s: string) => s.replace(".", ",") || "—";
 const date = z.iso.date();
 const optionalDate = z.union([date, z.literal("")]);
 export const profileSchema = z.object({
@@ -295,8 +297,8 @@ export const formatPowerPrice = (price: number | null) =>
 
 export function powerDescription(t: Tariff) {
   const unit = powerUnitLabels[t.powerUnit];
-  const peak = t.powerPeak.replace(".", ",") || "—";
-  const valley = t.powerValley.replace(".", ",") || "—";
+  const peak = decimalComma(t.powerPeak);
+  const valley = decimalComma(t.powerValley);
   return t.powerKind === "combined"
     ? `${peak} ${unit} · P1 + P2 combinados`
     : t.powerKind === "same"

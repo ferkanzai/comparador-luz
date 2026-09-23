@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import type { Profile } from "@/lib/domain";
+import { decimalComma, type Profile } from "@/lib/domain";
 import {
   electricityTax,
   formatRate,
@@ -150,8 +150,8 @@ export function TaxAssumptions({ profile }: { profile: Profile }) {
     <span aria-label="Impuestos de la comparación">
       {profile.taxes ? (
         <>
-          IVA {profile.vat.replace(".", ",") || "—"} % · IEE{" "}
-          {profile.electricityTax.replace(".", ",") || "—"} % ·{" "}
+          IVA {decimalComma(profile.vat)} % · IEE{" "}
+          {decimalComma(profile.electricityTax)} % ·{" "}
           {profile.minimumTax
             ? `Mínimo IEE ${formatRate(electricityTax.minimumPerKwh)} €/kWh`
             : "Mínimo IEE desactivado"}
