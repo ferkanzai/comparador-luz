@@ -19,6 +19,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const config: NextConfig = {
+  cacheComponents: true,
   poweredByHeader: false,
   async headers() {
     return [

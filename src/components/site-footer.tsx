@@ -1,17 +1,15 @@
 import { Zap } from "lucide-react";
+import { MethodButton } from "./page-context";
 
-export default function SiteFooter({ onMethod }: { onMethod: () => void }) {
+export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <span>
         <Zap size={13} /> Luz en claro{" "}
-        <span className="footer-separator">/</span> Entender también es
-        ahorrar.
+        <span className="footer-separator">/</span> Entender también es ahorrar.
       </span>
       <div>
-        <button className="link-button" onClick={onMethod}>
-          Método y fuentes
-        </button>
+        <MethodButton />
         <span>Hecho para hogares en España</span>
       </div>
     </footer>

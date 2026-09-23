@@ -1,5 +1,5 @@
 "use client";
-import FeedbackNotice, { useFeedback } from "./feedback-notice";
+import FeedbackNotice from "./feedback-notice";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Download, ShieldCheck } from "lucide-react";
@@ -15,15 +15,12 @@ import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
 import ConfirmDialog from "./confirm-dialog";
 import type { TariffRecordDraft } from "./tariff-record-form";
-import SiteHeader from "./site-header";
-import SignOutButton from "./sign-out-button";
-import Hero from "./hero";
 import WorkspaceTabs, { type WorkspaceTab } from "./workspace-tabs";
 import WorkspaceStatus from "./workspace-status";
 import VerificationBanner from "./verification-banner";
-import MethodModal from "./method-modal";
-import SiteFooter from "./site-footer";
 import { AccountRequired, SignupBanner } from "./guest-prompts";
+import { usePage } from "./page-context";
+import type { CurrentUser } from "@/lib/current-user";
 import {
   duplicateTariff,
   removeTariff,
@@ -31,10 +28,24 @@ import {
   saveTariff,
 } from "@/lib/workspace-actions";
 
-const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
-const TariffHistory = dynamic(() => import("./tariff-history"));
-const TariffForm = dynamic(() => import("./tariff-form"));
-const BillForm = dynamic(() => import("./bill-form"));
+// Each lazy view needs its own boundary: suspending up to the page's
+// streaming boundary leaves the triggering update uncommitted.
+const TariffRecordForm = dynamic(() => import("./tariff-record-form"), {
+  loading: () => null,
+});
+const TariffHistory = dynamic(() => import("./tariff-history"), {
+  loading: () => (
+    <div className="panel loading" role="status">
+      Cargando tus tarifas…
+    </div>
+  ),
+});
+const TariffForm = dynamic(() => import("./tariff-form"), {
+  loading: () => null,
+});
+const BillForm = dynamic(() => import("./bill-form"), {
+  loading: () => null,
+});
 const Bills = dynamic(() => import("./bills"), {
   loading: () => (
     <div className="panel loading" role="status">
@@ -47,23 +58,18 @@ export default function Dashboard({
   user,
   accountsAvailable,
   initialWorkspace,
-  method,
+  hero,
 }: {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    emailVerified: boolean;
-  } | null;
+  user: CurrentUser | null;
   accountsAvailable: boolean;
   initialWorkspace?: InitialWorkspace;
-  method: ReactNode;
+  hero: ReactNode;
 }) {
   const workspace = useWorkspace(user?.id, initialWorkspace);
   const { data: w, loaded, loadError, stored, status } = workspace;
   const [busy, setBusy] = useState(false);
-  const { message, setMessage, dismiss } = useFeedback();
-  const [error, setError] = useState("");
+  const { message, setMessage, dismiss, error, setError, openMethod } =
+    usePage();
   const [tab, setTab] = useState<WorkspaceTab>("compare");
   const navigation = useRef<HTMLElement>(null);
   const previousTab = useRef(tab);
@@ -88,7 +94,6 @@ export default function Dashboard({
   const [recordDraft, setRecordDraft] = useState<TariffRecordDraft | null>(
     null,
   );
-  const [methodOpen, setMethodOpen] = useState(false);
   const [removingTariffId, setRemovingTariffId] = useState<string | null>(null);
   const removingTariff = w.tariffs.find(
     (tariff) => tariff.id === removingTariffId && tariff.id !== w.currentId,
@@ -124,153 +129,143 @@ export default function Dashboard({
   }
   return (
     <>
-      <a href="#main" className="skip-link">
-        Saltar al contenido
-      </a>
-      <SiteHeader
-        userName={user ? user.name : null}
-        signOut={<SignOutButton disabled={busy} onError={setError} />}
-      />
-      <main id="main" className="shell">
-        {user || w.tariffs.length ? (
-          <h1 className="workspace-title">Tu espacio de electricidad</h1>
-        ) : (
-          <Hero />
-        )}
-        <div className="workspace-bar">
-          <WorkspaceTabs ref={navigation} tab={tab} onChange={setTab} />
-          <WorkspaceStatus
-            loaded={loaded}
-            signedIn={Boolean(user)}
-            snapshot={workspace}
-            onRetry={workspace.retry}
-          />
+      {user || w.tariffs.length ? (
+        <h1 className="workspace-title">Tu espacio de electricidad</h1>
+      ) : (
+        hero
+      )}
+      <div className="workspace-bar">
+        <WorkspaceTabs ref={navigation} tab={tab} onChange={setTab} />
+        <WorkspaceStatus
+          loaded={loaded}
+          signedIn={Boolean(user)}
+          snapshot={workspace}
+          onRetry={workspace.retry}
+        />
+      </div>
+      {loaded && (
+        <div className="save-strip">
+          <span>
+            <ShieldCheck size={16} />
+            {!user
+              ? "Tus datos se guardan automáticamente en este dispositivo."
+              : "Los cambios se guardan automáticamente."}
+          </span>
+          <button
+            className="button secondary small-button"
+            onClick={exportData}
+          >
+            <Download size={15} />
+            Exportar
+          </button>
         </div>
-        {loaded && (
-          <div className="save-strip">
-            <span>
-              <ShieldCheck size={16} />
-              {!user
-                ? "Tus datos se guardan automáticamente en este dispositivo."
-                : "Los cambios se guardan automáticamente."}
-            </span>
-            <button
-              className="button secondary small-button"
-              onClick={exportData}
-            >
-              <Download size={15} />
-              Exportar
-            </button>
-          </div>
-        )}
-        {status === "invalid" && workspace.issue && (
-          <div className="notice" role="status">
-            No podemos guardar en tu cuenta hasta corregirlo. {workspace.issue}
-          </div>
-        )}
-        {status === "conflict" && (
-          <div className="notice">
-            Tu cuenta tiene cambios más recientes.{" "}
-            {stored
-              ? "Tus cambios siguen guardados en este dispositivo."
-              : "Tus cambios siguen abiertos en esta pestaña."}{" "}
-            Puedes exportarlos antes de cargar la versión de tu cuenta.
-            <button
-              className="button secondary small-button"
-              onClick={workspace.useAccountVersion}
-            >
-              Cargar versión de mi cuenta
-            </button>
-          </div>
-        )}
-        {user && !user.emailVerified && (
-          <VerificationBanner
-            email={user.email}
-            busy={busy}
-            onBusyChange={setBusy}
-            onSent={setMessage}
-            onError={setError}
-          />
-        )}
-        {message && (
-          <FeedbackNotice
-            key={message.id}
-            message={message}
-            onDismiss={dismiss}
-          />
-        )}
-        {error && (
-          <FeedbackNotice
-            message={{ id: 0, text: error, kind: "error" }}
-            onDismiss={() => setError("")}
-          />
-        )}
-        {loadError && (
-          <div className="notice error" role="alert">
-            {loadError}{" "}
-            <button className="link-button" onClick={workspace.reload}>
-              Reintentar
-            </button>
-          </div>
-        )}
-        {!loaded && !loadError && (
-          <div className="panel loading" role="status">
-            Cargando tus tarifas y facturas…
-          </div>
-        )}
-        {loaded && (
-          <fieldset className="workspace-content" disabled={busy}>
-            {tab === "compare" ? (
-              <>
-                <ComparisonWorkspace
-                  key={`${user?.id ?? "guest"}:${workspace.generation}`}
-                  data={w}
-                  onChange={update}
-                  onAdd={() => setEditing({ tariff: newTariff() })}
-                  onMethod={() => setMethodOpen(true)}
-                  onBill={user ? setBillDraft : undefined}
-                  actions={{
-                    onEdit: (tariff) => setEditing({ tariff }),
-                    onDuplicate: (tariff) =>
-                      setEditing({
-                        tariff: duplicateTariff(tariff),
-                        duplicatedFrom: tariff.name,
-                      }),
-                    onCurrent: (tariff) =>
-                      setRecordDraft({
-                        tariff,
-                        kind: "current",
-                        title: "Registrar como actual",
-                      }),
-                    onHistorical: user
-                      ? (tariff) =>
-                          setRecordDraft({
-                            tariff,
-                            kind: "historical",
-                            title: "Registrar como anterior",
-                          })
-                      : undefined,
-                    onRemove: (tariff) => setRemovingTariffId(tariff.id),
-                  }}
-                />
-                {!user && <SignupBanner />}
-              </>
-            ) : !user ? (
-              <AccountRequired section={tab} />
-            ) : tab === "bills" ? (
-              <Bills workspace={w} update={update} />
-            ) : (
-              <TariffHistory
-                key={workspace.generation}
-                workspace={w}
-                update={update}
-                onCompare={() => setTab("compare")}
+      )}
+      {status === "invalid" && workspace.issue && (
+        <div className="notice" role="status">
+          No podemos guardar en tu cuenta hasta corregirlo. {workspace.issue}
+        </div>
+      )}
+      {status === "conflict" && (
+        <div className="notice">
+          Tu cuenta tiene cambios más recientes.{" "}
+          {stored
+            ? "Tus cambios siguen guardados en este dispositivo."
+            : "Tus cambios siguen abiertos en esta pestaña."}{" "}
+          Puedes exportarlos antes de cargar la versión de tu cuenta.
+          <button
+            className="button secondary small-button"
+            onClick={workspace.useAccountVersion}
+          >
+            Cargar versión de mi cuenta
+          </button>
+        </div>
+      )}
+      {user && !user.emailVerified && (
+        <VerificationBanner
+          email={user.email}
+          busy={busy}
+          onBusyChange={setBusy}
+          onSent={setMessage}
+          onError={setError}
+        />
+      )}
+      {message && (
+        <FeedbackNotice
+          key={message.id}
+          message={message}
+          onDismiss={dismiss}
+        />
+      )}
+      {error && (
+        <FeedbackNotice
+          message={{ id: 0, text: error, kind: "error" }}
+          onDismiss={() => setError("")}
+        />
+      )}
+      {loadError && (
+        <div className="notice error" role="alert">
+          {loadError}{" "}
+          <button className="link-button" onClick={workspace.reload}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {!loaded && !loadError && (
+        <div className="panel loading" role="status">
+          Cargando tus tarifas y facturas…
+        </div>
+      )}
+      {loaded && (
+        <fieldset className="workspace-content" disabled={busy}>
+          {tab === "compare" ? (
+            <>
+              <ComparisonWorkspace
+                key={`${user?.id ?? "guest"}:${workspace.generation}`}
+                data={w}
+                onChange={update}
+                onAdd={() => setEditing({ tariff: newTariff() })}
+                onMethod={openMethod}
+                onBill={user ? setBillDraft : undefined}
+                actions={{
+                  onEdit: (tariff) => setEditing({ tariff }),
+                  onDuplicate: (tariff) =>
+                    setEditing({
+                      tariff: duplicateTariff(tariff),
+                      duplicatedFrom: tariff.name,
+                    }),
+                  onCurrent: (tariff) =>
+                    setRecordDraft({
+                      tariff,
+                      kind: "current",
+                      title: "Registrar como actual",
+                    }),
+                  onHistorical: user
+                    ? (tariff) =>
+                        setRecordDraft({
+                          tariff,
+                          kind: "historical",
+                          title: "Registrar como anterior",
+                        })
+                    : undefined,
+                  onRemove: (tariff) => setRemovingTariffId(tariff.id),
+                }}
               />
-            )}
-          </fieldset>
-        )}
-        <SiteFooter onMethod={() => setMethodOpen(true)} />
-      </main>
+              {!user && <SignupBanner />}
+            </>
+          ) : !user ? (
+            <AccountRequired section={tab} />
+          ) : tab === "bills" ? (
+            <Bills workspace={w} update={update} />
+          ) : (
+            <TariffHistory
+              key={workspace.generation}
+              workspace={w}
+              update={update}
+              onCompare={() => setTab("compare")}
+            />
+          )}
+        </fieldset>
+      )}
       {removingTariff && (
         <ConfirmDialog
           title="Eliminar tarifa"
@@ -345,9 +340,6 @@ export default function Dashboard({
           update={update}
           onClose={() => setRecordDraft(null)}
         />
-      )}
-      {methodOpen && (
-        <MethodModal onClose={() => setMethodOpen(false)}>{method}</MethodModal>
       )}
       {!accountsAvailable && (
         <span className="sr-only">

@@ -1,19 +1,14 @@
 "use client";
 import { LogOut } from "lucide-react";
+import { usePage } from "./page-context";
 
-export default function SignOutButton({
-  disabled,
-  onError,
-}: {
-  disabled: boolean;
-  onError: (message: string) => void;
-}) {
+export default function SignOutButton() {
+  const { setError } = usePage();
   return (
     <button
       className="icon-button"
       title="Cerrar sesión"
       aria-label="Cerrar sesión"
-      disabled={disabled}
       onClick={async () => {
         try {
           const { authClient } = await import("@/lib/auth-client");
@@ -21,7 +16,7 @@ export default function SignOutButton({
           if (result.error) throw new Error();
           window.location.assign("/");
         } catch {
-          onError("No se ha podido cerrar sesión. Inténtalo de nuevo.");
+          setError("No se ha podido cerrar sesión. Inténtalo de nuevo.");
         }
       }}
     >

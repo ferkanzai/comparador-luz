@@ -1,18 +1,27 @@
+import { Suspense } from "react";
 import { authConfigured } from "@/lib/auth";
 import AccountForm from "@/components/account-form";
-export const dynamic = "force-dynamic";
-export default async function Account({
+
+export default function Account({ searchParams }: PageProps<"/cuenta">) {
+  return (
+    <Suspense>
+      <AccountPage searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function AccountPage({
   searchParams,
-}: {
-  searchParams: Promise<{ mode?: string; token?: string; error?: string }>;
-}) {
+}: Pick<PageProps<"/cuenta">, "searchParams">) {
   const params = await searchParams;
+  const text = (value: string | string[] | undefined) =>
+    typeof value === "string" ? value : undefined;
   return (
     <AccountForm
       configured={authConfigured()}
-      mode={params.mode}
-      token={params.token}
-      verificationError={params.error}
+      mode={text(params.mode)}
+      token={text(params.token)}
+      verificationError={text(params.error)}
     />
   );
 }
