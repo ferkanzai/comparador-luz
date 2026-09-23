@@ -1,101 +1,24 @@
 import type { PoolClient } from "pg";
 import { emptyWorkspace, workspaceSchema, type Workspace } from "./domain";
+import {
+  breakdownFields,
+  billFields,
+  columnOf,
+  consumptionFields,
+  decimalNames,
+  historyDateFields,
+  profileFields,
+  tariffFields,
+  workspaceDateFields,
+  type FieldGroup,
+} from "./workspace-fields";
 
-// Explicit field lists are also the SQL identifier allowlist. Values are always parameters.
-const profileFields = [
-  "days",
-  "peakKwh",
-  "flatKwh",
-  "valleyKwh",
-  "peakKw",
-  "valleyKw",
-  "taxes",
-  "vat",
-  "electricityTax",
-  "minimumTax",
-] as const;
-const tariffFields = [
-  "name",
-  "provider",
-  "kind",
-  "energyPeak",
-  "energyFlat",
-  "energyValley",
-  "powerPeak",
-  "powerValley",
-  "powerKind",
-  "powerUnit",
-  "meterDay",
-  "meterEstimate",
-  "socialDay",
-  "socialEstimate",
-  "socialInElectricityTax",
-  "snoeeKwh",
-  "servicesMonth",
-  "url",
-  "checkedOn",
-  "validUntil",
-  "notes",
-] as const;
-const billFields = [
-  "month",
-  "periodStart",
-  "periodEnd",
-  "provider",
-  "paid",
-  "credit",
-  "kwh",
-  "notes",
-] as const;
-const breakdownFields = [
-  "energy",
-  "power",
-  "social",
-  "snoee",
-  "meter",
-  "services",
-  "electricityTax",
-  "vat",
-  "servicesVat",
-] as const;
-const numericFields = new Set([
-  "days",
-  "peakKwh",
-  "flatKwh",
-  "valleyKwh",
-  "peakKw",
-  "valleyKw",
-  "vat",
-  "electricityTax",
-  "energyPeak",
-  "energyFlat",
-  "energyValley",
-  "powerPeak",
-  "powerValley",
-  "meterDay",
-  "socialDay",
-  "snoeeKwh",
-  "servicesMonth",
-  "paid",
-  "credit",
-  "kwh",
-  "quantity",
-  "price",
-  "amount",
-  "energy",
-  "power",
-  "social",
-  "snoee",
-  "meter",
-  "services",
-  "servicesVat",
-]);
 // Match PostgreSQL NUMERIC/UUID text output without passing decimals through JS numbers.
 // Input must already satisfy workspaceSchema; these rewrites keep every value valid.
 export function normalizeWorkspaceStorage(input: Workspace): Workspace {
   function normalize(value: unknown, key = ""): unknown {
     if (typeof value === "string") {
-      if (numericFields.has(key) && value !== "") {
+      if (decimalNames.has(key) && value !== "") {
         const number = value.replace(",", ".").replace(/^(-?)0+(?=\d)/, "$1");
         return /^-0(?:\.0+)?$/.test(number) ? number.slice(1) : number;
       }
@@ -110,46 +33,44 @@ export function normalizeWorkspaceStorage(input: Workspace): Workspace {
   }
   return normalize(input) as Workspace;
 }
-const dateFields = new Set([
-  "checkedOn",
-  "validUntil",
-  "periodStart",
-  "periodEnd",
-  "start",
-  "end",
-  "currentSince",
-  "reviewedOn",
-]);
-const column = (field: string) =>
-  field.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 type Row = Record<string, unknown>;
-function encode(source: object, fields: readonly string[]): Row {
+// Registry names are also the SQL identifier allowlist. Values are always parameters.
+function encode(source: object, group: FieldGroup): Row {
   const value = source as Row;
   return Object.fromEntries(
-    fields.map((field) => [
-      column(field),
-      numericFields.has(field)
-        ? value[field] === ""
-          ? null
-          : String(value[field]).replace(",", ".")
-        : dateFields.has(field)
-          ? value[field] || null
-          : value[field],
-    ]),
+    Object.entries(group).map(([name, field]) => {
+      const raw = value[name];
+      switch (field.kind) {
+        case "decimal":
+          return [
+            columnOf(name, field),
+            raw === "" ? null : String(raw).replace(",", "."),
+          ];
+        case "date":
+          return [columnOf(name, field), raw || null];
+        case "enum":
+        case "text":
+        case "boolean":
+          return [columnOf(name, field), raw];
+        default: {
+          const unhandled: never = field;
+          throw new Error(`Unhandled field: ${JSON.stringify(unhandled)}`);
+        }
+      }
+    }),
   );
 }
-function decode(source: Row, fields: readonly string[]): Row {
+function decode(source: Row, group: FieldGroup): Row {
   return Object.fromEntries(
-    fields.map((field) => {
-      const value = source[column(field)];
-      return [
-        field,
-        numericFields.has(field)
-          ? value == null
-            ? ""
-            : String(value)
-          : dateFields.has(field)
-            ? value == null
+    Object.entries(group).map(([name, field]) => {
+      const value = source[columnOf(name, field)];
+      switch (field.kind) {
+        case "decimal":
+          return [name, value == null ? "" : String(value)];
+        case "date":
+          return [
+            name,
+            value == null
               ? ""
               : value instanceof Date
                 ? [
@@ -157,15 +78,30 @@ function decode(source: Row, fields: readonly string[]): Row {
                     (value.getMonth() + 1).toString().padStart(2, "0"),
                     value.getDate().toString().padStart(2, "0"),
                   ].join("-")
-                : String(value)
-            : value,
-      ];
+                : String(value),
+          ];
+        case "enum":
+        case "text":
+        case "boolean":
+          return [name, value];
+        default: {
+          const unhandled: never = field;
+          throw new Error(`Unhandled field: ${JSON.stringify(unhandled)}`);
+        }
+      }
     }),
   );
 }
 // Cast NUMERIC before JSON construction: JSON numbers would lose decimal precision in JS.
-function joinedRecord(alias: string, fields: readonly string[]) {
-  return `CASE WHEN ${alias}.user_id IS NULL THEN NULL ELSE json_build_object(${fields.map((field) => `'${column(field)}', ${alias}."${column(field)}"${numericFields.has(field) ? "::text" : ""}`).join(",")}) END`;
+function joinedRecord(alias: string, group: FieldGroup, extra: string[] = []) {
+  const columns = [
+    ...extra.map((column) => `'${column}', ${alias}."${column}"`),
+    ...Object.entries(group).map(([name, field]) => {
+      const column = columnOf(name, field);
+      return `'${column}', ${alias}."${column}"${field.kind === "decimal" ? "::text" : ""}`;
+    }),
+  ];
+  return `CASE WHEN ${alias}.user_id IS NULL THEN NULL ELSE json_build_object(${columns.join(",")}) END`;
 }
 export const workspaceTables = [
   "workspace",
@@ -258,8 +194,7 @@ export async function writeWorkspaceRecords(
       user_id: userId,
       id: h.id,
       position,
-      start_date: h.start,
-      end_date: h.end,
+      ...encode(h, historyDateFields),
       snapshot_key: `history/${h.id}`,
     })),
     ["user_id", "id"],
@@ -279,11 +214,9 @@ export async function writeWorkspaceRecords(
           : b.consumption === null
             ? "total"
             : "periods",
-      ...Object.fromEntries(
-        ["peakKwh", "flatKwh", "valleyKwh"].map((f) => [
-          column(f),
-          b.consumption ? encode(b.consumption, [f])[column(f)] : null,
-        ]),
+      ...encode(
+        b.consumption ?? { peakKwh: "", flatKwh: "", valleyKwh: "" },
+        consumptionFields,
       ),
       review_signature: b.tariffReview?.signature ?? null,
       review_reason: b.tariffReview?.reason ?? null,
@@ -388,21 +321,21 @@ export async function readWorkspaceRecords(
     [userId],
   );
   const { rows: history } = await client.query(
-    `SELECT h.*, ${joinedRecord("t", ["tariffId", ...tariffFields])} AS tariff FROM workspace_history h JOIN workspace_tariff_snapshot t ON t.user_id = h.user_id AND t.snapshot_key = h.snapshot_key WHERE h.user_id = $1 ORDER BY h.position`,
+    `SELECT h.*, ${joinedRecord("t", tariffFields, ["tariff_id"])} AS tariff FROM workspace_history h JOIN workspace_tariff_snapshot t ON t.user_id = h.user_id AND t.snapshot_key = h.snapshot_key WHERE h.user_id = $1 ORDER BY h.position`,
     [userId],
   );
   const { rows: bills } = await client.query(
-    `SELECT b.*, ${joinedRecord("t", ["tariffId", ...tariffFields])} AS tariff, ${joinedRecord("p", profileFields)} AS profile, ${joinedRecord("d", breakdownFields)} AS breakdown FROM workspace_bill b LEFT JOIN workspace_tariff_snapshot t ON t.user_id = b.user_id AND t.snapshot_key = b.snapshot_key LEFT JOIN workspace_bill_profile p ON p.user_id = b.user_id AND p.bill_id = b.id LEFT JOIN workspace_bill_breakdown d ON d.user_id = b.user_id AND d.bill_id = b.id WHERE b.user_id = $1 ORDER BY b.position`,
+    `SELECT b.*, ${joinedRecord("t", tariffFields, ["tariff_id"])} AS tariff, ${joinedRecord("p", profileFields)} AS profile, ${joinedRecord("d", breakdownFields)} AS breakdown FROM workspace_bill b LEFT JOIN workspace_tariff_snapshot t ON t.user_id = b.user_id AND t.snapshot_key = b.snapshot_key LEFT JOIN workspace_bill_profile p ON p.user_id = b.user_id AND p.bill_id = b.id LEFT JOIN workspace_bill_breakdown d ON d.user_id = b.user_id AND d.bill_id = b.id WHERE b.user_id = $1 ORDER BY b.position`,
     [userId],
   );
   const data = workspaceSchema.parse({
     profile: decode(profile, profileFields),
     tariffs: tariffs.map((t) => ({ id: t.id, ...decode(t, tariffFields) })),
     currentId: workspace.current_id,
-    ...decode(workspace, ["currentSince", "reviewedOn"]),
+    ...decode(workspace, workspaceDateFields),
     history: history.map((h) => ({
       id: h.id,
-      ...decode({ start: h.start_date, end: h.end_date }, ["start", "end"]),
+      ...decode(h, historyDateFields),
       tariff: { id: h.tariff.tariff_id, ...decode(h.tariff, tariffFields) },
     })),
     bills: bills.map((b) => ({
@@ -419,7 +352,7 @@ export async function readWorkspaceRecords(
             consumption:
               b.consumption_kind === "total"
                 ? null
-                : decode(b, ["peakKwh", "flatKwh", "valleyKwh"]),
+                : decode(b, consumptionFields),
           }),
       ...(b.review_signature == null
         ? {}

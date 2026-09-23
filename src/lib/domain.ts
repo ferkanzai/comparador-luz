@@ -106,7 +106,9 @@ export const billSchema = z
           /^-?\d+(?:[.,]\d+)?$/.test(s) && Math.abs(numberOf(s)) <= 1_000_000,
         "Introduce un total válido.",
       ),
-    credit: decimal(1_000_000).default("0"),
+    credit: decimal(1_000_000)
+      .transform((s) => s || "0")
+      .default("0"),
     kwh: decimal(),
     // Undefined identifies older bills whose matching profile may supply periods.
     // Explicit null means the user chose to keep only the total.

@@ -11,6 +11,11 @@ import {
   loadMigrations,
   migrateWorkspaces,
 } from "../src/lib/workspace-migrations";
+import {
+  columnOf,
+  tableFields,
+  type FieldGroup,
+} from "../src/lib/workspace-fields";
 import { workspaceTables } from "../src/lib/workspace-records";
 
 function fixture(): Workspace {
@@ -519,6 +524,15 @@ test(
         ),
         /check constraint/,
       );
+      // A cleared credit field means no credit; the column is NOT NULL.
+      const noCredit = structuredClone(original);
+      noCredit.bills[1].credit = "";
+      noCredit.bills[1].paid = "10";
+      assert.equal(
+        await saveWorkspace("fresh", workspaceSchema.parse(noCredit), 3),
+        4,
+      );
+      assert.equal((await readWorkspace("fresh")).data.bills[1].credit, "0");
       // Saves are limited per account and minute; other accounts keep saving.
       await pool.query("INSERT INTO \"user\" VALUES ('other')");
       for (let i = 0; i < workspaceSaveLimit.max; i++)
@@ -539,6 +553,135 @@ test(
     } finally {
       await pool.end();
       await getPool().end();
+    }
+  },
+);
+
+// Keys, ordering and markers the registry deliberately doesn't describe.
+const structuralColumns: Record<string, string[]> = {
+  workspace: ["user_id", "version", "current_id", "updated_at"],
+  workspace_profile: ["user_id"],
+  workspace_tariff: ["user_id", "id", "position"],
+  workspace_tariff_snapshot: ["user_id", "snapshot_key", "tariff_id"],
+  workspace_history: ["user_id", "id", "position", "snapshot_key"],
+  workspace_bill: [
+    "user_id",
+    "id",
+    "position",
+    "snapshot_key",
+    "consumption_kind",
+    "review_signature",
+    "review_reason",
+  ],
+  workspace_bill_profile: ["user_id", "bill_id"],
+  workspace_bill_breakdown: ["user_id", "bill_id"],
+};
+
+test(
+  "the storage registry matches the migrated columns and CHECK constraints",
+  { skip: !process.env.TEST_WORKSPACE_DATABASE_URL },
+  async () => {
+    const url = new URL(process.env.TEST_WORKSPACE_DATABASE_URL!);
+    assert.ok(
+      ["localhost", "127.0.0.1"].includes(url.hostname) &&
+        url.pathname.endsWith("_workspace_test"),
+    );
+    const pool = new Pool({ connectionString: url.toString() });
+    try {
+      await pool.query(
+        'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE TABLE "user" (id TEXT PRIMARY KEY)',
+      );
+      await migrateWorkspaces(pool);
+      assert.deepEqual(
+        Object.keys(tableFields).sort(),
+        [...workspaceTables].sort(),
+      );
+      for (const [table, groups] of Object.entries(
+        tableFields as Record<string, readonly FieldGroup[]>,
+      )) {
+        const { rows: columns } = await pool.query<{
+          column_name: string;
+          data_type: string;
+          is_nullable: "YES" | "NO";
+          character_maximum_length: number | null;
+        }>(
+          "SELECT column_name, data_type, is_nullable, character_maximum_length FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1",
+          [table],
+        );
+        const { rows: checks } = await pool.query<{
+          column: string;
+          definition: string;
+        }>(
+          "SELECT a.attname AS column, pg_get_constraintdef(c.oid) AS definition FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1] WHERE c.conrelid = $1::regclass AND c.contype = 'c' AND array_length(c.conkey, 1) = 1",
+          [table],
+        );
+        const described = new Set(structuralColumns[table]);
+        for (const group of groups)
+          for (const [name, field] of Object.entries(group)) {
+            const column = columnOf(name, field);
+            const at = `${table}.${column}`;
+            described.add(column);
+            const info = columns.find((c) => c.column_name === column);
+            assert.ok(info, `${at} is missing from the database`);
+            const check = checks
+              .filter((c) => c.column === column)
+              .map((c) => c.definition)
+              .join(" ");
+            switch (field.kind) {
+              case "decimal": {
+                assert.equal(info.data_type, "numeric", at);
+                assert.equal(info.is_nullable === "NO", !!field.required, at);
+                const bound = (op: string) =>
+                  Number(
+                    check.match(
+                      new RegExp(`${op} \\('?(-?\\d+)'?(?:::integer)?\\)`),
+                    )?.[1],
+                  );
+                assert.equal(bound(">="), field.min, `${at} minimum`);
+                assert.equal(bound("<="), field.max, `${at} maximum`);
+                break;
+              }
+              case "date":
+                assert.equal(info.data_type, "date", at);
+                assert.equal(info.is_nullable === "NO", !!field.required, at);
+                break;
+              case "enum":
+                assert.equal(info.data_type, "text", at);
+                assert.equal(info.is_nullable, "NO", at);
+                assert.deepEqual(
+                  [...check.matchAll(/'([^']+)'::text/g)].map((m) => m[1]),
+                  field.values,
+                  `${at} values`,
+                );
+                break;
+              case "text":
+                assert.equal(info.is_nullable, "NO", at);
+                assert.equal(
+                  info.character_maximum_length,
+                  field.maxLength ?? null,
+                  `${at} length`,
+                );
+                break;
+              case "boolean":
+                assert.equal(info.data_type, "boolean", at);
+                assert.equal(info.is_nullable, "NO", at);
+                break;
+              default: {
+                const unhandled: never = field;
+                throw new Error(
+                  `Unhandled field: ${JSON.stringify(unhandled)}`,
+                );
+              }
+            }
+          }
+        assert.deepEqual(
+          columns.map((c) => c.column_name).filter((c) => !described.has(c)),
+          [],
+          `${table} has columns the registry doesn't describe`,
+        );
+      }
+    } finally {
+      await pool.end();
     }
   },
 );
