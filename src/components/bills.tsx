@@ -23,6 +23,7 @@ import BillsChart from "./bills-chart";
 import YearComparison from "./year-comparison";
 import { invoiceYears } from "@/lib/year-comparison";
 import { consumptionMonths, formatKwh } from "@/lib/bill-consumption";
+import { removeBill, saveBill } from "@/lib/workspace-actions";
 export default function Bills({
   workspace: w,
   update,
@@ -331,10 +332,7 @@ export default function Bills({
                             aria-label={`Eliminar factura ${b.month}`}
                             onClick={() => {
                               if (window.confirm("¿Eliminar esta factura?"))
-                                update({
-                                  ...w,
-                                  bills: w.bills.filter((x) => x.id !== b.id),
-                                });
+                                update(removeBill(w, b.id));
                             }}
                           >
                             <Trash2 size={16} />
@@ -355,11 +353,7 @@ export default function Bills({
           workspace={w}
           onClose={() => setEditing(null)}
           onSave={async (bill, newTariff) => {
-            update({
-              ...w,
-              tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
-              bills: [...w.bills.filter((b) => b.id !== bill.id), bill],
-            });
+            update(saveBill(w, bill, newTariff));
             setYear(bill.month.slice(0, 4));
             setView("months");
             setEditing(null);

@@ -160,20 +160,25 @@ export const billSchema = z
           "Completa los tres consumos (usa 0 donde corresponda). Su suma debe coincidir con los kWh totales.",
       });
   });
+export const workspaceLimits = {
+  tariffs: 100,
+  history: 500,
+  bills: 1200,
+} as const;
 export const workspaceSchema = z
   .object({
     profile: profileSchema,
-    tariffs: z.array(tariffSchema).max(100),
+    tariffs: z.array(tariffSchema).max(workspaceLimits.tariffs),
     currentId: z.uuid().nullable(),
     currentSince: optionalDate,
-    history: z.array(historySchema).max(500),
+    history: z.array(historySchema).max(workspaceLimits.history),
     // Retired split-price invoices are intentionally discarded, including stale browser drafts.
     bills: z.preprocess(
       (value) =>
         Array.isArray(value)
           ? value.filter((bill) => !hasLegacyPriceLines(bill))
           : value,
-      z.array(billSchema).max(1200),
+      z.array(billSchema).max(workspaceLimits.bills),
     ),
     reviewedOn: optionalDate,
   })

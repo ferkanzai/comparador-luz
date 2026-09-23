@@ -682,6 +682,54 @@ test("preserves tariff duplication, deletion and current-contract designation", 
   ).toHaveCount(0);
 });
 
+test("stops adding and duplicating tariffs at the 100-tariff limit and explains why", async ({
+  page,
+}) => {
+  const data = comparisonFixture();
+  const offer = data.tariffs[1];
+  data.tariffs.push(
+    ...Array.from({ length: 99 - data.tariffs.length }, (_, i) => ({
+      ...offer,
+      id: crypto.randomUUID(),
+      name: `Oferta ${i + 1}`,
+    })),
+  );
+  await openComparison(page, data);
+  const table = page.getByRole("table", {
+    name: "Comparativa de tarifas",
+    exact: true,
+  });
+  const add = page.getByRole("button", { name: "Añadir tarifa", exact: true });
+  await expect(add).toBeEnabled();
+  await table.getByRole("button", { name: "Clara Fija", exact: true }).click();
+  await page.getByRole("button", { name: "Duplicar", exact: true }).click();
+  await page.getByRole("button", { name: "Crear tarifa", exact: true }).click();
+  await expect(table.getByRole("row")).toHaveCount(101);
+  await expect(add).toBeDisabled();
+  await expect(add).toHaveAccessibleDescription(/hasta 100 tarifas/);
+  await table.getByRole("button", { name: "Clara Fija", exact: true }).click();
+  const details = page.getByRole("dialog", { name: "Clara Fija", exact: true });
+  const duplicate = details.getByRole("button", {
+    name: "Duplicar",
+    exact: true,
+  });
+  await expect(duplicate).toBeDisabled();
+  await expect(duplicate).toHaveAccessibleDescription(/hasta 100 tarifas/);
+  await details
+    .getByRole("button", { name: "Eliminar tarifa", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Eliminar tarifa", exact: true })
+    .getByRole("button", { name: "Eliminar tarifa", exact: true })
+    .click();
+  await expect(table.getByRole("row")).toHaveCount(100);
+  await expect(add).toBeEnabled();
+  await expect(page.getByText(/hasta 100 tarifas/)).toHaveCount(0);
+  await expect(page.locator(".workspace-status")).not.toContainText(
+    "no se puede",
+  );
+});
+
 test("retains the expired current tariff as baseline and excludes incompatible combined power", async ({
   page,
 }) => {

@@ -29,7 +29,12 @@ import { Brand, Empty, Modal } from "./ui";
 import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
 import type { TariffRecordDraft } from "./tariff-record-form";
-import { recordCurrent } from "@/lib/tariff-periods";
+import {
+  duplicateTariff,
+  removeTariff,
+  saveBill,
+  saveTariff,
+} from "@/lib/workspace-actions";
 import { syncStatusLabel } from "@/lib/sync-status";
 import {
   electricityTax,
@@ -105,24 +110,13 @@ export default function Dashboard({
     setMessage("");
     setError("");
   }
-  function saveTariff(
+  function handleTariffSave(
     tariff: Tariff,
     since: string,
-    nextProfile: Profile,
+    profile: Profile,
     makeCurrent: boolean,
   ) {
-    const old = w.tariffs.find((t) => t.id === tariff.id);
-    const next = { ...w, profile: nextProfile };
-    update(
-      makeCurrent && !w.currentId
-        ? recordCurrent(next, tariff, since)
-        : {
-            ...next,
-            tariffs: old
-              ? w.tariffs.map((t) => (t.id === tariff.id ? tariff : t))
-              : [...w.tariffs, tariff],
-          },
-    );
+    update(saveTariff(w, tariff, { since, profile, makeCurrent }));
     setEditing(null);
     setMessage(
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
@@ -382,7 +376,7 @@ export default function Dashboard({
                 <ComparisonWorkspace
                   key={`${user?.id ?? "guest"}:${workspace.generation}`}
                   data={w}
-                  onProfile={(profile) => update({ ...w, profile })}
+                  onChange={update}
                   onAdd={() => setEditing({ tariff: newTariff() })}
                   onMethod={() => setTaxHelp(true)}
                   onBill={user ? setBillDraft : undefined}
@@ -390,11 +384,7 @@ export default function Dashboard({
                     onEdit: (tariff) => setEditing({ tariff }),
                     onDuplicate: (tariff) =>
                       setEditing({
-                        tariff: {
-                          ...structuredClone(tariff),
-                          id: crypto.randomUUID(),
-                          name: `${tariff.name.slice(0, 92)} (copia)`,
-                        },
+                        tariff: duplicateTariff(tariff),
                         duplicatedFrom: tariff.name,
                       }),
                     onCurrent: (tariff) =>
@@ -520,12 +510,7 @@ export default function Dashboard({
               <button
                 className="button tariff-delete-confirm"
                 onClick={() => {
-                  update({
-                    ...w,
-                    tariffs: w.tariffs.filter(
-                      (t) => t.id !== removingTariff.id,
-                    ),
-                  });
+                  update(removeTariff(w, removingTariff.id));
                   setRemovingTariffId(null);
                 }}
               >
@@ -541,11 +526,7 @@ export default function Dashboard({
           workspace={w}
           onClose={() => setBillDraft(null)}
           onSave={async (bill, newTariff) => {
-            update({
-              ...w,
-              tariffs: newTariff ? [...w.tariffs, newTariff] : w.tariffs,
-              bills: [...w.bills, bill],
-            });
+            update(saveBill(w, bill, newTariff));
             setBillDraft(null);
             setTab("bills");
             setMessage("Factura añadida, con su consumo y desglose.");
@@ -575,7 +556,7 @@ export default function Dashboard({
               !editing.duplicatedFrom &&
               !w.tariffs.some((t) => t.id === editing.tariff.id)
             }
-            onSave={saveTariff}
+            onSave={handleTariffSave}
             onClose={() => setEditing(null)}
           />
         ))}

@@ -27,6 +27,12 @@ import {
   type ConsumptionSimulation,
 } from "@/lib/consumption-simulation";
 import ConsumptionSimulator from "./consumption-simulator";
+import {
+  adoptSimulation,
+  canAddTariff,
+  updateProfile,
+} from "@/lib/workspace-actions";
+import { tariffLimitMessage } from "@/lib/tariff-periods";
 import { billFromCalculation } from "@/lib/bill-data";
 import ComparisonTable, {
   TariffDetails,
@@ -44,14 +50,14 @@ const quantity = (value: number) =>
 
 export default function ComparisonWorkspace({
   data,
-  onProfile,
+  onChange,
   onAdd,
   actions,
   onBill,
   onMethod,
 }: {
   data: Workspace;
-  onProfile: (profile: Profile) => void;
+  onChange: (next: Workspace) => void;
   onAdd: () => void;
   actions: TariffActions;
   onBill?: (bill: Bill) => void;
@@ -87,6 +93,9 @@ export default function ComparisonWorkspace({
           : selectedIds,
     );
   }
+  const changeProfile = (profile: Profile) =>
+    onChange(updateProfile(data, profile));
+  const tariffRoom = canAddTariff(data);
   const [profileOpen, setProfileOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const current = data.tariffs.find((tariff) => tariff.id === data.currentId);
@@ -190,7 +199,7 @@ export default function ComparisonWorkspace({
           }}
           onAdopt={() => {
             if (simulationResult.consumption) {
-              onProfile({ ...data.profile, ...simulationResult.consumption });
+              onChange(adoptSimulation(data, simulationResult.consumption));
               setSimulation(null);
               setSimulationOpen(false);
             }
@@ -209,11 +218,21 @@ export default function ComparisonWorkspace({
               <span className="tariff-count">{data.tariffs.length}</span>
             </h2>
           </div>
-          <button className="button primary" onClick={onAdd}>
+          <button
+            className="button primary"
+            disabled={!tariffRoom}
+            aria-describedby={tariffRoom ? undefined : "tariff-limit"}
+            onClick={onAdd}
+          >
             <Plus size={17} />
             Añadir tarifa
           </button>
         </div>
+        {!tariffRoom && (
+          <p id="tariff-limit" className="notice small">
+            {tariffLimitMessage}
+          </p>
+        )}
         {!data.tariffs.length ? (
           <div className="panel">
             <Empty
@@ -366,8 +385,8 @@ export default function ComparisonWorkspace({
               Estos datos se aplican a todas tus tarifas y se guardan
               automáticamente.
             </p>
-            <ProfileFields value={profile} onChange={onProfile} />
-            <TaxFields value={profile} onChange={onProfile} />
+            <ProfileFields value={profile} onChange={changeProfile} />
+            <TaxFields value={profile} onChange={changeProfile} />
             <button className="text-link" onClick={onMethod}>
               Cómo calculamos los impuestos
             </button>
@@ -402,6 +421,7 @@ export default function ComparisonWorkspace({
           current={detail.tariff.id === data.currentId}
           unit={unit}
           actions={actions}
+          canDuplicate={tariffRoom}
           onClose={() => setDetailId(null)}
         />
       )}

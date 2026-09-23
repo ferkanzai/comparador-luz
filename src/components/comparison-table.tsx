@@ -3,6 +3,7 @@ import { money, shortDate, today, type Tariff } from "@/lib/domain";
 import { type Calculation, cents } from "@/lib/calculator";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import { billLines } from "@/lib/bill-data";
+import { tariffLimitMessage } from "@/lib/tariff-periods";
 import CostCategoryLabel, { billLineCategories } from "./cost-category-label";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";
@@ -222,12 +223,14 @@ export function TariffDetails({
   current,
   unit,
   actions,
+  canDuplicate,
   onClose,
 }: {
   row: ComparisonRow;
   current: boolean;
   unit: Tariff["powerUnit"];
   actions: TariffActions;
+  canDuplicate: boolean;
   onClose: () => void;
 }) {
   return (
@@ -331,6 +334,10 @@ export function TariffDetails({
             </button>
             <button
               className="button secondary"
+              disabled={!canDuplicate}
+              aria-describedby={
+                canDuplicate ? undefined : "tariff-detail-limit"
+              }
               onClick={() => {
                 onClose();
                 actions.onDuplicate(tariff);
@@ -352,6 +359,11 @@ export function TariffDetails({
               </button>
             )}
           </div>
+          {!canDuplicate && (
+            <p id="tariff-detail-limit" className="small muted">
+              {tariffLimitMessage}
+            </p>
+          )}
         </div>
       </div>
     </Modal>

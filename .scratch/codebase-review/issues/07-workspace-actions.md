@@ -8,6 +8,8 @@
 
 **Effort:** M
 
+**Implementation:** complete
+
 ## Why
 
 `tariff-periods.ts` is the good pattern: pure functions that validate before returning a new workspace (`validateChanges`). Other changes are written inline in components:
@@ -22,9 +24,23 @@
 
 ## Checklist
 
-- [ ] Add `saveTariff`, `removeTariff`, `duplicateTariff`, `saveBill` (insert or replace by id, one behaviour for both callers), `removeBill`, `updateProfile` and `adoptSimulation` as pure functions.
-- [ ] Reuse `validateChanges` for capacity checks, and throw the same Spanish messages it uses.
-- [ ] Disable "Añadir tarifa" and "Duplicar" at 100 tariffs with an explanation, as the bill form does.
-- [ ] Components only call actions and `update()`. No `{ ...w, tariffs: … }` spreads remain in `src/components`.
-- [ ] Unit tests for each action, including the capacity limit and saving an existing bill from both entry points.
-- [ ] Browser suite passes.
+- [x] Add `saveTariff`, `removeTariff`, `duplicateTariff`, `saveBill` (insert or replace by id, one behaviour for both callers), `removeBill`, `updateProfile` and `adoptSimulation` as pure functions.
+- [x] Reuse `validateChanges` for capacity checks, and throw the same Spanish messages it uses.
+- [x] Disable "Añadir tarifa" and "Duplicar" at 100 tariffs with an explanation, as the bill form does.
+- [x] Components only call actions and `update()`. No `{ ...w, tariffs: … }` spreads remain in `src/components`.
+- [x] Unit tests for each action, including the capacity limit and saving an existing bill from both entry points.
+- [x] Browser suite passes.
+
+## Comments
+
+Implemented in `src/lib/workspace-actions.ts`. The dashboard, `Bills` and `ComparisonWorkspace` now only call actions. `ComparisonWorkspace` takes an `onChange(workspace)` prop instead of `onProfile`, so adopting a simulation and editing the profile both go through actions. The only spread left in `src/components` builds the JSON export, which doesn't change the workspace.
+
+Decisions:
+
+- **List limits in one place.** `workspaceLimits` in `domain.ts` now feeds both the schema and `validateChanges`, which is exported from `tariff-periods.ts`. `validateChanges` also checks the 1200-bill limit, because adding a bill never checked it and hitting it would have failed sync the same way the tariff bug did.
+- **`duplicateTariff` returns a draft.** Duplicating opens the tariff form with a copy, and the copy is only added when saved through `saveTariff`. So the capacity check happens on save, and the buttons are disabled up front.
+- **`saveBill` replaces in place.** Editing a bill used to move it to the end of the list (Mis facturas) or append a second copy (dashboard). Now both keep its position. The list is sorted by month, so what users see doesn't change. The invoice tariff is only added if it isn't already in the workspace.
+- **`removeTariff` on the current contract delegates to `removePeriod`**, so `currentId` and `currentSince` are cleared together.
+- **"Añadir tarifa", "Duplicar" and the bill form's "Crear tarifa con estos precios"** are disabled at 100 tariffs. Each shows `tariffLimitMessage` and links it through `aria-describedby`. "Volver a comparar" in Mis tarifas already reported the error from `comparePeriod`.
+
+Tests: `tests/workspace-actions.test.ts` covers every action, including the tariff and bill limits and editing at the limit. A new browser test goes from 99 tariffs to 100 by duplicating, checks both disabled buttons and their descriptions, then deletes one to re-enable adding. Unit tests (103), typecheck, lint and the browser suite (30) pass.

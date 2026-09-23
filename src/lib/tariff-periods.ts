@@ -1,5 +1,11 @@
 import * as z from "zod";
-import { tariffSchema, today, type Tariff, type Workspace } from "./domain";
+import {
+  tariffSchema,
+  today,
+  workspaceLimits,
+  type Tariff,
+  type Workspace,
+} from "./domain";
 
 export type PeriodCorrection = {
   start: string;
@@ -67,14 +73,18 @@ export function periodProblem(
     : "";
 }
 
-function validateChanges(w: Workspace, ids: string[]) {
-  if (w.tariffs.length > 100)
+export const tariffLimitMessage = `El comparador admite hasta ${workspaceLimits.tariffs} tarifas. Elimina una oferta antes de añadir otra.`;
+
+export function validateChanges(w: Workspace, ids: string[]) {
+  if (w.tariffs.length > workspaceLimits.tariffs)
+    throw new Error(tariffLimitMessage);
+  if (w.history.length > workspaceLimits.history)
     throw new Error(
-      "El comparador admite hasta 100 tarifas. Elimina una oferta antes de añadir otra.",
+      `El historial admite hasta ${workspaceLimits.history} períodos. Elimina un registro antes de añadir otro.`,
     );
-  if (w.history.length > 500)
+  if (w.bills.length > workspaceLimits.bills)
     throw new Error(
-      "El historial admite hasta 500 períodos. Elimina un registro antes de añadir otro.",
+      `Puedes guardar hasta ${workspaceLimits.bills} facturas. Elimina una antes de añadir otra.`,
     );
   const periods = tariffPeriods(w);
   for (const period of periods.filter((p) => ids.includes(p.id))) {

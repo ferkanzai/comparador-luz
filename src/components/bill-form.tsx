@@ -7,6 +7,7 @@ import {
   shortDate,
   money,
   newTariff,
+  workspaceLimits,
   type Bill,
   type Workspace,
   type Tariff,
@@ -22,6 +23,7 @@ import {
   updateBillConsumption,
 } from "@/lib/bill-consumption";
 import { newInvoiceProfile } from "@/lib/invoice-profile";
+import { tariffLimitMessage } from "@/lib/tariff-periods";
 export default function BillForm({
   initial,
   workspace: w,
@@ -49,6 +51,8 @@ export default function BillForm({
     dismiss: dismissPastTariff,
   } = useFeedback();
   const pastTariffsId = useId();
+  const tariffLimitId = useId();
+  const tariffsFull = availableTariffs.length >= workspaceLimits.tariffs;
   const tariffSelect = useRef<HTMLSelectElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -380,7 +384,8 @@ export default function BillForm({
               <button
                 type="button"
                 className="link-button"
-                disabled={availableTariffs.length >= 100}
+                disabled={tariffsFull}
+                aria-describedby={tariffsFull ? tariffLimitId : undefined}
                 onClick={() =>
                   setCreatingTariff({
                     ...newTariff(),
@@ -394,6 +399,11 @@ export default function BillForm({
                 Se guardará junto con la factura, sin cambiar tu contrato
                 actual.
               </p>
+              {tariffsFull && (
+                <p id={tariffLimitId} className="small muted">
+                  {tariffLimitMessage}
+                </p>
+              )}
             </section>
             <Field
               label="Notas (opcional)"
