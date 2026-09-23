@@ -42,6 +42,23 @@ export async function readWorkspace(userId: string) {
     readWorkspaceRecords(client, userId),
   );
 }
+export const workspaceSaveLimit = { max: 60, windowSeconds: 60 };
+
+/** Counts one save attempt; false once the account exceeds its per-minute allowance. */
+export async function consumeSaveAllowance(userId: string): Promise<boolean> {
+  return withWorkspaceTransaction(userId, false, async (client) => {
+    const { rows } = await client.query<{ count: number }>(
+      `INSERT INTO workspace_save_rate (user_id, window_start, count) VALUES ($1, now(), 1)
+       ON CONFLICT (user_id) DO UPDATE SET
+         window_start = CASE WHEN workspace_save_rate.window_start <= now() - make_interval(secs => $2) THEN now() ELSE workspace_save_rate.window_start END,
+         count = CASE WHEN workspace_save_rate.window_start <= now() - make_interval(secs => $2) THEN 1 ELSE workspace_save_rate.count + 1 END
+       RETURNING count`,
+      [userId, workspaceSaveLimit.windowSeconds],
+    );
+    return rows[0].count <= workspaceSaveLimit.max;
+  });
+}
+
 /** `input` must be the output of `workspaceSchema`; the API route validates it once. */
 export async function saveWorkspace(
   userId: string,

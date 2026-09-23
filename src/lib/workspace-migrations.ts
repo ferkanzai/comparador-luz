@@ -52,6 +52,27 @@ async function addSnoeeCost(client: PoolClient) {
   );
 }
 
+/** Needs the luz_workspace role, so it runs after 001 on fresh databases. */
+async function addSaveRate(client: PoolClient) {
+  if (
+    (
+      await client.query(
+        "SELECT 1 FROM app_migration WHERE id = '004-workspace-save-rate'",
+      )
+    ).rowCount
+  )
+    return;
+  await client.query(
+    await readFile(
+      new URL("../../migrations/004-workspace-save-rate.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await client.query(
+    "INSERT INTO app_migration (id) VALUES ('004-workspace-save-rate')",
+  );
+}
+
 export async function migrateWorkspaces(pool: Pool) {
   const client = await pool.connect();
   let failed = false;
@@ -70,6 +91,7 @@ export async function migrateWorkspaces(pool: Pool) {
     ) {
       await removeInvoicePriceLines(client);
       await addSnoeeCost(client);
+      await addSaveRate(client);
       await client.query("COMMIT");
       return;
     }
@@ -178,6 +200,7 @@ export async function migrateWorkspaces(pool: Pool) {
       "INSERT INTO app_migration (id) VALUES ('001-relational-workspaces')",
     );
     await removeInvoicePriceLines(client);
+    await addSaveRate(client);
     await client.query("COMMIT");
   } catch (error) {
     try {

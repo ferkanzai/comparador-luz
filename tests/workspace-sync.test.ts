@@ -119,6 +119,34 @@ test("unfinished inputs stay local, and network failures retry the latest valid 
   assert.equal(sync.snapshot.status, "saved");
 });
 
+test("a rate-limited save backs off and then sends the latest edits", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const requests: Workspace[] = [];
+  const sync = new WorkspaceSync({
+    data: emptyWorkspace(),
+    version: 1,
+    saved: emptyWorkspace(),
+    persist: () => true,
+    send: async (data) => {
+      requests.push(data);
+      if (requests.length === 1) throw new SyncError(429, "Demasiados");
+      return 2;
+    },
+    onChange: () => {},
+  });
+  t.after(() => sync.dispose());
+  sync.update(changed("10"));
+  t.mock.timers.tick(800);
+  await settle();
+  assert.equal(sync.snapshot.status, "error");
+  sync.update(changed("11"));
+  t.mock.timers.tick(800);
+  await settle();
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].profile.days, "11");
+  assert.equal(sync.snapshot.status, "saved");
+});
+
 test("conflicting versions stop automatic writes while retaining edits locally", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   let attempts = 0;

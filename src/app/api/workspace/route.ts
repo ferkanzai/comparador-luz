@@ -2,7 +2,12 @@ import { z } from "zod";
 import { authConfigured, getAuth } from "@/lib/auth";
 import { authOrigins } from "@/lib/auth-origins";
 import { maxWorkspaceRequestBytes, workspaceSchema } from "@/lib/domain";
-import { readWorkspace, saveWorkspace } from "@/lib/workspace-store";
+import {
+  consumeSaveAllowance,
+  readWorkspace,
+  saveWorkspace,
+  workspaceSaveLimit,
+} from "@/lib/workspace-store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (body: unknown, status = 200) =>
@@ -41,6 +46,21 @@ export async function PUT(request: Request) {
       );
     if (!request.headers.get("content-type")?.includes("application/json"))
       return json({ error: "Formato no válido." }, 415);
+    // Before reading the body, so a flood of saves never reaches parsing.
+    if (!(await consumeSaveAllowance(id)))
+      return Response.json(
+        {
+          error:
+            "Demasiados guardados seguidos. Tus cambios siguen aquí; lo reintentaremos en breve.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Cache-Control": "private, no-store",
+            "Retry-After": String(workspaceSaveLimit.windowSeconds),
+          },
+        },
+      );
     // Bound the actual streamed body, including requests without Content-Length.
     const reader = request.body?.getReader();
     if (!reader) return json({ error: "Faltan datos." }, 400);

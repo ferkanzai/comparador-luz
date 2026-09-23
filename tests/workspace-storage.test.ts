@@ -117,8 +117,13 @@ test(
     process.env.DATABASE_URL = url.toString();
     const pool = new Pool({ connectionString: url.toString() });
     const { getPool } = await import("../src/lib/db");
-    const { readWorkspace, saveWorkspace, withWorkspaceTransaction } =
-      await import("../src/lib/workspace-store");
+    const {
+      consumeSaveAllowance,
+      readWorkspace,
+      saveWorkspace,
+      withWorkspaceTransaction,
+      workspaceSaveLimit,
+    } = await import("../src/lib/workspace-store");
     const original = fixture();
     try {
       await pool.query(
@@ -495,6 +500,23 @@ test(
         ),
         /check constraint/,
       );
+      // Saves are limited per account and minute; other accounts keep saving.
+      await pool.query("INSERT INTO \"user\" VALUES ('other')");
+      for (let i = 0; i < workspaceSaveLimit.max; i++)
+        assert.equal(await consumeSaveAllowance("fresh"), true);
+      assert.equal(await consumeSaveAllowance("fresh"), false);
+      assert.equal(await consumeSaveAllowance("other"), true);
+      await withWorkspaceTransaction("other", true, async (c) =>
+        assert.equal(
+          (await c.query("SELECT * FROM workspace_save_rate")).rowCount,
+          1,
+          "an account only sees its own counter",
+        ),
+      );
+      await pool.query(
+        "UPDATE workspace_save_rate SET window_start = now() - interval '61 seconds' WHERE user_id = 'fresh'",
+      );
+      assert.equal(await consumeSaveAllowance("fresh"), true);
     } finally {
       await pool.end();
       await getPool().end();
