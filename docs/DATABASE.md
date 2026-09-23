@@ -1,97 +1,71 @@
-# Workspace database
+# Account database
 
-Account data lives in relational PostgreSQL tables. `workspace` contains ownership, the current tariff reference, review dates and the optimistic-lock version. It has no JSON column.
+Account data lives in PostgreSQL tables defined with Drizzle in `src/db/schema.ts`. Better Auth keeps its own tables (`user`, `session`, `account`, `verification`, `rateLimit`). Each account has one workspace ([`CONTEXT.md`](../CONTEXT.md)), stored as:
 
-| Table                       | Contents and relationships                                                                                |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `workspace_profile`         | One current consumption/tax profile per workspace                                                         |
-| `workspace_tariff`          | Ordered current offers; `(user_id, id)` identifies a tariff                                               |
-| `workspace_tariff_snapshot` | Independent tariff values for history entries and bills, including the original tariff ID                 |
-| `workspace_history`         | Contract dates and a foreign key to a historical tariff snapshot                                          |
-| `workspace_bill`            | Reporting month, invoice dates, amounts, consumption and review acknowledgement; optional tariff snapshot |
-| `workspace_bill_profile`    | Optional profile snapshot belonging to one bill                                                           |
-| `workspace_bill_breakdown`  | Optional typed amounts for the bill's nine charge concepts                                               |
+| Table            | One row per                                                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `workspace`      | account: the comparison profile, `current_tariff_id` and `current_since`                                              |
+| `tariff`         | offer, including the current tariff ([ADR-0001](adr/0001-separate-candidates-contract-periods-and-bill-snapshots.md)) |
+| `tariff_period`  | past contract period, with the columns of its tariff snapshot                                                         |
+| `bill`           | bill: month, dates, amounts, consumption and review acknowledgement                                                   |
+| `bill_tariff`    | a bill's optional tariff snapshot                                                                                     |
+| `bill_profile`   | a bill's optional comparison-profile snapshot                                                                         |
+| `bill_breakdown` | a bill's optional amounts for its nine charge concepts                                                                |
+| `save_rate`      | account's one-minute window of save requests                                                                          |
 
-All child keys and foreign keys include `user_id`. UUIDs can recur in another account without sharing records. Removing a live offer never changes its historical or invoice snapshots. Deleting a user cascades through their workspace and the legacy archive.
+Every key includes `user_id`, so the same UUID can exist in two accounts without sharing anything. Deleting a Better Auth user cascades through all of its rows. Records keep the order they were created in (`seq`).
 
-Amounts, consumption and prices use exact `NUMERIC`; missing form values use SQL `NULL`, distinct from zero. Dates use `DATE`. The existing API still returns decimal strings, with a decimal point instead of a comma and without leading integer zeroes. It preserves decimal precision, optional/null consumption distinctions, ordering, snapshot values and legacy invoice-review metadata. JSON is used for HTTP and batched SQL parameters/results, not as live database storage.
+The tables enforce types, presence, keys and ownership. Values (ranges, allowed options, a breakdown that adds up to the paid total) are validated by the Zod schemas in `src/lib/domain.ts` on every write. Amounts, consumption and prices are exact `NUMERIC`, exchanged as decimal strings. An empty form value is `NULL`, distinct from zero. Dates are `DATE`, exchanged as `YYYY-MM-DD`. Nested relational queries would pass `NUMERIC` through JSON numbers and round them, so `src/db/workspace.ts` reads bill parts with plain selects.
 
-## Transactions and ownership
+## Saving
 
-`workspace-store.ts` starts a transaction, switches to the restricted `luz_workspace` role and sets `app.user_id` from the authenticated server session. Both role and identity are transaction-local. Every table enables and forces row-level security with matching `USING` and `WITH CHECK` policies. Missing identity means no rows. The role has only SELECT/INSERT/UPDATE/DELETE on workspace tables, with no login, ownership, superuser, BYPASSRLS, role memberships, auth-table grants or TRUNCATE grant.
+Signed-in changes are saved one action at a time, and the last save wins ([ADR-0003](adr/0003-save-each-record-through-crud-endpoints.md)):
 
-Reads use repeatable-read transactions so joins and subsequent queries see the same version. Saves claim the expected workspace version before writing, update only changed rows, prune deleted records and commit all changes atomically. Concurrent or stale saves still return HTTP 409. The API keeps its authenticated ownership checks, origin validation, body-size limits and Zod validation; database constraints additionally enforce ownership references, ranges, enums, dates and ordering.
+| Endpoint                                   | Action                                                          |
+| ------------------------------------------ | --------------------------------------------------------------- |
+| `GET /api/workspace`                       | Read the whole workspace                                        |
+| `PATCH /api/profile`                       | Change some profile fields                                      |
+| `PUT`, `DELETE /api/offers/[id]`           | Save or remove an offer (not the current tariff)                |
+| `POST /api/contract/current`               | Register the current tariff, or a real price change             |
+| `POST /api/contract/periods`               | Record a past period                                            |
+| `PUT`, `DELETE /api/contract/periods/[id]` | Correct or remove a period, the current one included            |
+| `PUT`, `DELETE /api/bills/[id]`            | Save or remove a bill, optionally with an offer from its prices |
+| `POST /api/import`                         | Move a guest's workspace into the account on sign-in            |
 
-The database identity is trusted server context, not a client-provided ID or database-verified JWT. RLS protects against omitted ownership predicates, not a compromised server or stolen administrative database credentials. Better Auth and migrations still use the configured `DATABASE_URL`; workspace operations always explicitly switch to the restricted role. Keep credentials server-side. PostgreSQL owners and BYPASSRLS/superuser roles have special privileges; see [PostgreSQL row security](https://www.postgresql.org/docs/17/ddl-rowsecurity.html).
+Every save goes through `mutation()` in `src/lib/account-api.ts`. It checks the origin, the session (always from the database, so sign-out and password resets stop saves immediately), the rate limit and a 4 MB body. It then runs one of the pure actions in `workspace-actions.ts` or `tariff-periods.ts` on the stored workspace and validates the result with `workspaceSchema`. A refused action or a broken rule answers 422 with a Spanish message. Otherwise `writeChanges` writes only the records that differ, in one transaction. Removing something that no longer exists succeeds.
 
-## Migration and deployment
+The client (`src/components/use-workspace.ts`) turns each user action into a command from `src/lib/workspace-commands.ts`: the same pure action, applied on screen at once, plus the requests above. It refetches the workspace after saving and when the window regains focus. Guests never call these endpoints; their workspace stays in the browser.
 
-`pnpm db:migrate` applies Better Auth migrations and then the workspace migrations, under one session advisory lock so concurrent deployments take turns. The database login must own the old workspace table and be able to create tables and create/grant the `luz_workspace` role. The migration fails rather than silently omitting security. An existing role with elevated attributes or memberships is rejected.
+**Older builds.** Every save sends `x-luz-schema` with `appSchemaVersion` from `src/lib/domain.ts`. The server answers 426 to older versions, and to the whole-workspace `PUT /api/workspace` of builds from before ADR-0003, and the page asks the user to reload. **When you add a stored field, bump `appSchemaVersion`**, or a tab left open on the previous build could save records without it.
 
-### Migration runner
+## Ownership and row-level security
 
-Workspace migrations are the files `migrations/NNN-name.sql`. `src/lib/workspace-migrations.ts` applies every file not yet recorded in `app_migration`, in numeric order, and records each by its file name without `.sql`. Everything runs in one transaction under a transaction advisory lock. Fresh installations and upgrades follow the same sequence. To add a migration, add the next numbered file; no code change is needed.
+`withAccount(userId, "read" | "write", run)` in `src/db/index.ts` opens a transaction, switches to the restricted `luz_workspace` role and sets `app.user_id` from the authenticated session. Both are transaction-local, so a pooled connection never keeps a user. Reads use repeatable-read, read-only transactions. Every account table enables and forces row-level security, with a policy that matches `user_id` to `app.user_id`. Missing identity means no rows. The role can only select, insert, update and delete on these tables. It has no login, ownership, superuser, `BYPASSRLS`, memberships, auth-table grants or `TRUNCATE`.
 
-- **001's code steps.** Before 001, a JSON-document `workspace` table is renamed to `workspace_legacy`. After 001, the `luz_workspace` role, grants and row-level security are set up.
-- **The legacy import runs last.** It happens after every migration in the run, because the record writers target the latest schema.
-- **Newer databases are refused.** If `app_migration` contains an id this build doesn't have, the runner fails without changing anything. That means the database was migrated by a newer build.
+RLS protects against a query that forgets its ownership filter. It doesn't protect against a compromised server or stolen administrative credentials. Better Auth and migrations use `DATABASE_URL` directly. Keep credentials server-side.
 
-### Compatibility policy
+## Migrations
 
-`pnpm build:vercel` migrates **before** the new build goes live. While it builds, and indefinitely if the build fails, the live deployment runs the previous app against the new schema. Every migration must therefore keep the previous release working.
+`pnpm db:migrate` takes a session advisory lock, runs Better Auth's migrations, and then Drizzle's migrator on `migrations/`. Vercel runs it before every build (`pnpm build:vercel`).
 
-**Expand, then contract.** A migration may only add things:
+- To change the schema, edit `src/db/schema.ts` and run `pnpm db:generate`. Review the generated SQL.
+- For what Drizzle can't express (grants, policies, keys to Better Auth's tables, the key between `workspace` and `tariff` that references each other), use `pnpm db:generate --custom --name <name>` and write the SQL. `0002_row-security` is an example.
+- `0000_drop-legacy` dropped the tables of the design before ADR-0003 without migrating their data. Nobody used the app yet.
 
-- tables;
-- columns that are nullable or have a default;
-- indexes;
-- constraints that existing data and the previous app's writes already satisfy.
+**Compatibility.** Migrations run before the new build goes live, so the previous build runs against the new schema meanwhile. Only add things: tables, nullable or defaulted columns, indexes. Remove or rename in a later release, once no deployed build uses the old name. Anything destructive needs a maintenance window: back up or branch the Neon database, deploy, verify.
 
-Removing or renaming something ships in a later release, once no deployed build reads or writes it. Renames are done as: add the new name, write both, move reads over, then drop the old one.
+## Integration tests
 
-**Destructive migrations need a maintenance window.** That covers drops, renames, type changes, tightened constraints and data rewrites the previous app can't handle. Use the same procedure as the 001 cutover below: a backup or Neon branch, paused account persistence, then deploy and verify. 002 dropped a table the previous app wrote to, and should have followed this rule.
-
-**Outdated clients.** Saves replace the whole workspace, so a browser running the previous build silently drops fields it doesn't know. 003's SNOEE prices are an example. Until ticket 28 changes the sync model, a migration that adds user-editable fields must say so in its notes, and users must reload before using the feature. The planned fix is for the client to send the schema version it was built for, and for the server to reject older saves with a "reload to continue" response instead of accepting them.
-
-Review checklist for a migration:
-
-- [ ] Only adds, or has a maintenance window planned and written down.
-- [ ] New columns are nullable or defaulted; new constraints hold for existing rows and for the previous app's writes.
-- [ ] The previous release still reads and saves correctly against the new schema. Check this by running the previous build against a migrated copy.
-- [ ] New user-editable fields are flagged as dropped by stale clients.
-- [ ] Anything left for a later contract step is listed in the migration file's header comment.
-- [ ] `tests/workspace-storage.test.ts` covers upgrading from the previous schema.
-
-### The one-off 001 cutover
-
-For an existing installation, this is a **maintenance-window cutover**, not a rolling migration:
-
-1. Take a database backup/Neon branch and verify the migration on a separate database first.
-2. Pause access to account persistence on the old deployment. Export unsaved browser drafts where needed.
-3. Run `pnpm build:vercel`/the normal deployment while account access remains paused. It runs the migration before the build.
-4. Verify saving, reloading and account isolation on the new deployment, then restore access.
-
-Legacy invoices with nonempty `priceLines` are intentionally discarded before validation; other invoices remain. Browser drafts and incoming workspace saves apply the same rule. Migration `002-remove-invoice-price-lines` also handles databases that already ran the old relational migration: it deletes affected invoices and their dependent records and tariff snapshots, advances affected workspace versions, and drops the retired price-line table. Fresh installations do not create it.
-
-The migration locks the legacy table, renames it to `workspace_legacy`, creates the new schema, validates each saved workspace, backfills its rows and verifies every reconstructed workspace. The initial migration retains versions and timestamps; the follow-up cleanup advances versions only for accounts with deleted invoices. Everything in the workspace migration, including the migration marker, commits in one transaction; an invalid record or failed verification rolls it all back. Concurrent workspace migrations serialize on an advisory lock. Repeat runs skip completed migrations.
-
-`workspace_legacy` is a frozen recovery archive with forced RLS and no application policy/grants. It is never read or written by the new app and is absent on fresh installations. Administrators can inspect it with an appropriately privileged role (a non-BYPASSRLS owner must deliberately disable its RLS first). It is not a current backup after new saves occur. No automatic archive deletion is included.
-
-**After migration commits, old application builds are incompatible.** If the subsequent app build fails, keep maintenance enabled and fix/redeploy the new build. Before accepting new writes, restoring the pre-migration database backup and old app together is a rollback option. After accepting new writes, restoring that backup would lose them; use a forward fix or a separately reviewed reverse migration. Reverting only the application is not a rollback.
-
-## SNOEE incremental migration
-
-`003-snoee-cost` adds nullable `snoee_kwh` prices to live tariffs and tariff snapshots, and a nonnegative `snoee` amount defaulting to zero on invoice breakdowns. It leaves historical totals and workspace versions unchanged. It does not require another JSON-to-relational cutover. Existing applications can still read their previous fields, but a stale client that does not understand SNOEE cannot preserve a newly entered charge when rewriting a whole workspace; reload clients onto the new version before using the feature.
-
-## Integration checks
-
-The existing account test uses a separate, explicitly configured local `*_test` database after `pnpm db:migrate`.
-
-The dedicated relational test **replaces the public schema** of a disposable local database whose name ends in `_workspace_test`. It refuses remote hosts and other names:
+These run only against disposable local databases. They refuse remote hosts and names that don't end in `_test`.
 
 ```sh
-docker exec comparador-luz-dev-postgres createdb -U postgres luz_workspace_test
-TEST_WORKSPACE_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_workspace_test pnpm exec tsx --test tests/workspace-storage.test.ts
+# Replaces the public schema of its database.
+TEST_WORKSPACE_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_workspace_test pnpm exec tsx --test tests/db.test.ts
+# Needs `pnpm db:migrate` first; creates and removes its own users.
+TEST_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_test pnpm exec tsx --test tests/accounts.test.ts tests/endpoints.test.ts
 ```
 
-It exercises fresh installation, legacy backfill, validation rollback, migration reruns, the SNOEE incremental upgrade, exact decimals, date handling, joins, snapshot preservation, all-table RLS without ownership filters, denied cross-owner inserts/updates/deletes, denied auth/archive/TRUNCATE access, missing identity, pooled identity cleanup, cross-account foreign keys, concurrent saves, consistent reads, rollback and cascade cleanup. Run it only against its own disposable database, never the account test's database.
+- `tests/db.test.ts`: the baseline migration (legacy tables dropped, reruns), a full workspace round trip with exact decimals, writes limited to what changed, record order, RLS isolation, read-only reads, no identity leaking between transactions, cascade on account deletion, and the rate limit.
+- `tests/endpoints.test.ts`: every save endpoint, and the rules they enforce (limits, overlapping periods, the current tariff).
+- `tests/accounts.test.ts`: authentication, sessions, account isolation, origins, 426 for older builds, import, and account deletion.
+- `pnpm test:browser` with `COMPARISON_TEST_DATABASE_URL` runs the signed-in browser tests, which seed accounts through the same `writeChanges`.

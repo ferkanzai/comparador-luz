@@ -58,7 +58,7 @@ Each mutation loads the workspace, runs the existing pure action, validates the 
 | 05  | [Bill endpoints](issues/05-bills.md)                                             | S      | completed       | 02         |
 | 06  | [Client on TanStack Query](issues/06-client-tanstack-query.md)                   | M–L    | completed       | 03, 04, 05 |
 | 07  | [Export on the account page](issues/07-export-on-account-page.md)                | S      | completed       | 06         |
-| 08  | [Remove the old persistence and rewrite the docs](issues/08-cleanup-and-docs.md) | M      | ready-for-agent | 06         |
+| 08  | [Remove the old persistence and rewrite the docs](issues/08-cleanup-and-docs.md) | M      | completed       | 06         |
 
 
 Work on one branch and merge once 01–08 are done and the browser suite passes: halfway through, the app can't save.

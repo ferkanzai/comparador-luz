@@ -43,7 +43,7 @@ Vercel runs `pnpm build:vercel` on every deployment. This applies the database s
 pnpm db:migrate && pnpm build
 ```
 
-Fresh installations migrate automatically. **Existing JSON workspace installations require a maintenance-window cutover:** the old app is incompatible after migration. Follow [the migration and rollback procedure](DATABASE.md#migration-and-deployment) before deploying this change. The migration creates or updates Better Auth's schema using the installed version's migration API and applies the versioned relational workspace migration. It creates typed tables, foreign keys and row-level policies, and validates/backfills existing JSON workspaces. The database login needs table ownership and permission to create/grant the restricted workspace role. If it fails, the build stops and the new version is not deployed. Successful schema changes remain applied if the subsequent application build fails.
+The migration creates or updates Better Auth's schema, then applies the app's Drizzle migrations: typed tables, foreign keys, the restricted role and row-level security. The database login needs table ownership and permission to create and grant that role. If the migration fails, the build stops and the new version isn't deployed. Successful schema changes stay applied if the app build fails afterwards. See [the account database](DATABASE.md).
 
 Both Production and Preview deployments migrate the database specified by their own `DATABASE_URL`. Make sure Preview uses its separate Neon branch/database and that the database and auth environment variables are available at build time. A missing database URL fails the deployment rather than silently skipping migrations. Review schema changes for compatibility with the currently deployed app, since migrations run before the new version goes live.
 
@@ -60,11 +60,11 @@ Verify these flows on the production domain:
 - Anonymous page starts with empty consumption and no sample tariffs.
 - Create account with a password → arrive signed in → receive verification email.
 - Choose email code → receive a code → enter it → arrive signed in; test both new and existing accounts.
-- Add a tariff, mark it as current, enter consumption and click **Guardar cambios**.
+- Add a tariff, mark it as current and enter consumption. Wait for "Guardado en tu cuenta".
 - Reload: the data remains. A second account starts empty.
 - Change current prices and inspect **Mis tarifas**.
 - From the comparator, use **Guardar este período como factura**. Check the period dates, reporting month and real amounts; **Guardar factura** persists immediately. Reload and check the stacked chart and breakdown. Hover, focus or tap a month to inspect it, then switch to **Evolución** for connected monthly totals (missing months remain gaps). Add a credit and check that the total decreases, tax amounts remain unchanged, and the credit survives refresh.
-- Add or edit a bill under **Mis facturas** and reload without clicking **Guardar cambios**.
+- Add or edit a bill under **Mis facturas** and reload.
 - Request a password reset; confirm delivery and successful reset.
 
 ## Local development
@@ -103,12 +103,12 @@ pnpm build
 TEST_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_test pnpm test
 ```
 
-The last command exercises real authentication and account-owned persistence against a disposable local database. It refuses non-local database hosts and databases whose names do not end in `_test`. The test cleans up the users it creates and resets the test database's rate-limit records. Without `TEST_DATABASE_URL`, that integration test is explicitly skipped. Run the same command with `TEST_VERCEL_PREVIEW=deployment` and then `TEST_VERCEL_PREVIEW=branch` to check the entire account workflow on both preview URLs while simulating an inherited production `BETTER_AUTH_URL`. Run these database tests sequentially.
+The last command exercises real authentication and account-owned persistence against a disposable local database. It refuses non-local database hosts and databases whose names do not end in `_test`. The tests clean up the users they create and reset the test database's rate-limit records. Without `TEST_DATABASE_URL`, those integration tests are explicitly skipped. Run the same command with `TEST_VERCEL_PREVIEW=deployment` and then `TEST_VERCEL_PREVIEW=branch` to check the account workflow on both preview URLs while simulating an inherited production `BETTER_AUTH_URL`. The schema tests need their own database; see [Integration tests](DATABASE.md#integration-tests). Run database tests sequentially.
 
 ## Storage and privacy
 
-Auth uses its standard relational tables. Account profiles, tariffs, snapshots, history, bills and breakdowns use separate typed tables with account-scoped foreign keys. Every read/write derives ownership from the server session and runs under a restricted database role with transaction-local identity and forced row-level security. Versioned, atomic saves reject stale tabs with HTTP 409. See [the database model, security boundary and migration tests](DATABASE.md). Workspaces are limited to 1 MB, 100 offers, 500 historical changes and 1,200 bills.
+Auth uses its standard relational tables. The workspace uses typed tables with account-scoped foreign keys. Every read and write derives ownership from the server session and runs under a restricted database role with transaction-local identity and forced row-level security. See [the account database](DATABASE.md). Workspaces are limited to 100 offers, 500 historical periods and 1,200 bills.
 
-Tariff and comparison edits are saved with **Guardar cambios**. Explicit price-review confirmations save immediately for signed-in users. Creating, editing or deleting a bill saves immediately; the editor waits for server confirmation and retains the draft on failure. These saves also persist the current comparison workspace. Network failures retain the visible draft. Comparison drafts are backed up in sessionStorage, scoped to the signed-in account or guest, and survive refresh/navigation within the same tab. On sign-in, guest consumption and offers are recovered alongside saved tariffs; an existing account contract, history and bills are preserved. Use **Guardar cambios** to persist this recovered comparison in the account. Closing the tab can clear this temporary copy; export or save first. If another tab/device has saved a newer version, the stale draft cannot overwrite it; the UI offers export and loading the account version. Navigation warns only when the browser cannot store a draft. Export downloads a JSON copy for personal backups, including unsaved edits; it does not include passwords or sessions. This version does not import backups or automatically discover offers.
+Guests' comparisons are saved in this browser's `localStorage`. On sign-in they move into the account once: consumption, offers and, if the account has none, the current tariff. An existing account contract, history and bills are kept. Signed-in changes save automatically, one action at a time, with no save button. The screen updates at once. If a save fails or is refused, a message explains why and the screen goes back to the account's copy. When the same account is used on several devices, each record keeps the last version saved. **Exportar** (home page, guests) and **Descargar mis datos** (Mi cuenta) download a JSON copy for personal backups; it doesn't include passwords or sessions. This version does not import backups or automatically discover offers.
 
 Price confirmation buttons appear only on tariffs without a confirmation date. Bulk confirmation fills missing dates and preserves all existing dates, even from previous days.

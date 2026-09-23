@@ -4,7 +4,7 @@ A Spanish electricity dashboard for comparing offers and recording your househol
 
 - Guest comparison with empty forms, no sample prices, and no account requirement.
 - Better Auth email-code login or email/password with immediate signup sessions, email verification and password recovery.
-- Relational PostgreSQL persistence with account-scoped foreign keys, row-level security and atomic versioned saves.
+- PostgreSQL persistence (Drizzle) with account-scoped foreign keys and row-level security; each change saves on its own, and the last save wins.
 - Saved consumption, current tariff, manually entered offers and optional offer expiry.
 - Dated contract history, with separate corrections and real price changes.
 - Bills with actual date ranges, consumption snapshots, editable breakdowns, immediate saving, monthly stacked charts and JSON export.
@@ -28,13 +28,13 @@ Start with your current tariff or your consumption. Every tariff uses one shared
 
 Use **Editar perfil** to change the shared inputs. **Simular consumo** accepts punta, llano and valle kWh directly, like an invoice, and shows their calculated total on the right (below on a phone). Simulations apply to every result but stay outside autosave and export until you choose **Usar este consumo**. **Restablecer** returns to the underlying profile. Reset or adopt a simulation before creating a bill from the comparison, then check the actual invoice figures.
 
-Guest edits are saved in this browser; signed-in edits also synchronize automatically to the account. Optional **Oferta válida hasta** sits inside collapsed offer details and appears in the comparison table when supplied. Expired candidates remain visible but unranked; the current contract remains the baseline. Legacy personal-review dates are preserved in storage but no longer appear in the interface.
+Guest edits are saved in this browser; signed-in edits save automatically to the account. Optional **Oferta válida hasta** sits inside collapsed offer details and appears in the comparison table when supplied. Expired candidates remain visible but unranked; the current contract remains the baseline. Legacy personal-review dates are preserved in storage but no longer appear in the interface.
 
 **Mis tarifas** lets you add current and previous contract periods, correct mistakes, register real price changes, and remove mistakenly entered records. Gaps are allowed; new or corrected periods cannot overlap. A shared change date can be corrected on both adjoining periods with a preview. Corrections never rewrite saved bills. Expand **Comparar precios** to compare up to three recorded periods with power prices in a common unit. **Registrar como actual/anterior** records a comparator candidate as a contract; **Volver a comparar** creates an independent candidate from recorded prices. **Mis facturas** records actual paid amounts. Use **Guardar este período como factura** to copy consumption and estimated line items, then check dates and actual amounts. **Guardar factura** saves immediately; no second save is required. Optional credits reduce the final amount while preserving the recorded taxes. Explore the monthly breakdown by hover, keyboard or tap, or switch to the line view to follow spending over time. No provider switching, automatic offer scraping or email reminders are performed.
 
 ## Stack
 
-Next.js App Router, React, TypeScript, Better Auth, `pg`, Zod and CSS. Fonts are served locally. The original Vite app has been replaced with a full-stack app so that authentication and data access stay on the server.
+Next.js App Router, React, TypeScript, Better Auth, Drizzle ORM on `pg`, TanStack Query, Zod and CSS. Fonts are served locally. The original Vite app has been replaced with a full-stack app so that authentication and data access stay on the server.
 
 ```sh
 pnpm lint
@@ -43,7 +43,7 @@ pnpm test
 pnpm build
 ```
 
-The account and relational storage integration tests run only with explicitly configured disposable local PostgreSQL databases; see [the setup guide](docs/SETUP.md) and [database model, migration and isolation tests](docs/DATABASE.md). Existing JSON workspace installations require a maintenance-window migration before deploying this version.
+The account and database integration tests run only with explicitly configured disposable local PostgreSQL databases; see [the setup guide](docs/SETUP.md) and [the account database](docs/DATABASE.md).
 
 ## Comparison browser tests
 
