@@ -1619,7 +1619,7 @@ details.form-section > .field {
   text-underline-offset: 4px;
 }
 .tariff-record-actions .record-remove {
-  margin-left: auto;
+  margin-left: 0;
   width: 40px;
   color: var(--muted);
   border-radius: 4px;
@@ -1820,6 +1820,29 @@ details.form-section > .field {
 .history-original-prices dd {
   margin: 0;
   color: var(--muted);
+}
+@media (min-width: 901px) {
+  .history-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 20px;
+    border-bottom: 0;
+  }
+  .tariff-record {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 22px;
+    border-top: 0;
+    background: var(--white);
+  }
+  .tariff-record .comparison-rates {
+    max-width: 420px;
+  }
+  .tariff-record-actions {
+    gap: 4px 14px;
+  }
 }
 @media (max-width: 700px) {
   .tariff-ledger-heading {
