@@ -8,7 +8,7 @@
 
 **Effort:** S
 
-**Implementation:** drafted, awaiting the owner's approval
+**Implementation:** complete (policy approved by the owner)
 
 ## Why
 
@@ -39,3 +39,5 @@ Decisions for the owner:
 
 - Is a maintenance window acceptable for every destructive change, or should some drops wait for a contract release instead?
 - Should the schema-version check on saves become its own ticket now, or wait for 28?
+
+**Owner's decision:** the owner approved the policy as drafted. Destructive changes need a maintenance window, and the schema-version check on saves waits for ticket 28. The pull-request template item stays open until a template exists.
