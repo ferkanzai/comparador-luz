@@ -6,7 +6,6 @@ import ConfirmDialog from "./confirm-dialog";
 import { authClient } from "@/lib/auth-client";
 import type { CurrentUser } from "@/lib/current-user";
 import { workspaceSchema } from "@/lib/domain";
-import { markPendingDeletion } from "@/lib/workspace-draft";
 import { downloadWorkspace } from "@/lib/workspace-export";
 
 export default function AccountSettings({
@@ -105,7 +104,6 @@ export default function AccountSettings({
             ? "Demasiados intentos. Espera un minuto y vuelve a probar."
             : "No hemos podido enviar el correo de confirmación. Inténtalo de nuevo.",
         );
-      markPendingDeletion(localStorage, user.id);
       setDeletionSent(true);
     });
   }

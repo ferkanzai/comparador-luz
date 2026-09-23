@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0003
+---
+
 # Sync account workspaces with per-record change sets
 
 Signed-in saves stop sending the whole workspace. Each user action becomes a change set: the records it upserts and removes, the workspace version it was based on, the client's schema version and a client-generated id. Edits made on different devices to different records merge without a prompt; only edits to the same record conflict, and only that record is offered for resolution. We accept per-row versions, tombstones and an idempotency log in exchange, because whole-workspace saves made every concurrent edit an all-or-nothing conflict whose only exit discarded local work, and their size grew with history rather than with the edit.

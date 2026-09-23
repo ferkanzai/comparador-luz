@@ -1,13 +1,12 @@
 "use client";
 import FeedbackNotice, { useFeedback } from "./feedback-notice";
-import { useEffect, useState, useRef, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./input-otp";
 import { Brand } from "./ui";
-import { removeDeletedAccountDrafts } from "@/lib/workspace-draft";
 export default function AccountForm({
   configured,
   mode: initialMode,
@@ -21,9 +20,6 @@ export default function AccountForm({
   verificationError?: string;
   deleted?: boolean;
 }) {
-  useEffect(() => {
-    if (deleted) removeDeletedAccountDrafts(localStorage, sessionStorage);
-  }, [deleted]);
   const [mode, setMode] = useState(
     token
       ? "reset"

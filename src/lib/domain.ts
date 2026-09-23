@@ -182,7 +182,6 @@ export const workspaceSchema = z
           : value,
       z.array(billSchema).max(workspaceLimits.bills),
     ),
-    reviewedOn: optionalDate,
   })
   .superRefine((w, ctx) => {
     if (w.currentId && !w.tariffs.some((t) => t.id === w.currentId))
@@ -195,6 +194,13 @@ export const workspaceSchema = z
         });
     }
   });
+/**
+ * Sent with every save. Bump it when a stored field is added, so the server
+ * refuses older builds, which would save records without that field.
+ */
+export const appSchemaVersion = 1;
+export const appSchemaHeader = "x-luz-schema";
+
 // A workspace at every list maximum with realistic content is about 2.3 MB.
 // Vercel rejects request bodies over 4.5 MB before the function runs.
 export const maxWorkspaceRequestBytes = 4_000_000;
@@ -220,7 +226,6 @@ export const emptyWorkspace = (): Workspace => ({
   currentSince: "",
   history: [],
   bills: [],
-  reviewedOn: "",
 });
 export const newTariff = (): Tariff => ({
   id: crypto.randomUUID(),

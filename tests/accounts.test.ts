@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { emptyWorkspace, newTariff } from "../src/lib/domain";
-import { workspaceTables } from "../src/lib/workspace-records";
+
 // Explicit opt-in to a disposable local database. Never run against a production URL.
 test(
   "Postgres: verification, account isolation, persistence, conflicting writes, reset and revocation",
@@ -29,6 +29,10 @@ test(
     const { getAuth } = await import("../src/lib/auth");
     const { getPool } = await import("../src/lib/db");
     const { GET, PUT } = await import("../src/app/api/workspace/route");
+    const { POST: importWorkspace } =
+      await import("../src/app/api/import/route");
+    const { appSchemaHeader, appSchemaVersion } =
+      await import("../src/lib/domain");
     // The guarded disposable database also stores rate limits between test runs.
     await getPool().query('DELETE FROM "rateLimit"');
     const auth = getAuth();
@@ -137,20 +141,32 @@ test(
         profile: null,
         breakdown: null,
       });
-      const put = (cookie: string, version: number, origin = base) =>
-        PUT(
-          new Request(`${base}/api/workspace`, {
-            method: "PUT",
-            headers: { origin, cookie, "content-type": "application/json" },
-            body: JSON.stringify({ data: w, version }),
+      const put = (cookie: string, origin = base, schema = appSchemaVersion) =>
+        importWorkspace(
+          new Request(`${base}/api/import`, {
+            method: "POST",
+            headers: {
+              origin,
+              cookie,
+              "content-type": "application/json",
+              [appSchemaHeader]: String(schema),
+            },
+            body: JSON.stringify({ data: w }),
           }),
         );
       assert.equal(
-        (await put(aliceCookie, 0, "https://evil.example")).status,
+        (await put(aliceCookie, "https://evil.example")).status,
         403,
       );
-      assert.equal((await put(aliceCookie, 0)).status, 200);
-      assert.equal((await put(aliceCookie, 0)).status, 409);
+      assert.equal((await put(aliceCookie)).status, 200);
+      // Importing the same records again changes nothing.
+      assert.equal((await put(aliceCookie)).status, 200);
+      // Older builds are told to reload, including the whole-workspace save.
+      assert.equal(
+        (await put(aliceCookie, base, appSchemaVersion - 1)).status,
+        426,
+      );
+      assert.equal(PUT().status, 426);
       const saved = await (
         await GET(request("/api/workspace", undefined, aliceCookie))
       ).json();
@@ -159,22 +175,21 @@ test(
       );
       assert.ok(cookieOf(recached).includes("session_data"));
       assert.equal(saved.data.tariffs[0].name, "Private tariff");
-      assert.equal(saved.data.bills[0].paid, "65.42");
-      assert.equal(saved.version, 1);
+      // Guests can't record bills, so importing carries offers and the profile only.
+      assert.deepEqual(saved.data.bills, []);
       const bobs = await (
         await GET(request("/api/workspace", undefined, bobCookie))
       ).json();
-      assert.equal(bobs.version, 0);
       assert.deepEqual(bobs.data.tariffs, []);
-      assert.equal((await put(bobCookie, 1)).status, 409);
-      assert.equal((await put(aliceCookie, 1)).status, 200);
-      const malformed = await PUT(
-        new Request(`${base}/api/workspace`, {
-          method: "PUT",
+      assert.equal(saved.data.tariffs.length, 1);
+      const malformed = await importWorkspace(
+        new Request(`${base}/api/import`, {
+          method: "POST",
           headers: {
             origin: base,
             cookie: aliceCookie,
             "content-type": "application/json",
+            [appSchemaHeader]: String(appSchemaVersion),
           },
           body: "{oops",
         }),
@@ -202,7 +217,7 @@ test(
         (await GET(request("/api/workspace", undefined, aliceCookie))).status,
         200,
       );
-      assert.equal((await put(aliceCookie, 2)).status, 401);
+      assert.equal((await put(aliceCookie)).status, 401);
       assert.equal(
         (
           await GET(
@@ -231,7 +246,7 @@ test(
           .status,
         200,
       );
-      assert.equal((await put(bobCookie, 0)).status, 401);
+      assert.equal((await put(bobCookie)).status, 401);
       assert.equal(
         (
           await GET(
@@ -364,7 +379,7 @@ test(
       const retained = await (
         await GET(request("/api/workspace", undefined, cookieOf(aliceOTP)))
       ).json();
-      assert.equal(retained.data.bills[0].paid, "65.42");
+      assert.equal(retained.data.tariffs[0].name, "Private tariff");
       // Deletion needs the emailed link, opened with the account's session, and removes every workspace row.
       const aliceId = (
         await getPool().query('SELECT id FROM "user" WHERE email = $1', [
@@ -373,7 +388,16 @@ test(
       ).rows[0].id;
       const rowsOf = async (id: string) => {
         let total = 0;
-        for (const table of workspaceTables)
+        for (const table of [
+          "workspace",
+          "tariff",
+          "tariff_period",
+          "bill",
+          "bill_tariff",
+          "bill_profile",
+          "bill_breakdown",
+          "save_rate",
+        ])
           total += (
             await getPool().query(`SELECT 1 FROM ${table} WHERE user_id = $1`, [
               id,

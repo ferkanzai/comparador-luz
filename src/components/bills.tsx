@@ -23,13 +23,13 @@ import BillList from "./bill-list";
 import YearComparison from "./year-comparison";
 import { invoiceYears } from "@/lib/year-comparison";
 import { consumptionMonths, formatKwh } from "@/lib/bill-consumption";
-import { removeBill, saveBill } from "@/lib/workspace-actions";
+import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 export default function Bills({
   workspace: w,
-  update,
+  run,
 }: {
   workspace: Workspace;
-  update: (w: Workspace) => void;
+  run: (command: WorkspaceCommand) => void;
 }) {
   const [editing, setEditing] = useState<Bill | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -287,7 +287,7 @@ export default function Bills({
           }
           confirmLabel="Eliminar factura"
           onConfirm={() => {
-            update(removeBill(w, removing.id));
+            run(commands.removeBill(removing.id));
             setRemovingId(null);
           }}
           onClose={() => setRemovingId(null)}
@@ -299,7 +299,7 @@ export default function Bills({
           workspace={w}
           onClose={() => setEditing(null)}
           onSave={async (bill, newTariff) => {
-            update(saveBill(w, bill, newTariff));
+            run(commands.saveBill(bill, newTariff));
             setYear(bill.month.slice(0, 4));
             setView("months");
             setEditing(null);

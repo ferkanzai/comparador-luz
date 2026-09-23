@@ -46,7 +46,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 25  | [Guest first-run screen](issues/25-guest-first-run.md)                                                       | Design                    | S      | needs-triage    |            |
 | 26  | [Avoid stacked dialogs](issues/26-stacked-dialogs.md)                                                        | Design                    | M      | needs-triage    | 07         |
 | 27  | [Record why the current contract lives in the offers list (ADR-0001)](issues/27-current-contract-storage.md) | Architecture              | S      | completed       |            |
-| 28  | [Send only changes instead of the whole workspace on each save](issues/28-delta-sync.md)                     | Performance, Architecture | L      | ready-for-agent | 03, 07     |
+| 28  | [Send only changes instead of the whole workspace on each save](issues/28-delta-sync.md)                     | Performance, Architecture | L      | wontfix         | 03, 07     |
 | 29  | [Keep hints out of form labels in the account form](issues/29-account-form-label-hints.md)                   | Accounts, Accessibility   | S      | completed       |            |
 
 
@@ -60,9 +60,10 @@ Review of performance, architecture, composition, design, security, account and 
 4. Migrations: 19 (policy), 18, then 20. All implemented. The owner approved the policy for 19 in `docs/DATABASE.md`.
 5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. All implemented, including the owner-approved privacy notice for 16.
 6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code. 23, 24 and 27 implemented. The design session for 28 is done and recorded in ADR-0002; 28 is ready-for-agent, with no code yet.
-7. Leftovers: 21 before 28 (implemented), then 28. 25 and 26 need triage. 22 is independent and is easiest after 25 and 26 settle the UI.
 
 
+
+7. Leftovers (2026-09-23): 21 implemented. 28 abandoned in favour of `.scratch/simple-persistence/` (ADR-0003), which also replaces what 03, 18, 19 and 20 built for whole-workspace saves. After that: triage 25 and 26. Defer 22.
 
 ## Considered and rejected
 

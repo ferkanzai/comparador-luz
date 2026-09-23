@@ -1,224 +1,291 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { emptyWorkspace, workspaceSchema, type Workspace } from "@/lib/domain";
 import {
-  mergeGuestComparison,
-  migrateDraft,
-  readDraft,
-  recoverDraft,
+  useIsMutating,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  appSchemaHeader,
+  appSchemaVersion,
+  emptyWorkspace,
+  profileSchema,
+  workspaceSchema,
+  type Profile,
+  type Workspace,
+} from "@/lib/domain";
+import {
+  readGuestDraft,
   removeDraft,
-  writeDraft,
-  type WorkspaceDraft,
+  writeGuestDraft,
 } from "@/lib/workspace-draft";
 import {
-  WorkspaceSync,
-  SyncError,
-  type SyncSnapshot,
-} from "@/lib/workspace-sync";
+  profileRequest,
+  type SaveRequest,
+  type WorkspaceCommand,
+} from "@/lib/workspace-commands";
+import type { SaveStatus } from "@/lib/sync-status";
 
-export type InitialWorkspace = Promise<
-  { data: Workspace; version: number } | { error: string }
->;
+export type InitialWorkspace = Promise<{ data: Workspace } | { error: string }>;
 
-function browserDraft(owner: string) {
-  try {
-    return migrateDraft(localStorage, sessionStorage, owner);
-  } catch {
-    // Access to either storage object itself can be denied by the browser.
-    try {
-      return readDraft(localStorage, owner);
-    } catch {
-      /* Try the legacy draft. */
-    }
-    try {
-      return readDraft(sessionStorage, owner);
-    } catch {
-      return null;
-    }
+export class SaveError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
   }
 }
-function persist(owner: string, draft: WorkspaceDraft) {
-  try {
-    return writeDraft(localStorage, owner, draft);
-  } catch {
-    return false;
-  }
-}
-async function readAccount(signal: AbortSignal) {
-  const response = await fetch("/api/workspace", { signal, cache: "no-store" });
+async function readAccount() {
+  const response = await fetch("/api/workspace", { cache: "no-store" }).catch(
+    () => {
+      throw new SaveError(0, offline);
+    },
+  );
   const body = await response.json();
-  if (!response.ok) throw new SyncError(response.status, body.error);
-  return {
-    data: workspaceSchema.parse(body.data),
-    version: body.version as number,
-  };
+  if (!response.ok) throw new SaveError(response.status, body.error);
+  return workspaceSchema.parse(body.data);
 }
-async function send(data: Workspace, version: number) {
-  const response = await fetch("/api/workspace", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data, version }),
-    signal: AbortSignal.timeout(20_000),
-  });
-  const body = await response.json();
-  if (!response.ok) throw new SyncError(response.status, body.error);
-  return body.version as number;
-}
-
-export function useWorkspace(
-  userId?: string,
-  initialWorkspace?: InitialWorkspace,
-) {
-  const [snapshot, setSnapshot] = useState<SyncSnapshot>(() => ({
-    data: emptyWorkspace(),
-    stored: true,
-    status: "local",
-    error: "",
-    issue: "",
-  }));
-  const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState("");
-  const [reload, setReload] = useState(0);
-  const [generation, setGeneration] = useState(0);
-  const controller = useRef<WorkspaceSync | null>(null);
-  useEffect(() => {
-    const abort = new AbortController();
-    const owner = userId ?? "guest";
-    const own = browserDraft(owner);
-    let sync: WorkspaceSync | null = null;
-    function start(
-      initial: {
-        data: Workspace;
-        version: number;
-        saved: Workspace | null;
-        conflict: boolean;
-        pending?: Workspace;
+const offline =
+  "No se ha podido conectar. Revisa tu conexión y vuelve a intentarlo.";
+async function send(requests: SaveRequest[], keepalive = false) {
+  for (const { method, path, body } of requests) {
+    const response = await fetch(path, {
+      method,
+      keepalive,
+      headers: {
+        [appSchemaHeader]: String(appSchemaVersion),
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
       },
-      guest: WorkspaceDraft | null = null,
-    ) {
-      if (abort.signal.aborted) return;
-      sync = new WorkspaceSync({
-        ...initial,
-        persist: (draft) => persist(owner, draft),
-        send: userId ? send : undefined,
-        readCurrent: userId
-          ? () => readAccount(AbortSignal.timeout(20_000))
-          : undefined,
-        onChange: setSnapshot,
-      });
-      controller.current = sync;
-      if (userId || own) {
-        sync.update(
-          guest ? mergeGuestComparison(initial.data, guest.data) : initial.data,
-        );
-      } else {
-        // Visiting the empty comparator must not replace account consumption on login.
-        setSnapshot(sync.snapshot);
-      }
-      // The guest copy may only go once the merged workspace is on disk.
-      sync.saveDraft();
-      if (guest && sync.snapshot.stored) {
-        try {
-          removeDraft(localStorage, "guest");
-        } catch {
-          /* Browser denied storage. */
-        }
-        try {
-          removeDraft(sessionStorage, "guest");
-        } catch {
-          /* Browser denied storage. */
-        }
-      }
-      setLoadError("");
-      // Reset presentation state only once the replacement workspace is installed.
-      setGeneration((value) => value + 1);
-      setLoaded(true);
-    }
-    if (!userId) {
-      start({
-        data: own?.data ?? emptyWorkspace(),
-        version: 0,
-        saved: null,
-        conflict: false,
-      });
-    } else {
-      // The first read starts on the server while the browser loads the app.
-      // Explicit retries/reloads must fetch a fresh version, not replay it.
-      const account =
-        reload === 0 && initialWorkspace
-          ? Promise.resolve(initialWorkspace).then((result) => {
-              if ("error" in result) throw new Error(result.error);
-              return result;
-            })
-          : readAccount(abort.signal);
-      account
-        .then((server) =>
-          start(recoverDraft(server, own), browserDraft("guest")),
-        )
-        .catch((error) => {
-          if (abort.signal.aborted) return;
-          if (own) {
-            start({
-              data: own.data,
-              version: own.version,
-              saved: own.base ?? null,
-              conflict: false,
-              pending: own.pending,
-            });
-          } else {
-            setLoadError(
-              error instanceof Error
-                ? error.message
-                : "No se han podido cargar tus datos.",
-            );
-          }
-        });
-    }
-    const retry = () => sync?.retry();
-    const saveDraft = () => sync?.saveDraft();
-    window.addEventListener("online", retry);
-    window.addEventListener("pagehide", saveDraft);
-    document.addEventListener("visibilitychange", saveDraft);
-    return () => {
-      abort.abort();
-      sync?.dispose();
-      controller.current = null;
-      window.removeEventListener("online", retry);
-      window.removeEventListener("pagehide", saveDraft);
-      document.removeEventListener("visibilitychange", saveDraft);
-    };
-  }, [userId, reload, initialWorkspace]);
-
-  async function useAccountVersion() {
-    try {
-      const server = await readAccount(AbortSignal.timeout(20_000));
-      // A debounced local write must not land on top of the account copy.
-      controller.current?.saveDraft();
-      // The existing copy stays intact if reading the account fails.
-      if (!persist(userId!, { ...server, base: server.data })) {
-        setLoadError(
-          "No se pudo guardar la copia de tu cuenta en este dispositivo.",
-        );
-        return;
-      }
-      controller.current?.dispose();
-      setReload((n) => n + 1);
-    } catch (error) {
-      setLoadError(
-        error instanceof Error
-          ? error.message
-          : "No se han podido cargar tus datos.",
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    }).catch(() => {
+      // The browser's own message ("Failed to fetch") is in English.
+      throw new SaveError(0, offline);
+    });
+    if (!response.ok) {
+      const message = await response
+        .json()
+        .then((b: { error?: string }) => b.error)
+        .catch(() => undefined);
+      throw new SaveError(
+        response.status,
+        message ?? "No se ha podido guardar el cambio.",
       );
     }
   }
+}
+
+/**
+ * The workspace on screen and the way to change it. A guest's lives in this
+ * browser; an account's is saved record by record, and the last save wins
+ * (docs/adr/0003). `run` throws when the action can't apply, as the pure
+ * actions do.
+ */
+export function useWorkspace(userId?: string, initial?: InitialWorkspace) {
+  const guest = useGuestWorkspace(!userId);
+  const account = useAccountWorkspace(userId, initial);
+  return userId ? account : guest;
+}
+
+function useGuestWorkspace(enabled: boolean) {
+  const [data, setData] = useState(emptyWorkspace);
+  const [loaded, setLoaded] = useState(false);
+  const [stored, setStored] = useState(true);
+  const latest = useRef(data);
+  const unsaved = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  function save() {
+    clearTimeout(timer.current);
+    if (!unsaved.current) return;
+    unsaved.current = false;
+    setStored(writeGuestDraft(localStorage, latest.current));
+  }
+  useEffect(() => {
+    if (!enabled) return;
+    try {
+      const draft = readGuestDraft(localStorage);
+      if (draft) {
+        latest.current = draft;
+        // Restoring the browser copy after hydration is intended here.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setData(draft);
+      }
+    } catch {
+      /* The browser denied storage; start empty. */
+    }
+    setLoaded(true);
+    const hidden = () => save();
+    window.addEventListener("pagehide", hidden);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      save();
+      window.removeEventListener("pagehide", hidden);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, [enabled]);
   return {
-    ...snapshot,
+    data,
     loaded,
-    loadError,
-    generation,
-    reload: () => setReload((n) => n + 1),
-    update: (data: Workspace) => controller.current?.update(data),
-    retry: () => controller.current?.retry(),
-    useAccountVersion,
+    loadError: "",
+    status: (stored ? "local" : "error") satisfies SaveStatus as SaveStatus,
+    error: stored ? "" : "No se pudo guardar en este dispositivo.",
+    reload: () => {},
+    run(command: WorkspaceCommand) {
+      const next = command.apply(latest.current);
+      latest.current = next;
+      setData(next);
+      // Typing fires a change per keystroke; the browser copy only needs the last one.
+      unsaved.current = true;
+      clearTimeout(timer.current);
+      timer.current = setTimeout(save, 250);
+    },
+  };
+}
+
+const retryable = (error: unknown) =>
+  !(error instanceof SaveError) || error.status >= 500 || error.status === 429;
+
+function useAccountWorkspace(userId?: string, initial?: InitialWorkspace) {
+  const client = useQueryClient();
+  const key = ["workspace", userId];
+  // The first read starts on the server while the browser loads the app.
+  const seed = useRef(initial);
+  const query = useQuery({
+    queryKey: key,
+    enabled: !!userId,
+    queryFn: async () => {
+      const first = seed.current;
+      seed.current = undefined;
+      if (!first) return readAccount();
+      const result = await first;
+      if ("error" in result) throw new Error(result.error);
+      return result.data;
+    },
+  });
+  const [error, setError] = useState("");
+  const [outdated, setOutdated] = useState(false);
+  const saving = useIsMutating({ mutationKey: key });
+  const save = useMutation({
+    mutationKey: key,
+    mutationFn: (requests: SaveRequest[]) => send(requests),
+    retry: (count, failure) => retryable(failure) && count < 2,
+    onSuccess: () => setError(""),
+    onError: (failure) => {
+      if (failure instanceof SaveError && failure.status === 426)
+        setOutdated(true);
+      setError(failure.message);
+    },
+    onSettled: () => {
+      // Refetch once no other save is still on its way, so none is undone on screen.
+      if (client.isMutating({ mutationKey: key }) === 1)
+        void client.invalidateQueries({ queryKey: key });
+    },
+  });
+
+  // Profile typing stays on screen and goes out after a pause, one PATCH with
+  // the valid fields, so a refetch never undoes what is being typed.
+  const [typed, setTyped] = useState<Profile | null>(null);
+  const typedRef = useRef<Profile | null>(null);
+  const profileTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  function sendProfile(keepalive = false) {
+    clearTimeout(profileTimer.current);
+    const local = typedRef.current;
+    const server = client.getQueryData<Workspace>(key)?.profile;
+    if (!local || !server) return;
+    const valid = Object.fromEntries(
+      Object.entries(local).filter(
+        ([name, value]) =>
+          profileSchema.shape[name as keyof Profile].safeParse(value).success,
+      ),
+    ) as Partial<Profile>;
+    const requests = profileRequest(server, { ...server, ...valid });
+    if (Object.keys(valid).length === Object.keys(local).length) {
+      typedRef.current = null;
+      setTyped(null);
+    }
+    if (!requests.length) return;
+    client.setQueryData<Workspace>(
+      key,
+      (w) => w && { ...w, profile: { ...w.profile, ...valid } },
+    );
+    if (keepalive) void send(requests, true);
+    else save.mutate(requests);
+  }
+  useEffect(() => {
+    const hidden = () => sendProfile(true);
+    window.addEventListener("pagehide", hidden);
+    return () => window.removeEventListener("pagehide", hidden);
+  });
+
+  // On sign-in, a guest's workspace moves into the account once.
+  const imported = useRef(false);
+  useEffect(() => {
+    if (!userId || !query.isSuccess || imported.current) return;
+    imported.current = true;
+    try {
+      removeDraft(localStorage, userId);
+      removeDraft(sessionStorage, userId);
+      removeDraft(sessionStorage);
+    } catch {
+      /* Storage unavailable. */
+    }
+    let guest: Workspace | null = null;
+    try {
+      guest = readGuestDraft(localStorage);
+    } catch {
+      return;
+    }
+    if (!guest) return;
+    save.mutate(
+      [{ method: "POST", path: "/api/import", body: { data: guest } }],
+      { onSuccess: () => removeDraft(localStorage) },
+    );
+  }, [userId, query.isSuccess, save]);
+
+  const data =
+    query.data &&
+    (typed
+      ? { ...query.data, profile: { ...query.data.profile, ...typed } }
+      : query.data);
+  return {
+    data: data ?? emptyWorkspace(),
+    loaded: !!query.data,
+    loadError:
+      !query.data && query.error
+        ? query.error.message || "No se han podido cargar tus datos."
+        : "",
+    status: (outdated
+      ? "outdated"
+      : typed && !profileSchema.safeParse(typed).success
+        ? "invalid"
+        : saving || typed
+          ? "saving"
+          : error
+            ? "error"
+            : "saved") satisfies SaveStatus as SaveStatus,
+    error,
+    reload: () => void query.refetch(),
+    run(command: WorkspaceCommand) {
+      const current = client.getQueryData<Workspace>(key);
+      if (!current) return;
+      const before = typedRef.current
+        ? { ...current, profile: typedRef.current }
+        : current;
+      const after = command.apply(before);
+      if (command.profile) {
+        typedRef.current = after.profile;
+        setTyped(after.profile);
+        clearTimeout(profileTimer.current);
+        profileTimer.current = setTimeout(() => sendProfile(), 800);
+        return;
+      }
+      // Anything typed goes first, so the action's own profile change applies on top.
+      if (typedRef.current) sendProfile();
+      void client.cancelQueries({ queryKey: key });
+      client.setQueryData(key, after);
+      const requests = command.requests(before, after);
+      if (requests.length) save.mutate(requests);
+    },
   };
 }

@@ -6,45 +6,33 @@ import {
   workspaceSchema,
   type Workspace,
 } from "../src/lib/domain";
-import { describeWorkspaceIssue, syncStatusLabel } from "../src/lib/sync-status";
-import { WorkspaceSync, type SyncSnapshot } from "../src/lib/workspace-sync";
+import {
+  describeWorkspaceIssue,
+  saveStatusLabel,
+  type SaveStatus,
+} from "../src/lib/sync-status";
 
-const statuses: SyncSnapshot["status"][] = [
+const statuses: SaveStatus[] = [
   "local",
   "saved",
-  "pending",
   "saving",
   "invalid",
   "error",
-  "conflict",
+  "outdated",
 ];
 
-test("every sync status has its own label", () => {
-  const labels = statuses.map((status) => syncStatusLabel(status, true));
-  assert.deepEqual(labels, [
-    "Guardado en este dispositivo",
-    "Guardado en tu cuenta",
-    "Guardado aquí · se enviará a tu cuenta",
-    "Sincronizando…",
-    "Guardado aquí · no se puede sincronizar",
-    "Guardado aquí · sin sincronizar",
-    "Guardado aquí · revisa la versión de tu cuenta",
-  ]);
+test("every save status has its own label", () => {
+  const labels = statuses.map(saveStatusLabel);
   assert.equal(new Set(labels).size, statuses.length);
-});
-
-test("a failed local write wins over every status except saved", () => {
-  for (const status of statuses)
-    assert.equal(
-      syncStatusLabel(status, false),
-      status === "saved"
-        ? "Guardado en tu cuenta"
-        : "No se pudo guardar en este dispositivo",
-    );
+  assert.equal(saveStatusLabel("saved"), "Guardado en tu cuenta");
+  assert.equal(saveStatusLabel("local"), "Guardado en este dispositivo");
 });
 
 const issueFor = (data: Workspace) =>
-  describeWorkspaceIssue(data, workspaceSchema.safeParse(data).error?.issues[0]);
+  describeWorkspaceIssue(
+    data,
+    workspaceSchema.safeParse(data).error?.issues[0],
+  );
 
 test("invalid workspaces name the record to fix", () => {
   const tariff = { ...newTariff(), name: "Luz Fija", energyPeak: "abc" };
@@ -76,22 +64,4 @@ test("invalid workspaces name the record to fix", () => {
     "La tarifa actual no existe.",
   );
   assert.equal(describeWorkspaceIssue(emptyWorkspace(), undefined), "");
-});
-
-test("the sync snapshot carries the issue only while invalid", () => {
-  const sync = new WorkspaceSync({
-    data: emptyWorkspace(),
-    version: 1,
-    saved: emptyWorkspace(),
-    persist: () => true,
-    send: async () => 2,
-    onChange: () => {},
-  });
-  sync.update({ ...emptyWorkspace(), tariffs: [newTariff()] });
-  assert.equal(sync.snapshot.status, "invalid");
-  assert.equal(sync.snapshot.issue, "Revisa la tarifa sin nombre.");
-  sync.update(emptyWorkspace());
-  assert.equal(sync.snapshot.status, "saved");
-  assert.equal(sync.snapshot.issue, "");
-  sync.dispose();
 });

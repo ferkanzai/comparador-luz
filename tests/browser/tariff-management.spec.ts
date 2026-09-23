@@ -3,7 +3,7 @@ import axe from "axe-core";
 import type { Page } from "@playwright/test";
 import { comparisonFixture } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
-import { signUpVerified } from "./sign-up";
+import { seedWorkspace, signUpVerified } from "./sign-up";
 import { money, type Workspace } from "../../src/lib/domain";
 import { calculate } from "../../src/lib/calculator";
 import { billFromCalculation, billTotal } from "../../src/lib/bill-data";
@@ -84,17 +84,14 @@ async function openTariffs(page: Page, data: Workspace = comparisonFixture()) {
     "Requires disposable local account database.",
   );
   await page.clock.setFixedTime(new Date("2026-09-22T12:00:00Z"));
+  const email = `tariffs-${crypto.randomUUID()}@example.test`;
   await signUpVerified(
     page,
     "Tariff test",
-    `tariffs-${crypto.randomUUID()}@example.test`,
+    email,
     "local-tariff-test-password",
   );
-  const saved = await page.request.put("/api/workspace", {
-    headers: { origin: "http://localhost:3000" },
-    data: { data, version: 0 },
-  });
-  expect(saved.ok(), await saved.text()).toBeTruthy();
+  await seedWorkspace(email, data);
   await page.goto("/");
   await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
 }
