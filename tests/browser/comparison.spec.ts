@@ -482,41 +482,41 @@ test("account autosave isolates simulations, reports failures and resets transie
   await expect(page.getByRole("main")).toContainText("600");
 });
 
-test("keeps names anchored on a phone, exposes rates by scrolling and supports keyboard selection", async ({
+test("shows one card per tariff on a phone, in ranking order, with selection and actions", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openComparison(page);
-  const region = page.getByRole("region", {
-    name: "Tabla de tarifas, desplazamiento horizontal",
-    exact: true,
-  });
-  const table = page.getByRole("table", {
-    name: "Comparativa de tarifas",
-    exact: true,
-  });
-  await expect(table).toBeVisible();
+  await expect(
+    page.getByRole("table", { name: "Comparativa de tarifas", exact: true }),
+  ).toHaveCount(0);
+  const cards = page
+    .getByRole("list", { name: "Comparativa de tarifas", exact: true })
+    .getByRole("article");
+  await expect(cards).toHaveCount(8);
+  await expect(cards.first()).toHaveAccessibleName("Clara Fija");
+  await expect(cards.first()).toContainText("Menor coste");
+  await expect(cards.last()).toHaveAccessibleName("Por completar");
+  const clara = cards.first();
+  await expect(clara).toContainText("80,35");
+  await expect(clara).toContainText("Ahorras 30,00");
+  await expect(clara).toContainText("Energía70,00 €");
+  await expect(clara).toContainText("Potencia10,35 €");
+  await expect(clara).toContainText("Otros cargos e impuestos0,00 €");
+  const current = page.getByRole("article", { name: "Casa 24h", exact: true });
+  await expect(current).toContainText("Tu tarifa actual");
+  await expect(
+    current.getByRole("button", { name: "Eliminar Casa 24h", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    clara.getByRole("button", { name: "Eliminar Clara Fija", exact: true }),
+  ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBeTruthy();
-  const name = table.getByRole("button", { name: "Clara Fija", exact: true });
-  const before = await name.boundingBox();
-  await region.focus();
-  await page.keyboard.press("ArrowRight");
-  await expect
-    .poll(() => region.evaluate((element) => element.scrollLeft))
-    .toBeGreaterThan(0);
-  await region.evaluate((element) => {
-    element.scrollLeft = 600;
-  });
-  const after = await name.boundingBox();
-  expect(after?.x).toBe(before?.x);
-  await region.evaluate((element) => {
-    element.scrollLeft = 0;
-  });
-  const select = table.getByRole("checkbox", {
+  const select = clara.getByRole("checkbox", {
     name: "Comparar Clara Fija",
     exact: true,
   });
@@ -536,8 +536,20 @@ test("keeps names anchored on a phone, exposes rates by scrolling and supports k
   ).toBeTruthy();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await clara
+    .getByRole("button", { name: "Ver desglose de Clara Fija", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Desglose del período");
+  await page.keyboard.press("Escape");
+  await page.addScriptTag({ content: axe.source });
+  const accessibility = await page.evaluate(() =>
+    (window as typeof window & { axe: typeof axe }).axe.run(
+      document.querySelector("main")!,
+      { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } },
+    ),
+  );
+  expect(accessibility.violations).toEqual([]);
 });
-
 test("preserves normalized power units and shows optional offer expiry without personal review", async ({
   page,
 }) => {
@@ -869,38 +881,65 @@ test("starts with no sample tariffs and lets the first tariff be the current ref
   await expect(table).toContainText("Completa los precios");
 });
 
-test("keeps column headings visible while scrolling both comparison tables", async ({
+test("shows every tariff at natural height on desktop with a header row that sticks to the page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openComparison(page);
+  const table = page.getByRole("table", {
+    name: "Comparativa de tarifas",
+    exact: true,
+  });
+  await expect(table.getByRole("row")).toHaveCount(9);
+  await expect(
+    page.getByRole("list", { name: "Comparativa de tarifas", exact: true }),
+  ).toHaveCount(0);
+  const frame = table.locator("..");
+  expect(
+    await frame.evaluate(
+      (el) =>
+        el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth,
+    ),
+  ).toBeTruthy();
+  await expect(page.getByText(/Desliza dentro de la tabla/)).toHaveCount(0);
+  const header = table.getByRole("columnheader").first();
+  const last = table.getByRole("row").last();
+  await last.scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 200);
+  await expect
+    .poll(async () => (await table.boundingBox())!.y)
+    .toBeLessThan(-100);
+  expect(Math.abs((await header.boundingBox())!.y)).toBeLessThan(2);
+  await expect(last).toBeInViewport();
+});
+
+test("keeps finalist column headings visible while scrolling inside the dialog", async ({
   page,
 }) => {
   await openComparison(page);
-  for (const finalists of [false, true]) {
-    if (finalists) {
-      await page
-        .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
-        .check();
-      await page
-        .getByRole("button", { name: "Ver comparación (2)", exact: true })
-        .click();
-    }
-    const table = page.getByRole("table", {
-      name: finalists ? "Comparación de finalistas" : "Comparativa de tarifas",
-      exact: true,
-    });
-    const region = table.locator("..");
-    await region.scrollIntoViewIfNeeded();
-    const header = table.getByRole("columnheader").first();
-    const before = await header.boundingBox();
-    await region.evaluate((element) => {
-      element.scrollTop = 350;
-    });
-    expect(
-      await region.evaluate((element) => element.scrollTop),
-    ).toBeGreaterThan(100);
-    const after = await header.boundingBox();
-    expect(Math.abs(after!.y - before!.y)).toBeLessThan(2);
-  }
+  await page
+    .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Ver comparación (2)", exact: true })
+    .click();
+  const table = page.getByRole("table", {
+    name: "Comparación de finalistas",
+    exact: true,
+  });
+  const region = table.locator("..");
+  await region.scrollIntoViewIfNeeded();
+  const header = table.getByRole("columnheader").first();
+  const before = await header.boundingBox();
+  await region.evaluate((element) => {
+    element.scrollTop = 350;
+  });
+  expect(await region.evaluate((element) => element.scrollTop)).toBeGreaterThan(
+    100,
+  );
+  const after = await header.boundingBox();
+  expect(Math.abs(after!.y - before!.y)).toBeLessThan(2);
 });
-
 test("conserves a rounding-sensitive total through simulation and adoption", async ({
   page,
 }) => {
@@ -1021,51 +1060,6 @@ test("fits three finalists on desktop and audits the tariff breakdown contrast",
   }));
   expect(selection.color).toBe("rgb(36, 61, 50)");
   expect(selection.background).toBe("rgb(215, 238, 135)");
-});
-
-test("continues scrolling the page at both vertical edges of the overview table", async ({
-  page,
-}) => {
-  await openComparison(page);
-  const region = page
-    .getByRole("table", { name: "Comparativa de tarifas", exact: true })
-    .locator("..");
-  await region.scrollIntoViewIfNeeded();
-  const box = await region.boundingBox();
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  await region.evaluate((el) => {
-    el.scrollTop = el.scrollHeight;
-  });
-  await page.evaluate(
-    () =>
-      new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      ),
-  );
-  const beforeDown = await page.evaluate(() => scrollY);
-  await page.mouse.wheel(0, 1);
-  await page.mouse.wheel(0, 400);
-  await expect
-    .poll(() => page.evaluate(() => scrollY))
-    .toBeGreaterThan(beforeDown);
-  await region.scrollIntoViewIfNeeded();
-  await region.evaluate((el) => {
-    el.scrollTop = 0;
-  });
-  const topBox = await region.boundingBox();
-  await page.mouse.move(
-    topBox!.x + topBox!.width / 2,
-    topBox!.y + topBox!.height / 2,
-  );
-  await page.evaluate(
-    () =>
-      new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      ),
-  );
-  const beforeUp = await page.evaluate(() => scrollY);
-  await page.mouse.wheel(0, -400);
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(beforeUp);
 });
 
 test("keeps section navigation in a consistent position across all three tabs", async ({

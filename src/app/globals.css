@@ -333,7 +333,8 @@ a.user-name:hover {
 .legal-page li {
   color: var(--muted);
   line-height: 1.6;
-}.shell {
+}
+.shell {
   max-width: 1400px;
   margin: auto;
   padding: 0 38px;
@@ -3134,6 +3135,9 @@ summary:focus-visible {
   margin: 20px 0;
   padding: 6px;
 }
+.chart-scroll-hint {
+  margin: -12px 0 16px;
+}
 .stacked-chart {
   min-width: 900px;
   margin-top: 0;
@@ -3535,6 +3539,61 @@ button:disabled {
   }
 }
 
+.bill-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 12px;
+}
+.bill-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+.bill-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.bill-card-period {
+  font-weight: 650;
+}
+.bill-card-period small {
+  font-weight: 400;
+}
+.bill-card-amounts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+.bill-card-amounts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bill-card-amounts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.bill-card-paid {
+  font-weight: 700;
+}
+@media (max-width: 760px) {
+  .bill-table {
+    display: none;
+  }
+  .bill-cards {
+    display: grid;
+  }
+}
 .bill-table-caption {
   text-align: left;
   padding: 16px 20px;
@@ -4011,11 +4070,76 @@ button:disabled {
   outline: 3px solid var(--green);
   outline-offset: 3px;
 }
+/* No overflow scrolling here: the header row sticks to the page instead. */
+.comparison-frame {
+  overflow: clip;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+.comparison-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+.comparison-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+.comparison-card > .comparison-detail-link {
+  margin-top: auto;
+}
+.comparison-card.comparison-current {
+  background: #f5f8ee;
+}
+.comparison-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.comparison-card-head .comparison-row-actions {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.comparison-card-lines {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid #e6ebe2;
+  font-size: 0.8rem;
+}
+.comparison-card-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.comparison-card-lines dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1199px) {
+  .comparison-frame {
+    display: none;
+  }
+  .comparison-cards {
+    display: grid;
+  }
+}
 .comparison-table {
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
-  min-width: 1110px;
   text-align: left;
   line-height: 1.4;
 }
@@ -4230,9 +4354,6 @@ button:disabled {
   padding: 12px 2px;
   font-size: 0.65rem;
   color: var(--muted);
-}
-.scroll-hint {
-  flex-shrink: 0;
 }
 .comparison-bill-action {
   display: flex;
@@ -4617,19 +4738,6 @@ button:disabled {
     margin-left: 0;
     margin-top: 2px;
     font-size: 0.62rem;
-  }
-  .comparison-table tr > :first-child {
-    width: 142px;
-    min-width: 142px;
-    max-width: 142px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-  .comparison-table tbody td:nth-child(2) {
-    min-width: 165px;
-  }
-  .comparison-table {
-    min-width: 1030px;
   }
   .comparison-amount {
     font-size: 1.25rem;

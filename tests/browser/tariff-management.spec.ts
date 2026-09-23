@@ -342,6 +342,71 @@ test("deletes a bill only after keyboard confirmation and shows what it removes"
   await expect(remove).toHaveCount(0);
 });
 
+test("lists bills as cards on a phone and signals when the monthly chart scrolls", async ({
+  page,
+}) => {
+  const data = comparisonFixture();
+  const contract = data.tariffs[0];
+  const cost = calculate(contract, data.profile)!;
+  const base = billFromCalculation(contract, data.profile, cost);
+  data.bills = [
+    { ...base, id: crypto.randomUUID(), month: "2026-03" },
+    {
+      ...base,
+      id: crypto.randomUUID(),
+      month: "2026-04",
+      credit: "5",
+      paid: (Number(base.paid) - 5).toFixed(2),
+    },
+  ];
+  const april = data.bills[1];
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openTariffs(page, data);
+  await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Facturas registradas", exact: true }),
+  ).toHaveCount(0);
+  const cards = page
+    .getByRole("list", { name: "Facturas registradas", exact: true })
+    .getByRole("article");
+  await expect(cards).toHaveCount(2);
+  const card = cards.first();
+  await expect(card).toHaveAccessibleName("Factura de Abril 2026");
+  await expect(card).toContainText("Compañía actual");
+  await expect(card).toContainText(
+    `Total antes de créditos${money(Number(base.paid))}`,
+  );
+  await expect(card).toContainText(`Créditos${money(-5)}`);
+  await expect(card).toContainText(`Pagado${money(Number(april.paid))}`);
+  await expect(
+    card.getByRole("button", { name: "Eliminar factura 2026-04", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Desliza el gráfico para ver todos los meses ↔"),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBeTruthy();
+  await card
+    .getByRole("button", { name: "Editar factura 2026-04", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(
+    page.getByRole("region", { name: "Facturas registradas", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Facturas registradas", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Desliza el gráfico para ver todos los meses ↔"),
+  ).toHaveCount(0);
+});
+
 test("records a candidate as history and edits a comparison copy without changing the period", async ({
   page,
 }) => {

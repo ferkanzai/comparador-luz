@@ -22,6 +22,214 @@ export type TariffActions = {
   onRemove: (tariff: Tariff) => void;
 };
 
+type RowProps = {
+  row: ComparisonRow;
+  current: boolean;
+  cheapest: boolean;
+  baseline?: number;
+  unit: Tariff["powerUnit"];
+  selected: boolean;
+  selectable: boolean;
+  onToggle: (id: string) => void;
+  onDetails: (id: string) => void;
+  onEdit: (tariff: Tariff) => void;
+  onRemove: (tariff: Tariff) => void;
+};
+
+function otherCharges(cost: Calculation) {
+  return cents(
+    cost.social +
+      cost.snoee +
+      cost.meter +
+      cost.services +
+      cost.electricityTax +
+      cost.vat +
+      cost.servicesVat,
+  );
+}
+
+function TariffIdentity({
+  row: { tariff },
+  current,
+  cheapest,
+  selected,
+  selectable,
+  onToggle,
+  onDetails,
+}: RowProps) {
+  return (
+    <>
+      <input
+        className="finalist-checkbox"
+        type="checkbox"
+        aria-label={`Comparar ${tariff.name}`}
+        checked={selected}
+        disabled={!selectable}
+        onChange={() => onToggle(tariff.id)}
+      />
+      <span className="comparison-provider">
+        {tariff.provider || "Sin comercializadora"}
+      </span>
+      <button
+        className="tariff-name-button"
+        onClick={() => onDetails(tariff.id)}
+      >
+        {tariff.name}
+      </button>
+      <div className="comparison-tags">
+        {current && <span className="comparison-tag">Tu tarifa actual</span>}
+        {cheapest && <span className="comparison-tag best">Menor coste</span>}
+        {estimatedCharges(tariff) && (
+          <span className="comparison-tag approximate">Cargos estimados</span>
+        )}
+      </div>
+      {tariff.validUntil && (
+        <span className="comparison-provider">
+          {!current && tariff.validUntil < today()
+            ? "Caducada"
+            : "Oferta válida hasta"}{" "}
+          · {shortDate(tariff.validUntil)}
+        </span>
+      )}
+    </>
+  );
+}
+
+function TariffTotal({ row: { cost, reason }, baseline, current }: RowProps) {
+  return cost ? (
+    <>
+      <strong className="comparison-amount">{money(cost.total)}</strong>
+      <CostDifference
+        total={cost.total}
+        baseline={baseline}
+        current={current}
+      />
+    </>
+  ) : (
+    <>
+      <strong className="comparison-amount">—</strong>
+      <span className="comparison-exclusion">{reason}</span>
+    </>
+  );
+}
+
+function DetailsLink({ row: { tariff }, onDetails }: RowProps) {
+  return (
+    <button
+      className="comparison-detail-link"
+      onClick={() => onDetails(tariff.id)}
+      aria-label={`Ver desglose de ${tariff.name}`}
+    >
+      Ver desglose <ArrowUpRight size={13} />
+    </button>
+  );
+}
+
+function RowActions({ row: { tariff }, current, onEdit, onRemove }: RowProps) {
+  return (
+    <div className="comparison-row-actions">
+      <button
+        className="icon-button"
+        onClick={() => onEdit(tariff)}
+        aria-label={`Editar ${tariff.name}`}
+        title="Editar tarifa"
+      >
+        <Pencil size={16} />
+      </button>
+      {!current && (
+        <button
+          className="icon-button danger"
+          onClick={() => onRemove(tariff)}
+          aria-label={`Eliminar ${tariff.name}`}
+          title="Eliminar tarifa"
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TableRow(props: RowProps) {
+  const { tariff, cost } = props.row;
+  return (
+    <tr className={props.current ? "comparison-current" : ""}>
+      <th scope="row">
+        <TariffIdentity {...props} />
+      </th>
+      <td>
+        <TariffTotal {...props} />
+      </td>
+      <td>
+        <span className="component-cost">
+          {cost ? money(cost.energy) : "—"}
+        </span>
+        <EnergyRates tariff={tariff} />
+      </td>
+      <td>
+        <span className="component-cost">{cost ? money(cost.power) : "—"}</span>
+        <PowerRates tariff={tariff} unit={props.unit} />
+      </td>
+      <td>
+        <span className="component-cost">
+          {cost ? money(otherCharges(cost)) : "—"}
+        </span>
+        <DetailsLink {...props} />
+      </td>
+      <td>
+        <RowActions {...props} />
+      </td>
+    </tr>
+  );
+}
+
+function TariffCard(props: RowProps) {
+  const { tariff, cost } = props.row;
+  return (
+    <li>
+      <article
+        className={`comparison-card${props.current ? " comparison-current" : ""}`}
+        aria-label={tariff.name}
+      >
+        <div className="comparison-card-head">
+          <div>
+            <TariffIdentity {...props} />
+          </div>
+          <RowActions {...props} />
+        </div>
+        <div className="comparison-card-total">
+          <TariffTotal {...props} />
+        </div>
+        {cost && (
+          <dl className="comparison-card-lines">
+            <div>
+              <dt>
+                <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
+              </dt>
+              <dd>{money(cost.energy)}</dd>
+            </div>
+            <div>
+              <dt>
+                <CostCategoryLabel category="power">Potencia</CostCategoryLabel>
+              </dt>
+              <dd>{money(cost.power)}</dd>
+            </div>
+            <div>
+              <dt>
+                <CostCategoryLabel category="other">
+                  Otros cargos e impuestos
+                </CostCategoryLabel>
+              </dt>
+              <dd>{money(otherCharges(cost))}</dd>
+            </div>
+          </dl>
+        )}
+        <DetailsLink {...props} />
+      </article>
+    </li>
+  );
+}
+
 export default function ComparisonTable({
   rows,
   currentId,
@@ -43,178 +251,69 @@ export default function ComparisonTable({
 }) {
   const baseline = rows.find((row) => row.tariff.id === currentId)?.cost?.total;
   const best = rows.find((row) => row.cost)?.cost?.total;
+  const rowProps = (row: ComparisonRow): RowProps => {
+    const selected = selectedIds.includes(row.tariff.id);
+    return {
+      row,
+      current: row.tariff.id === currentId,
+      cheapest: row.cost !== null && row.cost.total === best,
+      baseline,
+      unit,
+      selected,
+      selectable: selected || selectedIds.length < 3,
+      onToggle,
+      onDetails,
+      onEdit,
+      onRemove,
+    };
+  };
   return (
-    <div
-      className="comparison-scroll"
-      role="region"
-      aria-label="Tabla de tarifas, desplazamiento horizontal"
-      tabIndex={0}
-    >
-      <table className="comparison-table" aria-label="Comparativa de tarifas">
-        <thead>
-          <tr>
-            <th scope="col">Tarifa</th>
-            <th scope="col">
-              Total del período <small>y diferencia con tu tarifa actual</small>
-            </th>
-            <th scope="col">
-              <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
-              <small>coste y precios sin impuestos</small>
-            </th>
-            <th scope="col">
-              <CostCategoryLabel category="power">Potencia</CostCategoryLabel>
-              <small>coste y precios sin impuestos</small>
-            </th>
-            <th scope="col">
-              <CostCategoryLabel category="other">
-                Otros cargos
-              </CostCategoryLabel>
-              <small>
-                <CostCategoryLabel category="taxes">
-                  e impuestos elegidos
+    <>
+      <div className="comparison-frame">
+        <table className="comparison-table" aria-label="Comparativa de tarifas">
+          <thead>
+            <tr>
+              <th scope="col">Tarifa</th>
+              <th scope="col">
+                Total del período{" "}
+                <small>y diferencia con tu tarifa actual</small>
+              </th>
+              <th scope="col">
+                <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
+                <small>coste y precios sin impuestos</small>
+              </th>
+              <th scope="col">
+                <CostCategoryLabel category="power">Potencia</CostCategoryLabel>
+                <small>coste y precios sin impuestos</small>
+              </th>
+              <th scope="col">
+                <CostCategoryLabel category="other">
+                  Otros cargos
                 </CostCategoryLabel>
-              </small>
-            </th>
-            <th scope="col">
-              <span className="sr-only">Acciones</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ tariff, cost, reason }) => {
-            const current = tariff.id === currentId;
-            const cheapest = cost !== null && cost.total === best;
-            return (
-              <tr
-                key={tariff.id}
-                className={current ? "comparison-current" : ""}
-              >
-                <th scope="row">
-                  <input
-                    className="finalist-checkbox"
-                    type="checkbox"
-                    aria-label={`Comparar ${tariff.name}`}
-                    checked={selectedIds.includes(tariff.id)}
-                    disabled={
-                      selectedIds.length >= 3 &&
-                      !selectedIds.includes(tariff.id)
-                    }
-                    onChange={() => onToggle(tariff.id)}
-                  />
-                  <span className="comparison-provider">
-                    {tariff.provider || "Sin comercializadora"}
-                  </span>
-                  <button
-                    className="tariff-name-button"
-                    onClick={() => onDetails(tariff.id)}
-                  >
-                    {tariff.name}
-                  </button>
-                  <div className="comparison-tags">
-                    {current && (
-                      <span className="comparison-tag">Tu tarifa actual</span>
-                    )}
-                    {cheapest && (
-                      <span className="comparison-tag best">Menor coste</span>
-                    )}
-                    {estimatedCharges(tariff) && (
-                      <span className="comparison-tag approximate">
-                        Cargos estimados
-                      </span>
-                    )}
-                  </div>
-                  {tariff.validUntil && (
-                    <span className="comparison-provider">
-                      {!current && tariff.validUntil < today()
-                        ? "Caducada"
-                        : "Oferta válida hasta"}{" "}
-                      · {shortDate(tariff.validUntil)}
-                    </span>
-                  )}
-                </th>
-                <td>
-                  {cost ? (
-                    <>
-                      <strong className="comparison-amount">
-                        {money(cost.total)}
-                      </strong>
-                      <CostDifference
-                        total={cost.total}
-                        baseline={baseline}
-                        current={current}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <strong className="comparison-amount">—</strong>
-                      <span className="comparison-exclusion">{reason}</span>
-                    </>
-                  )}
-                </td>
-                <td>
-                  <span className="component-cost">
-                    {cost ? money(cost.energy) : "—"}
-                  </span>
-                  <EnergyRates tariff={tariff} />
-                </td>
-                <td>
-                  <span className="component-cost">
-                    {cost ? money(cost.power) : "—"}
-                  </span>
-                  <PowerRates tariff={tariff} unit={unit} />
-                </td>
-                <td>
-                  <span className="component-cost">
-                    {cost
-                      ? money(
-                          cents(
-                            cost.social +
-                              cost.snoee +
-                              cost.meter +
-                              cost.services +
-                              cost.electricityTax +
-                              cost.vat +
-                              cost.servicesVat,
-                          ),
-                        )
-                      : "—"}
-                  </span>
-                  <button
-                    className="comparison-detail-link"
-                    onClick={() => onDetails(tariff.id)}
-                    aria-label={`Ver desglose de ${tariff.name}`}
-                  >
-                    Ver desglose <ArrowUpRight size={13} />
-                  </button>
-                </td>
-                <td>
-                  <div className="comparison-row-actions">
-                    <button
-                      className="icon-button"
-                      onClick={() => onEdit(tariff)}
-                      aria-label={`Editar ${tariff.name}`}
-                      title="Editar tarifa"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    {!current && (
-                      <button
-                        className="icon-button danger"
-                        onClick={() => onRemove(tariff)}
-                        aria-label={`Eliminar ${tariff.name}`}
-                        title="Eliminar tarifa"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                <small>
+                  <CostCategoryLabel category="taxes">
+                    e impuestos elegidos
+                  </CostCategoryLabel>
+                </small>
+              </th>
+              <th scope="col">
+                <span className="sr-only">Acciones</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <TableRow key={row.tariff.id} {...rowProps(row)} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ol className="comparison-cards" aria-label="Comparativa de tarifas">
+        {rows.map((row) => (
+          <TariffCard key={row.tariff.id} {...rowProps(row)} />
+        ))}
+      </ol>
+    </>
   );
 }
 

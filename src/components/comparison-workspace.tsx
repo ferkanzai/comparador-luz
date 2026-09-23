@@ -334,10 +334,6 @@ export default function ComparisonWorkspace({
                 referencia de 1 kW en cada período. Mes = 30 días · Año = 365
                 días.
               </p>
-              <span className="scroll-hint">
-                Desliza dentro de la tabla para ver todas las tarifas y precios
-                ↕ ↔
-              </span>
             </div>
             {unequalPower && (
               <p className="notice small">

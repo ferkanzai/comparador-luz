@@ -41,7 +41,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 20  | [One field registry for tariff, bill and profile storage](issues/20-field-registry.md)                       | Architecture, Migrations  | M      | completed       | 18         |
 | 21  | [Cut per-keystroke work in the sync layer](issues/21-sync-per-keystroke-cost.md)                             | Performance               | S–M    | ready-for-agent |            |
 | 22  | [Design tokens and a type scale in the stylesheet](issues/22-design-tokens.md)                               | Design                    | M–L    | ready-for-agent |            |
-| 23  | [Comparison table scrolling on desktop and phone](issues/23-comparison-table-scrolling.md)                   | Design                    | M      | ready-for-agent |            |
+| 23  | [Comparison table scrolling on desktop and phone](issues/23-comparison-table-scrolling.md)                   | Design                    | M      | completed       |            |
 | 24  | [Zero-value lines in cost breakdowns](issues/24-zero-value-breakdown-lines.md)                               | Design                    | S      | completed       |            |
 | 25  | [Guest first-run screen](issues/25-guest-first-run.md)                                                       | Design                    | S      | needs-triage    |            |
 | 26  | [Avoid stacked dialogs](issues/26-stacked-dialogs.md)                                                        | Design                    | M      | needs-triage    | 07         |
@@ -59,7 +59,7 @@ Review of performance, architecture, composition, design, security, account and 
 3. 11, then 12. Then 13. All implemented.
 4. Migrations: 19 (policy), 18, then 20. All implemented. The owner approved the policy for 19 in `docs/DATABASE.md`.
 5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. All implemented, including the owner-approved privacy notice for 16.
-6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code. 24 and 27 implemented.
+6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code. 23, 24 and 27 implemented; 28 is waiting for the design session.
 
 
 

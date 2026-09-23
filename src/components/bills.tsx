@@ -1,18 +1,16 @@
 "use client";
 import { useState } from "react";
-import { Plus, Receipt, Pencil, Trash2 } from "lucide-react";
+import { Plus, Receipt } from "lucide-react";
 import {
   money,
   today,
   numberOf,
-  shortDate,
   shortMonthLabel,
   type Bill,
   type Workspace,
 } from "@/lib/domain";
 import {
   billBuckets,
-  billLines,
   billGroups as groups,
   billMonthLabel,
   billTotal,
@@ -21,6 +19,7 @@ import { Empty } from "./ui";
 import BillForm from "./bill-form";
 import ConfirmDialog from "./confirm-dialog";
 import BillsChart from "./bills-chart";
+import BillList from "./bill-list";
 import YearComparison from "./year-comparison";
 import { invoiceYears } from "@/lib/year-comparison";
 import { consumptionMonths, formatKwh } from "@/lib/bill-consumption";
@@ -256,94 +255,11 @@ export default function Bills({
               </Empty>
             </div>
           ) : (
-            <div
-              className="panel table-scroll"
-              tabIndex={0}
-              role="region"
-              aria-label="Facturas registradas"
-            >
-              <table>
-                <caption className="bill-table-caption">
-                  Total antes de créditos · Pagado después de créditos.
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Período</th>
-                    <th scope="col">Comercializadora</th>
-                    <th scope="col">Consumo</th>
-                    <th scope="col">Total</th>
-                    <th scope="col">Créditos</th>
-                    <th scope="col">Pagado</th>
-                    <th scope="col">
-                      <span className="sr-only">Acciones</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bills.map((b) => (
-                    <tr key={b.id}>
-                      <td>
-                        {billMonthLabel(b.month)}
-                        {b.periodStart && b.periodEnd && (
-                          <small className="block muted">
-                            {shortDate(b.periodStart)} –{" "}
-                            {shortDate(b.periodEnd)}
-                          </small>
-                        )}
-                      </td>
-                      <td>
-                        <strong>{b.provider}</strong>
-                        {b.tariff && (
-                          <small className="block muted">{b.tariff.name}</small>
-                        )}
-                        {b.notes && (
-                          <small className="block muted">{b.notes}</small>
-                        )}
-                        {b.breakdown && (
-                          <details>
-                            <summary>Ver conceptos</summary>
-                            <dl className="bill-breakdown">
-                              {billLines.map(([key, label]) => (
-                                <div key={key}>
-                                  <dt>{label}</dt>
-                                  <dd>{money(numberOf(b.breakdown![key]))}</dd>
-                                </div>
-                              ))}
-                            </dl>
-                          </details>
-                        )}
-                      </td>
-                      <td>
-                        {b.kwh || "—"} {b.kwh && "kWh"}
-                      </td>
-                      <td className="amount">{money(billTotal(b))}</td>
-                      <td className="amount">
-                        {numberOf(b.credit) ? money(-numberOf(b.credit)) : "—"}
-                      </td>
-                      <td className="amount">{money(numberOf(b.paid))}</td>
-                      <td>
-                        <div className="row-actions">
-                          <button
-                            className="icon-button"
-                            aria-label={`Editar factura ${b.month}`}
-                            onClick={() => setEditing(b)}
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            className="icon-button danger"
-                            aria-label={`Eliminar factura ${b.month}`}
-                            onClick={() => setRemovingId(b.id)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <BillList
+              bills={bills}
+              onEdit={setEditing}
+              onRemove={(bill) => setRemovingId(bill.id)}
+            />
           )}
         </>
       )}

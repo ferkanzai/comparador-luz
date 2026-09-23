@@ -2,6 +2,7 @@
 import { useId, useState } from "react";
 import { BarChart3, ChartLine, Zap } from "lucide-react";
 import ConsumptionChart from "./consumption-chart";
+import ChartScroll from "./chart-scroll";
 import type { ConsumptionMonth } from "@/lib/bill-consumption";
 import { money } from "@/lib/domain";
 import {
@@ -158,12 +159,7 @@ export default function BillsChart({
               </p>
             </>
           )}
-          <div
-            className="chart-scroll"
-            role="region"
-            aria-label={`Gráfico mensual de ${year}. Desplázate para ver todos los meses.`}
-            tabIndex={0}
-          >
+          <ChartScroll label={`Gráfico mensual de ${year}`}>
             <div className="interactive-chart">
               <svg
                 viewBox="0 0 1200 260"
@@ -260,7 +256,7 @@ export default function BillsChart({
                 </button>
               ))}
             </div>
-          </div>
+          </ChartScroll>
           <div
             className="chart-detail"
             id={detailId}

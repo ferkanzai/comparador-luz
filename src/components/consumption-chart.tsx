@@ -6,6 +6,7 @@ import {
   type ConsumptionMonth,
 } from "@/lib/bill-consumption";
 import { billMonthLabel } from "@/lib/bill-data";
+import ChartScroll from "./chart-scroll";
 
 export default function ConsumptionChart({
   months,
@@ -48,13 +49,7 @@ export default function ConsumptionChart({
         tienen consumo total. Un mes parcial suma únicamente las facturas con
         kWh conocidos.
       </p>
-      <div
-        ref={scrollRef}
-        className="chart-scroll"
-        role="region"
-        aria-label={`Consumo mensual de ${year}. Desplázate para ver todos los meses.`}
-        tabIndex={0}
-      >
+      <ChartScroll ref={scrollRef} label={`Consumo mensual de ${year}`}>
         <div className="interactive-chart">
           <svg
             viewBox="0 0 1200 260"
@@ -102,7 +97,7 @@ export default function ConsumptionChart({
             </button>
           ))}
         </div>
-      </div>
+      </ChartScroll>
       <div
         className="chart-detail"
         id={detailId}
