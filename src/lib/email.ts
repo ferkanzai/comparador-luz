@@ -3,13 +3,14 @@ import {
   accountOtpEmail,
   type AccountEmail,
 } from "./email-templates";
+import type { AccountLinkKind } from "../emails/account-email";
 
 export async function sendAccountEmail(
   to: string,
   url: string,
-  reset: boolean,
+  kind: AccountLinkKind,
 ) {
-  return deliverEmail(to, await accountLinkEmail(url, reset));
+  return deliverEmail(to, await accountLinkEmail(url, kind));
 }
 export async function sendAccountOTP(to: string, otp: string, type: string) {
   return deliverEmail(to, await accountOtpEmail(otp, type));

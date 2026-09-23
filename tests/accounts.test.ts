@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { emptyWorkspace, newTariff } from "../src/lib/domain";
+import { workspaceTables } from "../src/lib/workspace-records";
 // Explicit opt-in to a disposable local database. Never run against a production URL.
 test(
   "Postgres: verification, account isolation, persistence, conflicting writes, reset and revocation",
@@ -364,6 +365,64 @@ test(
         await GET(request("/api/workspace", undefined, cookieOf(aliceOTP)))
       ).json();
       assert.equal(retained.data.bills[0].paid, "65.42");
+      // Deletion needs the emailed link, opened with the account's session, and removes every workspace row.
+      const aliceId = (
+        await getPool().query('SELECT id FROM "user" WHERE email = $1', [
+          users[0],
+        ])
+      ).rows[0].id;
+      const rowsOf = async (id: string) => {
+        let total = 0;
+        for (const table of workspaceTables)
+          total += (
+            await getPool().query(`SELECT 1 FROM ${table} WHERE user_id = $1`, [
+              id,
+            ])
+          ).rowCount!;
+        return total;
+      };
+      assert.ok((await rowsOf(aliceId)) > 0);
+      const requested = await auth.handler(
+        request(
+          "/api/auth/delete-user",
+          { callbackURL: `${base}/cuenta?eliminada=1` },
+          cookieOf(aliceOTP),
+        ),
+      );
+      assert.equal(requested.status, 200);
+      assert.equal((await requested.json()).message, "Verification email sent");
+      const deleteLink = emailURL();
+      assert.ok(deleteLink.includes("/delete-user/callback"));
+      const elsewhere = await auth.handler(
+        new Request(deleteLink, { headers: { origin: base } }),
+      );
+      assert.notEqual(elsewhere.status, 302);
+      assert.ok((await rowsOf(aliceId)) > 0);
+      const confirmed = await auth.handler(
+        new Request(deleteLink, {
+          headers: { origin: base, cookie: cookieOf(aliceOTP) },
+        }),
+      );
+      assert.equal(confirmed.status, 302);
+      assert.equal(
+        confirmed.headers.get("location"),
+        `${base}/cuenta?eliminada=1`,
+      );
+      assert.equal(
+        (await getPool().query('SELECT 1 FROM "user" WHERE id = $1', [aliceId]))
+          .rowCount,
+        0,
+      );
+      assert.equal(await rowsOf(aliceId), 0);
+      assert.equal(
+        (
+          await getPool().query(
+            'SELECT 1 FROM session WHERE "userId" = $1 UNION ALL SELECT 1 FROM account WHERE "userId" = $1',
+            [aliceId],
+          )
+        ).rowCount,
+        0,
+      );
     } finally {
       console.info = originalLog;
       await getPool().query('DELETE FROM "user" WHERE email = ANY($1)', [

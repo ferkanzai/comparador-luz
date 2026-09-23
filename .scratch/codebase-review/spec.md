@@ -19,26 +19,26 @@ Review of performance, architecture, composition, design, security, account and 
 
 | #   | Ticket                                                                                                       | Area                      | Effort | Status          | Blocked by |
 | --- | ------------------------------------------------------------------------------------------------------------ | ------------------------- | ------ | --------------- | ---------- |
-| 01  | [Reuse number and date formatters](issues/01-reuse-intl-formatters.md)                                       | Performance               | S      | ready-for-agent |            |
-| 02  | [Load fonts with next/font](issues/02-load-fonts-with-next-font.md)                                          | Performance               | S      | ready-for-agent |            |
-| 03  | [Validate the workspace once per save and align size limits](issues/03-validate-once-and-align-limits.md)    | Performance               | S      | ready-for-agent |            |
-| 04  | [Exhaustive sync status and an actionable "invalid" message](issues/04-exhaustive-sync-status.md)            | Architecture, Design      | S      | ready-for-agent |            |
-| 05  | [Centralize regulated rates](issues/05-centralize-regulated-rates.md)                                        | Architecture              | S–M    | ready-for-agent |            |
-| 06  | [Add a Content-Security-Policy and missing security headers](issues/06-security-headers.md)                  | Security                  | S–M    | ready-for-agent |            |
-| 07  | [Move workspace changes into tested actions (fixes the 101st-tariff bug)](issues/07-workspace-actions.md)    | Architecture              | M      | ready-for-agent |            |
-| 08  | [One confirmation dialog for destructive actions](issues/08-confirm-dialog.md)                               | Composition, Design       | S–M    | ready-for-agent | 07         |
-| 09  | [Extract shared tariff display components](issues/09-shared-tariff-display.md)                               | Composition               | S      | ready-for-agent |            |
-| 10  | [Numeric placeholders that don't look like values](issues/10-numeric-placeholders.md)                        | Design                    | S      | ready-for-agent |            |
-| 11  | [Split the Dashboard component](issues/11-split-dashboard.md)                                                | Composition               | M      | ready-for-agent | 04         |
-| 12  | [Server-render the static shell](issues/12-server-render-static-shell.md)                                    | Performance               | M      | ready-for-agent | 11         |
-| 13  | [Give TariffForm explicit modes and sections](issues/13-tariff-form-modes.md)                                | Composition               | M      | ready-for-agent | 09         |
-| 14  | [Cache sessions in a signed cookie](issues/14-session-cookie-cache.md)                                       | Performance, Security     | S      | ready-for-agent |            |
-| 15  | [Protect accounts created before email ownership is proven](issues/15-unproven-account-access.md)            | Security, Accounts        | S–M    | ready-for-agent |            |
-| 16  | [Account deletion and account management](issues/16-account-deletion-and-management.md)                      | Accounts, Privacy         | M      | ready-for-agent |            |
-| 17  | [Rate-limit workspace saves](issues/17-rate-limit-workspace-saves.md)                                        | Security                  | S      | ready-for-agent |            |
-| 18  | [Replace the hand-written migration runner](issues/18-migration-runner.md)                                   | Migrations                | M      | ready-for-agent |            |
-| 19  | [Write a migration compatibility policy](issues/19-migration-compatibility-policy.md)                        | Migrations                | S      | ready-for-human |            |
-| 20  | [One field registry for tariff, bill and profile storage](issues/20-field-registry.md)                       | Architecture, Migrations  | M      | ready-for-agent | 18         |
+| 01  | [Reuse number and date formatters](issues/01-reuse-intl-formatters.md)                                       | Performance               | S      | completed       |            |
+| 02  | [Load fonts with next/font](issues/02-load-fonts-with-next-font.md)                                          | Performance               | S      | completed       |            |
+| 03  | [Validate the workspace once per save and align size limits](issues/03-validate-once-and-align-limits.md)    | Performance               | S      | completed       |            |
+| 04  | [Exhaustive sync status and an actionable "invalid" message](issues/04-exhaustive-sync-status.md)            | Architecture, Design      | S      | completed       |            |
+| 05  | [Centralize regulated rates](issues/05-centralize-regulated-rates.md)                                        | Architecture              | S–M    | completed       |            |
+| 06  | [Add a Content-Security-Policy and missing security headers](issues/06-security-headers.md)                  | Security                  | S–M    | completed       |            |
+| 07  | [Move workspace changes into tested actions (fixes the 101st-tariff bug)](issues/07-workspace-actions.md)    | Architecture              | M      | completed       |            |
+| 08  | [One confirmation dialog for destructive actions](issues/08-confirm-dialog.md)                               | Composition, Design       | S–M    | completed       | 07         |
+| 09  | [Extract shared tariff display components](issues/09-shared-tariff-display.md)                               | Composition               | S      | completed       |            |
+| 10  | [Numeric placeholders that don't look like values](issues/10-numeric-placeholders.md)                        | Design                    | S      | completed       |            |
+| 11  | [Split the Dashboard component](issues/11-split-dashboard.md)                                                | Composition               | M      | completed       | 04         |
+| 12  | [Server-render the static shell](issues/12-server-render-static-shell.md)                                    | Performance               | M      | completed       | 11         |
+| 13  | [Give TariffForm explicit modes and sections](issues/13-tariff-form-modes.md)                                | Composition               | M      | completed       | 09         |
+| 14  | [Cache sessions in a signed cookie](issues/14-session-cookie-cache.md)                                       | Performance, Security     | S      | completed       |            |
+| 15  | [Protect accounts created before email ownership is proven](issues/15-unproven-account-access.md)            | Security, Accounts        | S–M    | completed       |            |
+| 16  | [Account deletion and account management](issues/16-account-deletion-and-management.md)                      | Accounts, Privacy         | M      | completed       |            |
+| 17  | [Rate-limit workspace saves](issues/17-rate-limit-workspace-saves.md)                                        | Security                  | S      | completed       |            |
+| 18  | [Replace the hand-written migration runner](issues/18-migration-runner.md)                                   | Migrations                | M      | completed       |            |
+| 19  | [Write a migration compatibility policy](issues/19-migration-compatibility-policy.md)                        | Migrations                | S      | completed       |            |
+| 20  | [One field registry for tariff, bill and profile storage](issues/20-field-registry.md)                       | Architecture, Migrations  | M      | completed       | 18         |
 | 21  | [Cut per-keystroke work in the sync layer](issues/21-sync-per-keystroke-cost.md)                             | Performance               | S–M    | ready-for-agent |            |
 | 22  | [Design tokens and a type scale in the stylesheet](issues/22-design-tokens.md)                               | Design                    | M–L    | ready-for-agent |            |
 | 23  | [Comparison table scrolling on desktop and phone](issues/23-comparison-table-scrolling.md)                   | Design                    | M      | ready-for-agent |            |
@@ -47,7 +47,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 26  | [Avoid stacked dialogs](issues/26-stacked-dialogs.md)                                                        | Design                    | M      | needs-triage    | 07         |
 | 27  | [Record why the current contract lives in the offers list (ADR-0001)](issues/27-current-contract-storage.md) | Architecture              | S      | ready-for-agent |            |
 | 28  | [Send only changes instead of the whole workspace on each save](issues/28-delta-sync.md)                     | Performance, Architecture | L      | needs-triage    | 03, 07     |
-| 29  | [Keep hints out of form labels in the account form](issues/29-account-form-label-hints.md)                   | Accounts, Accessibility   | S      | ready-for-agent |            |
+| 29  | [Keep hints out of form labels in the account form](issues/29-account-form-label-hints.md)                   | Accounts, Accessibility   | S      | completed       |            |
 
 
 
@@ -58,7 +58,7 @@ Review of performance, architecture, composition, design, security, account and 
 2. 07 (fixes a real bug and unblocks 08 and 26), then 08. Both implemented.
 3. 11, then 12. Then 13. All implemented.
 4. Migrations: 19 (policy), 18, then 20. All implemented. The owner approved the policy for 19 in `docs/DATABASE.md`.
-5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. 15 and 14 implemented.
+5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. All implemented. The privacy text for 16 needs the owner's review.
 6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code.
 
 

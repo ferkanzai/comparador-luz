@@ -60,6 +60,29 @@ export function removeDraft(storage: DraftStorage, owner: string) {
     /* The saved server version wins on reload. */
   }
 }
+// Deletion completes from an email link, after this account's session is gone.
+const pendingDeletionKey = "luz:pending-account-deletion";
+export function markPendingDeletion(storage: DraftStorage, owner: string) {
+  try {
+    storage.setItem(pendingDeletionKey, owner);
+  } catch {
+    /* Without the marker, the local draft simply stays behind. */
+  }
+}
+export function removeDeletedAccountDrafts(
+  storage: DraftStorage,
+  legacy: DraftStorage,
+) {
+  try {
+    const owner = storage.getItem(pendingDeletionKey);
+    if (!owner) return;
+    removeDraft(storage, owner);
+    removeDraft(legacy, owner);
+    storage.removeItem(pendingDeletionKey);
+  } catch {
+    /* Storage unavailable: nothing was kept there either. */
+  }
+}
 export function migrateDraft(
   storage: DraftStorage,
   legacy: DraftStorage,

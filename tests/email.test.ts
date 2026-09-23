@@ -28,14 +28,16 @@ test("account buttons and fallback links preserve and escape the full authentica
     'https://luz.example/api/auth/verify-email?token=abc&callbackURL=%2F&label="<example>"';
   const escaped =
     "https://luz.example/api/auth/verify-email?token=abc&amp;callbackURL=%2F&amp;label=&quot;&lt;example&gt;&quot;";
-  for (const reset of [false, true]) {
-    const email = await accountLinkEmail(url, reset);
+  for (const [kind, action] of [
+    ["verification", "Confirmar mi correo"],
+    ["reset", "Cambiar contraseña"],
+    ["delete", "Eliminar mi cuenta"],
+  ] as const) {
+    const email = await accountLinkEmail(url, kind);
     assert.ok(email.text.includes(url));
     assert.equal(email.html.split(`href="${escaped}"`).length - 1, 2);
     assert.ok(email.html.includes(`>${escaped}</a>`));
-    assert.ok(
-      email.html.includes(reset ? "Cambiar contraseña" : "Confirmar mi correo"),
-    );
+    assert.ok(email.html.includes(action));
     assert.equal(email.html.includes(url), false);
   }
   const maliciousCode = await accountOtpEmail('<img src="x">', "sign-in");
@@ -71,17 +73,17 @@ test("email delivery sends matching HTML and plain text through the existing Res
   await sendAccountEmail(
     "person@example.com",
     "https://luz.example/verify",
-    false,
+    "verification",
   );
   await sendAccountEmail(
     "person@example.com",
     "https://luz.example/reset",
-    true,
+    "reset",
   );
   const expected = await Promise.all([
     accountOtpEmail("012345", "sign-in"),
-    accountLinkEmail("https://luz.example/verify", false),
-    accountLinkEmail("https://luz.example/reset", true),
+    accountLinkEmail("https://luz.example/verify", "verification"),
+    accountLinkEmail("https://luz.example/reset", "reset"),
   ]);
   assert.equal(requests.length, 3);
   requests.forEach((request, index) => {

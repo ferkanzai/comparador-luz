@@ -2,10 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { emptyWorkspace, newTariff } from "../src/lib/domain";
 import {
+  markPendingDeletion,
   mergeGuestComparison,
   migrateDraft,
   readDraft,
   recoverDraft,
+  removeDeletedAccountDrafts,
   writeDraft,
 } from "../src/lib/workspace-draft";
 
@@ -28,6 +30,22 @@ test("drafts survive navigation, preserve unfinished inputs and stay scoped to t
   assert.equal(writeDraft(storage, "guest", { data, version: 0 }), true);
   assert.deepEqual(readDraft(storage, "guest"), { data, version: 0 });
   assert.equal(readDraft(storage, "another-user"), null);
+});
+test("a confirmed account deletion removes only that account's drafts from this browser", () => {
+  const local = memory();
+  const legacy = memory();
+  const draft = { data: emptyWorkspace(), version: 0 };
+  for (const owner of ["guest", "deleted-user", "other-user"])
+    writeDraft(local, owner, draft);
+  writeDraft(legacy, "deleted-user", draft);
+  removeDeletedAccountDrafts(local, legacy);
+  assert.ok(readDraft(local, "deleted-user"), "no pending deletion, no change");
+  markPendingDeletion(local, "deleted-user");
+  removeDeletedAccountDrafts(local, legacy);
+  assert.equal(readDraft(local, "deleted-user"), null);
+  assert.equal(readDraft(legacy, "deleted-user"), null);
+  assert.ok(readDraft(local, "guest"));
+  assert.ok(readDraft(local, "other-user"));
 });
 test("signing in carries guest consumption and offers without replacing the account contract or history", () => {
   const account = emptyWorkspace();

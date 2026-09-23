@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Download, ShieldCheck } from "lucide-react";
 import {
   newTariff,
-  today,
   type Bill,
   type Tariff,
   type Workspace,
@@ -20,6 +19,7 @@ import VerificationBanner from "./verification-banner";
 import { AccountRequired, SignupBanner } from "./guest-prompts";
 import { usePage } from "./page-context";
 import type { CurrentUser } from "@/lib/current-user";
+import { downloadWorkspace } from "@/lib/workspace-export";
 import {
   duplicateTariff,
   removeTariff,
@@ -96,18 +96,6 @@ export default function Dashboard({
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
     );
   }
-  function exportData() {
-    const blob = new Blob(
-      [JSON.stringify({ exportedAt: new Date().toISOString(), ...w }, null, 2)],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `luz-en-claro-${today()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
   return (
     <>
       {user || w.tariffs.length ? (
@@ -134,7 +122,7 @@ export default function Dashboard({
           </span>
           <button
             className="button secondary small-button"
-            onClick={exportData}
+            onClick={() => downloadWorkspace(w)}
           >
             <Download size={15} />
             Exportar

@@ -8,9 +8,9 @@ export default async function HeaderActions() {
   if (user)
     return (
       <>
-        <span className="user-name">
+        <Link className="user-name" href="/mi-cuenta" title="Mi cuenta">
           Hola{user.name ? `, ${user.name.split(" ")[0]}` : ""}
-        </span>
+        </Link>
         <SignOutButton />
       </>
     );

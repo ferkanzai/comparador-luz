@@ -49,7 +49,7 @@ export function authOptions() {
       revokeSessionsOnPasswordReset: true,
       resetPasswordTokenExpiresIn: 1800,
       sendResetPassword: async ({ user, url }) => {
-        await sendAccountEmail(user.email, url, true);
+        await sendAccountEmail(user.email, url, "reset");
       },
     },
     emailVerification: {
@@ -58,7 +58,7 @@ export function authOptions() {
       autoSignInAfterVerification: true,
       expiresIn: verificationLinkSeconds,
       sendVerificationEmail: async ({ user, url }) => {
-        await sendAccountEmail(user.email, url, false);
+        await sendAccountEmail(user.email, url, "verification");
       },
       // Whoever set the password may not own the mailbox. Keep it only when
       // the link opens in the browser that proved the password.
@@ -69,6 +69,16 @@ export function authOptions() {
           return;
         for (const account of await internalAdapter.findAccounts(user.id))
           await internalAdapter.deleteAccount(account.id);
+      },
+    },
+    // Workspace rows cascade from "user" (001-relational-workspaces.sql).
+    user: {
+      deleteUser: {
+        enabled: true,
+        deleteTokenExpiresIn: verificationLinkSeconds,
+        sendDeleteAccountVerification: async ({ user, url }) => {
+          await sendAccountEmail(user.email, url, "delete");
+        },
       },
     },
     hooks: {

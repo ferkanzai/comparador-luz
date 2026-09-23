@@ -3,6 +3,7 @@ import { render, toPlainText } from "react-email";
 import AccountEmailTemplate, {
   accountEmailSubject,
   type AccountEmailProps,
+  type AccountLinkKind,
 } from "../emails/account-email";
 
 export type AccountEmail = {
@@ -18,8 +19,8 @@ async function renderAccountEmail(
   return { subject: accountEmailSubject(props), text: toPlainText(html), html };
 }
 
-export function accountLinkEmail(url: string, reset: boolean) {
-  return renderAccountEmail({ kind: reset ? "reset" : "verification", url });
+export function accountLinkEmail(url: string, kind: AccountLinkKind) {
+  return renderAccountEmail({ kind, url });
 }
 
 export function accountOtpEmail(otp: string, type: string) {

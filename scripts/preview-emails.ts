@@ -11,14 +11,21 @@ const previews = [
     "verification",
     accountLinkEmail(
       "https://luz.example/api/auth/verify-email?token=preview-only&callbackURL=%2F",
-      false,
+      "verification",
     ),
   ],
   [
     "password-reset",
     accountLinkEmail(
       "https://luz.example/cuenta?token=preview-only&mode=reset",
-      true,
+      "reset",
+    ),
+  ],
+  [
+    "delete-account",
+    accountLinkEmail(
+      "https://luz.example/api/auth/delete-user/callback?token=preview-only&callbackURL=%2F",
+      "delete",
     ),
   ],
 ] as const;

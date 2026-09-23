@@ -1,23 +1,29 @@
 "use client";
 import FeedbackNotice, { useFeedback } from "./feedback-notice";
-import { useState, useRef, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./input-otp";
 import { Brand } from "./ui";
+import { removeDeletedAccountDrafts } from "@/lib/workspace-draft";
 export default function AccountForm({
   configured,
   mode: initialMode,
   token,
   verificationError,
+  deleted = false,
 }: {
   configured: boolean;
   mode?: string;
   token?: string;
   verificationError?: string;
+  deleted?: boolean;
 }) {
+  useEffect(() => {
+    if (deleted) removeDeletedAccountDrafts(localStorage, sessionStorage);
+  }, [deleted]);
   const [mode, setMode] = useState(
     token
       ? "reset"
@@ -191,6 +197,11 @@ export default function AccountForm({
                 ? "Te enviaremos un enlace para empezar de nuevo."
                 : "Continúa donde lo dejaste."}
           </p>
+          {deleted && (
+            <div className="notice success" role="status">
+              Hemos eliminado tu cuenta y todos sus datos.
+            </div>
+          )}
           {!configured && (
             <div className="notice">
               Las cuentas todavía no están disponibles en esta instalación.
@@ -391,8 +402,11 @@ export default function AccountForm({
             </button>
           </p>
           <div className="auth-security">
-            <ShieldCheck size={16} /> Tus datos solo están disponibles en tu
-            cuenta.
+            <ShieldCheck size={16} />
+            <span>
+              Tus datos solo están disponibles en tu cuenta.{" "}
+              <Link href="/privacidad">Cómo los tratamos</Link>
+            </span>
           </div>
         </div>
       </div>

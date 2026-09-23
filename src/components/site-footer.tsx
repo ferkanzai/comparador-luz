@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Zap } from "lucide-react";
 import { MethodButton } from "./page-context";
 
@@ -10,6 +11,7 @@ export default function SiteFooter() {
       </span>
       <div>
         <MethodButton />
+        <Link href="/privacidad">Privacidad</Link>
         <span>Hecho para hogares en España</span>
       </div>
     </footer>

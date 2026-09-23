@@ -13,9 +13,50 @@ import {
   Text,
 } from "react-email";
 
+export type AccountLinkKind = "verification" | "reset" | "delete";
 export type AccountEmailProps =
   | { kind: "otp"; otp: string; purpose: string }
-  | { kind: "verification" | "reset"; url: string };
+  | { kind: AccountLinkKind; url: string };
+
+function linkCopy(kind: AccountLinkKind) {
+  switch (kind) {
+    case "verification":
+      return {
+        subject: "Verifica tu correo · Luz en claro",
+        eyebrow: "BIENVENIDO A LUZ EN CLARO",
+        title: "Confirma tu correo.",
+        preview: "Un último paso: verifica tu correo en Luz en claro.",
+        intro:
+          "Gracias por unirte a Luz en claro. Confirma que este correo es tuyo para completar la verificación de tu cuenta.",
+        action: "Confirmar mi correo",
+      };
+    case "reset":
+      return {
+        subject: "Cambia tu contraseña · Luz en claro",
+        eyebrow: "RECUPERA TU ACCESO",
+        title: "Una nueva contraseña.",
+        preview: "Elige una nueva contraseña para tu cuenta de Luz en claro.",
+        intro:
+          "Has solicitado cambiar tu contraseña de Luz en claro. Elige una nueva para volver a entrar en tu cuenta.",
+        action: "Cambiar contraseña",
+      };
+    case "delete":
+      return {
+        subject: "Confirma que quieres eliminar tu cuenta · Luz en claro",
+        eyebrow: "ELIMINAR TU CUENTA",
+        title: "¿Eliminamos tu cuenta?",
+        preview:
+          "Confirma que quieres eliminar tu cuenta de Luz en claro y todos tus datos.",
+        intro:
+          "Has pedido eliminar tu cuenta de Luz en claro. Al confirmarlo borraremos la cuenta y todo lo que guarda: tarifas, facturas e historial. No se puede deshacer. Abre el enlace en el navegador donde tienes la sesión iniciada. Si no lo has pedido tú, ignora este correo.",
+        action: "Eliminar mi cuenta",
+      };
+    default: {
+      const unhandled: never = kind;
+      throw new Error(`Unknown account email: ${unhandled}`);
+    }
+  }
+}
 
 const theme = {
   paper: "#f7f8f2",
@@ -49,11 +90,7 @@ function otpAction(purpose: string) {
 }
 
 export function accountEmailSubject(props: AccountEmailProps) {
-  if (props.kind !== "otp") {
-    return props.kind === "reset"
-      ? "Cambia tu contraseña · Luz en claro"
-      : "Verifica tu correo · Luz en claro";
-  }
+  if (props.kind !== "otp") return linkCopy(props.kind).subject;
   const action =
     props.purpose === "forget-password"
       ? "Restablece tu contraseña"
@@ -244,22 +281,13 @@ export default function AccountEmailTemplate(props: AccountEmailProps) {
     );
   }
 
-  const reset = props.kind === "reset";
-  const action = reset ? "Cambiar contraseña" : "Confirmar mi correo";
+  const copy = linkCopy(props.kind);
   return (
     <EmailLayout
-      title={reset ? "Una nueva contraseña." : "Confirma tu correo."}
-      eyebrow={reset ? "RECUPERA TU ACCESO" : "BIENVENIDO A LUZ EN CLARO"}
-      preview={
-        reset
-          ? "Elige una nueva contraseña para tu cuenta de Luz en claro."
-          : "Un último paso: verifica tu correo en Luz en claro."
-      }
-      intro={
-        reset
-          ? "Has solicitado cambiar tu contraseña de Luz en claro. Elige una nueva para volver a entrar en tu cuenta."
-          : "Gracias por unirte a Luz en claro. Confirma que este correo es tuyo para completar la verificación de tu cuenta."
-      }
+      title={copy.title}
+      eyebrow={copy.eyebrow}
+      preview={copy.preview}
+      intro={copy.intro}
     >
       <Button
         href={props.url}
@@ -275,7 +303,7 @@ export default function AccountEmailTemplate(props: AccountEmailProps) {
           textAlign: "center",
         }}
       >
-        {action}
+        {copy.action}
       </Button>
       <Text style={{ ...small, margin: "26px 0 8px" }}>
         Si el botón no funciona, copia y pega este enlace en tu navegador:

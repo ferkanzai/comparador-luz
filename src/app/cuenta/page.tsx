@@ -11,6 +11,7 @@ export default async function Account({ searchParams }: PageProps<"/cuenta">) {
       mode={text(params.mode)}
       token={text(params.token)}
       verificationError={text(params.error)}
+      deleted={text(params.eliminada) === "1"}
     />
   );
 }
