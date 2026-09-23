@@ -65,7 +65,7 @@ export function Field({
           pattern={decimal ? pattern : undefined}
           required={required}
           maxLength={maxLength}
-          placeholder={placeholder ?? (decimal ? "0,00" : undefined)}
+          placeholder={placeholder}
           aria-invalid={invalid || undefined}
           aria-describedby={
             [
