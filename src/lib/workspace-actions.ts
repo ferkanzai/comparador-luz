@@ -12,10 +12,15 @@ export function canAddTariff(w: Workspace) {
   return w.tariffs.length < workspaceLimits.tariffs;
 }
 
+export type SaveTariffOptions = {
+  since: string;
+  profile: Profile;
+  makeCurrent: boolean;
+};
 export function saveTariff(
   w: Workspace,
   tariff: Tariff,
-  options: { since: string; profile: Profile; makeCurrent: boolean },
+  options: SaveTariffOptions,
 ): Workspace {
   const next = { ...w, profile: options.profile };
   if (options.makeCurrent && !w.currentId)

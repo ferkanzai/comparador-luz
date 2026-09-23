@@ -61,14 +61,14 @@ export default function TariffRecordForm({
       initial={draft.tariff}
       initialProfile={workspace.profile}
       onClose={onClose}
-      record={{
+      mode={{
+        kind: "record",
         title: draft.title,
         start: original?.start ?? "",
         end:
           draft.kind === "current" || original?.current
             ? undefined
             : (original?.end ?? ""),
-        correction: draft.kind === "correction",
         preview: draft.kind === "correction" ? preview : undefined,
         onSave: (tariff, dates) => {
           const { start, end } = dates;

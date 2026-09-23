@@ -7,7 +7,6 @@ import {
   newTariff,
   today,
   type Bill,
-  type Profile,
   type Tariff,
   type Workspace,
 } from "@/lib/domain";
@@ -26,6 +25,7 @@ import {
   removeTariff,
   saveBill,
   saveTariff,
+  type SaveTariffOptions,
 } from "@/lib/workspace-actions";
 
 // Each lazy view needs its own boundary: suspending up to the page's
@@ -103,13 +103,8 @@ export default function Dashboard({
     setMessage("");
     setError("");
   }
-  function handleTariffSave(
-    tariff: Tariff,
-    since: string,
-    profile: Profile,
-    makeCurrent: boolean,
-  ) {
-    update(saveTariff(w, tariff, { since, profile, makeCurrent }));
+  function handleTariffSave(tariff: Tariff, options: SaveTariffOptions) {
+    update(saveTariff(w, tariff, options));
     setEditing(null);
     setMessage(
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
@@ -321,15 +316,17 @@ export default function Dashboard({
           />
         ) : (
           <TariffForm
+            mode={{
+              kind: "offer",
+              first:
+                !w.currentId &&
+                !editing.duplicatedFrom &&
+                !w.tariffs.some((t) => t.id === editing.tariff.id),
+              duplicatedFrom: editing.duplicatedFrom,
+              onSave: handleTariffSave,
+            }}
             initial={editing.tariff}
-            duplicatedFrom={editing.duplicatedFrom}
             initialProfile={w.profile}
-            firstTariff={
-              !w.currentId &&
-              !editing.duplicatedFrom &&
-              !w.tariffs.some((t) => t.id === editing.tariff.id)
-            }
-            onSave={handleTariffSave}
             onClose={() => setEditing(null)}
           />
         ))}

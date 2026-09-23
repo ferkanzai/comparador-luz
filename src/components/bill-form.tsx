@@ -434,24 +434,25 @@ export default function BillForm({
       {creatingTariff && (
         <TariffForm
           initial={creatingTariff}
-          invoiceDraft
           initialProfile={newInvoiceProfile(editing)}
-          firstTariff={false}
           onClose={() => setCreatingTariff(null)}
-          onSave={(tariff, _since, profile) => {
-            setPendingTariff(tariff);
-            const consumption = {
-              peakKwh: profile.peakKwh,
-              flatKwh: profile.flatKwh,
-              valleyKwh: profile.valleyKwh,
-            };
-            const next = { ...editing, tariff, profile };
-            setEditing(
-              consumptionTotal(consumption) !== null
-                ? updateBillConsumption(next, consumption)
-                : next,
-            );
-            setCreatingTariff(null);
+          mode={{
+            kind: "invoice",
+            onSave: (tariff, profile) => {
+              setPendingTariff(tariff);
+              const consumption = {
+                peakKwh: profile.peakKwh,
+                flatKwh: profile.flatKwh,
+                valleyKwh: profile.valleyKwh,
+              };
+              const next = { ...editing, tariff, profile };
+              setEditing(
+                consumptionTotal(consumption) !== null
+                  ? updateBillConsumption(next, consumption)
+                  : next,
+              );
+              setCreatingTariff(null);
+            },
           }}
         />
       )}
