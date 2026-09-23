@@ -36,6 +36,32 @@ Workspace migrations are the files `migrations/NNN-name.sql`. `src/lib/workspace
 - **The legacy import runs last.** It happens after every migration in the run, because the record writers target the latest schema.
 - **Newer databases are refused.** If `app_migration` contains an id this build doesn't have, the runner fails without changing anything. That means the database was migrated by a newer build.
 
+### Compatibility policy
+
+`pnpm build:vercel` migrates **before** the new build goes live. While it builds, and indefinitely if the build fails, the live deployment runs the previous app against the new schema. Every migration must therefore keep the previous release working.
+
+**Expand, then contract.** A migration may only add things:
+
+- tables;
+- columns that are nullable or have a default;
+- indexes;
+- constraints that existing data and the previous app's writes already satisfy.
+
+Removing or renaming something ships in a later release, once no deployed build reads or writes it. Renames are done as: add the new name, write both, move reads over, then drop the old one.
+
+**Destructive migrations need a maintenance window.** That covers drops, renames, type changes, tightened constraints and data rewrites the previous app can't handle. Use the same procedure as the 001 cutover below: a backup or Neon branch, paused account persistence, then deploy and verify. 002 dropped a table the previous app wrote to, and should have followed this rule.
+
+**Outdated clients.** Saves replace the whole workspace, so a browser running the previous build silently drops fields it doesn't know. 003's SNOEE prices are an example. Until ticket 28 changes the sync model, a migration that adds user-editable fields must say so in its notes, and users must reload before using the feature. The planned fix is for the client to send the schema version it was built for, and for the server to reject older saves with a "reload to continue" response instead of accepting them.
+
+Review checklist for a migration:
+
+- [ ] Only adds, or has a maintenance window planned and written down.
+- [ ] New columns are nullable or defaulted; new constraints hold for existing rows and for the previous app's writes.
+- [ ] The previous release still reads and saves correctly against the new schema. Check this by running the previous build against a migrated copy.
+- [ ] New user-editable fields are flagged as dropped by stale clients.
+- [ ] Anything left for a later contract step is listed in the migration file's header comment.
+- [ ] `tests/workspace-storage.test.ts` covers upgrading from the previous schema.
+
 ### The one-off 001 cutover
 
 For an existing installation, this is a **maintenance-window cutover**, not a rolling migration:
