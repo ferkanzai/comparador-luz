@@ -35,7 +35,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
   const zero = 58 + top * scale;
   const description =
     metric === "paid"
-      ? "Importe pagado después de créditos"
+      ? "Importe pagado después de descuentos"
       : "Consumo registrado en kWh";
   return (
     <section aria-label="Comparación de facturas por años">

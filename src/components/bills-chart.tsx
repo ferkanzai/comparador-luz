@@ -154,7 +154,7 @@ export default function BillsChart({
               </ul>
               <p className="small muted chart-line-note">
                 Cada línea muestra un concepto; «Pagado» es el importe después
-                de créditos. Pulsa la leyenda para mostrar u ocultar líneas. Los
+                de descuentos. Pulsa la leyenda para mostrar u ocultar líneas. Los
                 meses sin facturas interrumpen las líneas.
               </p>
             </>
@@ -290,7 +290,7 @@ export default function BillsChart({
                     </div>
                   ))}
                 <div className="chart-detail-total">
-                  <dt>Total antes de créditos</dt>
+                  <dt>Total antes de descuentos</dt>
                   <dd>{money(active.amount - active.totals.credit)}</dd>
                 </div>
                 <div className="chart-detail-total">

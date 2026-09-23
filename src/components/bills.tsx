@@ -188,7 +188,7 @@ export default function Bills({
                   de fin del período), sin prorratearla. Otros cargos: bono
                   social, SNOEE, alquiler y servicios. Las facturas antiguas sin
                   conceptos aparecen como «Sin desglose»; los meses sin
-                  facturas, como «—». Los créditos se restan del total y
+                  facturas, como «—». Los descuentos se restan del total y
                   aparecen bajo el cero en las barras.
                 </p>
                 <details className="form-section">
@@ -201,7 +201,7 @@ export default function Bills({
                   >
                     <table>
                       <caption className="bill-table-caption">
-                        Total antes de créditos · Pagado después de créditos.
+                        Total antes de descuentos · Pagado después de descuentos.
                       </caption>
                       <thead>
                         <tr>

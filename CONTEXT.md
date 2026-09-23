@@ -141,7 +141,7 @@ _Avoid_: Consumption month, billing period.
 **Bill breakdown (desglose)**:
 The recorded amounts for energy, power, social-bonus financing, SNOEE cost, meter rental, services, IEE, supply IVA, and services IVA. Their sum before credits is the bill's total charges, and their sum minus credits must match the independently entered net amount paid.
 
-**Credit (crédito)**:
+**Credit (descuento)**:
 A nonnegative amount deducted from the final bill after its recorded charges and taxes, without recalculating those taxes. A discount already reflected in net charge and tax amounts is not another credit to deduct.
 _Avoid_: Tax reduction, tariff discount.
 

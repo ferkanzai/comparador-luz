@@ -159,7 +159,7 @@ export default function BillForm({
               />
             </div>
             <Field
-              label="Crédito o descuento sobre el total (opcional)"
+              label="Descuento o descuento sobre el total (opcional)"
               decimal
               unit="€"
               hint="Importe positivo que se resta después de impuestos. Si el descuento reduce una base imponible, copia los conceptos e impuestos ya descontados de tu factura y no lo restes aquí otra vez."
@@ -315,7 +315,7 @@ export default function BillForm({
               <>
                 <p className="small muted">
                   Copia los importes facturados. Conservamos el total pagado que
-                  has indicado y comprobamos que la suma menos el crédito
+                  has indicado y comprobamos que la suma menos el descuento
                   coincida, incluidos los impuestos.
                 </p>
                 <div className="bill-concepts">
@@ -347,7 +347,7 @@ export default function BillForm({
                       <p>
                         Suma de conceptos:{" "}
                         <strong>{money(reconciliation.gross)}</strong> ·
-                        Crédito: {money(numberOf(editing.credit))}
+                        Descuento: {money(numberOf(editing.credit))}
                       </p>
                       <p>
                         Resultado del desglose:{" "}

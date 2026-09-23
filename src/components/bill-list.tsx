@@ -88,7 +88,7 @@ export default function BillList({
       >
         <table>
           <caption className="bill-table-caption">
-            Total antes de créditos · Pagado después de créditos.
+            Total antes de descuentos · Pagado después de descuentos.
           </caption>
           <thead>
             <tr>
@@ -96,7 +96,7 @@ export default function BillList({
               <th scope="col">Comercializadora</th>
               <th scope="col">Consumo</th>
               <th scope="col">Total</th>
-              <th scope="col">Créditos</th>
+              <th scope="col">Descuentos</th>
               <th scope="col">Pagado</th>
               <th scope="col">
                 <span className="sr-only">Acciones</span>
@@ -151,11 +151,11 @@ export default function BillList({
                     <dd>{consumption(bill)}</dd>
                   </div>
                   <div>
-                    <dt>Total antes de créditos</dt>
+                    <dt>Total antes de descuentos</dt>
                     <dd>{money(billTotal(bill))}</dd>
                   </div>
                   <div>
-                    <dt>Créditos</dt>
+                    <dt>Descuentos</dt>
                     <dd>{credit(bill)}</dd>
                   </div>
                   <div className="bill-card-paid">

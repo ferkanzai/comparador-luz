@@ -371,9 +371,9 @@ test("lists bills as cards on a phone and signals when the monthly chart scrolls
   await expect(card).toHaveAccessibleName("Factura de Abril 2026");
   await expect(card).toContainText("Compañía actual");
   await expect(card).toContainText(
-    `Total antes de créditos${money(Number(base.paid))}`,
+    `Total antes de descuentos${money(Number(base.paid))}`,
   );
-  await expect(card).toContainText(`Créditos${money(-5)}`);
+  await expect(card).toContainText(`Descuentos${money(-5)}`);
   await expect(card).toContainText(`Pagado${money(Number(april.paid))}`);
   await expect(
     card.getByRole("button", { name: "Eliminar factura 2026-04", exact: true }),

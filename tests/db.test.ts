@@ -169,7 +169,7 @@ function fullWorkspace(): Workspace {
     paid: "-1,50",
     credit: "11.5",
     kwh: "60",
-    notes: "Con crédito",
+    notes: "Con descuento",
     // Bill parts are read separately; decimals must stay exact there too.
     tariff: {
       ...current,

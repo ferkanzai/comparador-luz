@@ -15,7 +15,7 @@ export const billGroups = [
   ["other", "Otros cargos"],
   ["taxes", "Impuestos"],
   ["unknown", "Sin desglose"],
-  ["credit", "Créditos"],
+  ["credit", "Descuentos"],
 ] as const;
 const longMonthFormat = new Intl.DateTimeFormat("es-ES", {
   month: "long",

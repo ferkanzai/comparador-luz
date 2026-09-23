@@ -138,11 +138,11 @@ export const billSchema = z
           numberOf(b.credit) -
           numberOf(b.paid),
       ) < 0.005,
-    "La suma de los conceptos menos el crédito debe coincidir con el total pagado.",
+    "La suma de los conceptos menos el descuento debe coincidir con el total pagado.",
   )
   .refine(
     (b) => b.breakdown || numberOf(b.paid) + numberOf(b.credit) >= 0,
-    "Un total negativo necesita un crédito que explique el saldo a tu favor.",
+    "Un total negativo necesita un descuento que explique el saldo a tu favor.",
   )
   .superRefine((b, ctx) => {
     if (
