@@ -30,6 +30,7 @@ import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
 import type { TariffRecordDraft } from "./tariff-record-form";
 import { recordCurrent } from "@/lib/tariff-periods";
+import { syncStatusLabel } from "@/lib/sync-status";
 
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 const TariffHistory = dynamic(() => import("./tariff-history"));
@@ -257,28 +258,12 @@ export default function Dashboard({
           </nav>
           <span
             className="workspace-status"
-            title={workspace.error || undefined}
+            title={workspace.error || workspace.issue || undefined}
           >
             <span
               className={`status-dot ${user && status !== "saved" ? "unsaved" : ""}`}
             />
-            {!loaded
-              ? "Cargando…"
-              : status === "saved"
-                ? "Guardado en tu cuenta"
-                : !stored
-                  ? "No se pudo guardar en este dispositivo"
-                  : status === "local"
-                    ? "Guardado en este dispositivo"
-                    : status === "conflict"
-                      ? "Guardado aquí · revisa la versión de tu cuenta"
-                      : status === "error"
-                        ? "Guardado aquí · sin sincronizar"
-                        : status === "invalid"
-                          ? "Guardado aquí · completa los datos para sincronizar"
-                          : status === "saving"
-                            ? "Sincronizando…"
-                            : "Guardado aquí · pendiente de sincronizar"}
+            {loaded ? syncStatusLabel(status, stored) : "Cargando…"}
             {status === "error" && (
               <button className="link-button" onClick={workspace.retry}>
                 Reintentar
@@ -301,6 +286,11 @@ export default function Dashboard({
               <Download size={15} />
               Exportar
             </button>
+          </div>
+        )}
+        {status === "invalid" && workspace.issue && (
+          <div className="notice" role="status">
+            No podemos guardar en tu cuenta hasta corregirlo. {workspace.issue}
           </div>
         )}
         {status === "conflict" && (

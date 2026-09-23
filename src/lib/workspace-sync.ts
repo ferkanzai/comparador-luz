@@ -1,5 +1,6 @@
 import { workspaceSchema, type Workspace } from "./domain";
 import type { WorkspaceDraft } from "./workspace-draft";
+import { describeWorkspaceIssue } from "./sync-status";
 
 export class SyncError extends Error {
   constructor(
@@ -15,6 +16,8 @@ export type SyncSnapshot = {
   status:
     "local" | "saved" | "pending" | "saving" | "invalid" | "error" | "conflict";
   error: string;
+  /** What to fix before an "invalid" workspace can sync; empty otherwise. */
+  issue: string;
 };
 type Options = {
   data: Workspace;
@@ -50,24 +53,20 @@ export class WorkspaceSync {
     this.pending = options.pending;
   }
   get snapshot(): SyncSnapshot {
-    return {
-      data: this.data,
-      stored: this.stored,
-      status: !this.options.send
-        ? "local"
-        : this.blocked
-          ? "conflict"
-          : this.inFlight
-            ? "saving"
-            : this.equal(this.data, this.saved) && !this.pending
-              ? "saved"
-              : !workspaceSchema.safeParse(this.data).success
-                ? "invalid"
-                : this.error
-                  ? "error"
-                  : "pending",
-      error: this.error,
-    };
+    const base = { data: this.data, stored: this.stored, error: this.error };
+    if (!this.options.send) return { ...base, status: "local", issue: "" };
+    if (this.blocked) return { ...base, status: "conflict", issue: "" };
+    if (this.inFlight) return { ...base, status: "saving", issue: "" };
+    if (this.equal(this.data, this.saved) && !this.pending)
+      return { ...base, status: "saved", issue: "" };
+    const parsed = workspaceSchema.safeParse(this.data);
+    if (!parsed.success)
+      return {
+        ...base,
+        status: "invalid",
+        issue: describeWorkspaceIssue(this.data, parsed.error.issues[0]),
+      };
+    return { ...base, status: this.error ? "error" : "pending", issue: "" };
   }
   private equal(a: Workspace, b: Workspace | null) {
     return JSON.stringify(a) === JSON.stringify(b);

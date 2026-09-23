@@ -74,6 +74,7 @@ export function useWorkspace(
     stored: true,
     status: "local",
     error: "",
+    issue: "",
   }));
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
