@@ -13,10 +13,17 @@ import { expect, test } from "../browser/strict-test";
 /** Full pages, except dialogs, which show what is on screen. */
 const shot = async (page: Page, name: string, fullPage = true) => {
   await page.evaluate(() => document.fonts.ready);
-  await expect(page).toHaveScreenshot(
-    `${name}-${test.info().project.name}.png`,
-    { fullPage, stylePath: "tests/visual/screenshot.css" },
-  );
+  // Soft, so one run reports every changed screen.
+  await expect
+    .soft(page)
+    .toHaveScreenshot(`${name}-${test.info().project.name}.png`, {
+      fullPage,
+      stylePath: "tests/visual/screenshot.css",
+      // VISUAL_STRICT=1 counts every changed pixel, for reviewing colour changes.
+      ...(process.env.VISUAL_STRICT
+        ? { threshold: 0, maxDiffPixelRatio: 0 }
+        : {}),
+    });
 };
 const dialog = (page: Page, name: string) => shot(page, name, false);
 
@@ -133,9 +140,7 @@ test("account screens", async ({ page }) => {
   await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
   await expect(page.getByRole("article").first()).toBeVisible();
   await shot(page, "account-tariffs");
-  await page
-    .getByRole("button", { name: "Mis facturas", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
   await expect(page.getByText("Cargando tus facturas…")).toHaveCount(0);
   await expect(page.getByRole("main")).toContainText("ago 2026");
   await shot(page, "account-bills");

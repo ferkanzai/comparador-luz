@@ -21,7 +21,7 @@ Replace the hand-written stylesheet with shadcn/ui (Tailwind v4, the `radix-nova
 | --- | ------------------------------------------------------------------------------------ | ------ | --------------- | ---------- |
 | 01  | [Screenshot baselines of every screen](issues/01-visual-baselines.md)                | S      | completed       |            |
 | 02  | [Tailwind v4 and shadcn, with no visible change](issues/02-tailwind-shadcn-init.md)  | M      | completed       | 01         |
-| 03  | [The current palette as shadcn tokens](issues/03-palette-tokens.md)                  | M      | ready-for-agent | 02         |
+| 03  | [The current palette as shadcn tokens](issues/03-palette-tokens.md)                  | M      | completed       | 02         |
 | 04  | [Type, spacing and radius scales](issues/04-scales.md)                               | M      | ready-for-agent | 03         |
 | 05  | [Primitives: Button, inputs, Card, Badge, Alert…](issues/05-primitives.md)            | M–L    | needs-triage    | 04         |
 | 06  | [Dialogs on shadcn](issues/06-dialogs.md)                                             | M      | needs-triage    | 05         |
