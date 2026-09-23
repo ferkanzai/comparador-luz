@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** wontfix
 
 **Effort:** M for tokens, L to also split the file into per-component CSS Modules
 
@@ -26,3 +26,7 @@ The visual design is consistent today (confirmed in the browser pass), but only 
 - [ ] Type scale of about 7 steps, spacing scale, and 3–4 radii.
 - [ ] Replace values mechanically, section by section. Compare before/after screenshots of every screen on desktop and phone (the browser suite plus `output/review` screenshots).
 - [ ] Optional follow-up (L): move component-specific rules into `*.module.css` next to their components.
+
+## Comments
+
+Superseded (user, 2026-09-23) by `.scratch/design-system/`: shadcn's tokens and components on Tailwind v4, themed with the current look. The inventory here becomes that spec's stage 03 (palette) and 04 (scales).

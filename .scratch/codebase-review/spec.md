@@ -40,7 +40,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 19  | [Write a migration compatibility policy](issues/19-migration-compatibility-policy.md)                        | Migrations                | S      | completed       |            |
 | 20  | [One field registry for tariff, bill and profile storage](issues/20-field-registry.md)                       | Architecture, Migrations  | M      | completed       | 18         |
 | 21  | [Cut per-keystroke work in the sync layer](issues/21-sync-per-keystroke-cost.md)                             | Performance               | S–M    | completed       |            |
-| 22  | [Design tokens and a type scale in the stylesheet](issues/22-design-tokens.md)                               | Design                    | M–L    | ready-for-agent |            |
+| 22  | [Design tokens and a type scale in the stylesheet](issues/22-design-tokens.md)                               | Design                    | M–L    | wontfix         |            |
 | 23  | [Comparison table scrolling on desktop and phone](issues/23-comparison-table-scrolling.md)                   | Design                    | M      | completed       |            |
 | 24  | [Zero-value lines in cost breakdowns](issues/24-zero-value-breakdown-lines.md)                               | Design                    | S      | completed       |            |
 | 25  | [Guest first-run screen](issues/25-guest-first-run.md)                                                       | Design                    | S      | needs-triage    |            |
@@ -63,7 +63,7 @@ Review of performance, architecture, composition, design, security, account and 
 
 
 
-7. Leftovers (2026-09-23): 21 implemented. 28 abandoned in favour of `.scratch/simple-persistence/` (ADR-0003), which also replaces what 03, 18, 19 and 20 built for whole-workspace saves. After that: triage 25 and 26. Defer 22.
+7. Leftovers (2026-09-23): 21 implemented. 28 abandoned in favour of `.scratch/simple-persistence/` (ADR-0003), which also replaces what 03, 18, 19 and 20 built for whole-workspace saves. After that: triage 25 and 26. 22 is superseded by `.scratch/design-system/`.
 
 ## Considered and rejected
 
