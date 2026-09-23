@@ -7,7 +7,10 @@ import {
   workspaceSchema,
   type Workspace,
 } from "../src/lib/domain";
-import { migrateWorkspaces } from "../src/lib/workspace-migrations";
+import {
+  loadMigrations,
+  migrateWorkspaces,
+} from "../src/lib/workspace-migrations";
 import { workspaceTables } from "../src/lib/workspace-records";
 
 function fixture(): Workspace {
@@ -453,11 +456,27 @@ test(
       await pool.query(
         'DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE TABLE "user" (id TEXT PRIMARY KEY)',
       );
-      await migrateWorkspaces(pool);
+      assert.deepEqual(
+        await migrateWorkspaces(pool),
+        (await loadMigrations()).map((m) => m.id),
+        "a fresh install applies every migration file, in order",
+      );
+      assert.deepEqual(await migrateWorkspaces(pool), []);
       assert.equal(
         (await pool.query("SELECT to_regclass('workspace_legacy') AS name"))
           .rows[0].name,
         null,
+      );
+      // A database migrated by a newer build must not be touched by an older one.
+      await pool.query(
+        "INSERT INTO app_migration (id) VALUES ('999-from-the-future')",
+      );
+      await assert.rejects(
+        migrateWorkspaces(pool),
+        /doesn't include \(999-from-the-future\)/,
+      );
+      await pool.query(
+        "DELETE FROM app_migration WHERE id = '999-from-the-future'",
       );
       await pool.query("INSERT INTO \"user\" VALUES ('fresh')");
       assert.equal(await saveWorkspace("fresh", original, 0), 1);

@@ -26,7 +26,17 @@ The database identity is trusted server context, not a client-provided ID or dat
 
 ## Migration and deployment
 
-`pnpm db:migrate` applies Better Auth migrations and the versioned workspace migration. The database login must own the old workspace table and be able to create tables and create/grant the `luz_workspace` role. The migration fails rather than silently omitting security. An existing role with elevated attributes or memberships is rejected.
+`pnpm db:migrate` applies Better Auth migrations and then the workspace migrations, under one session advisory lock so concurrent deployments take turns. The database login must own the old workspace table and be able to create tables and create/grant the `luz_workspace` role. The migration fails rather than silently omitting security. An existing role with elevated attributes or memberships is rejected.
+
+### Migration runner
+
+Workspace migrations are the files `migrations/NNN-name.sql`. `src/lib/workspace-migrations.ts` applies every file not yet recorded in `app_migration`, in numeric order, and records each by its file name without `.sql`. Everything runs in one transaction under a transaction advisory lock. Fresh installations and upgrades follow the same sequence. To add a migration, add the next numbered file; no code change is needed.
+
+- **001's code steps.** Before 001, a JSON-document `workspace` table is renamed to `workspace_legacy`. After 001, the `luz_workspace` role, grants and row-level security are set up.
+- **The legacy import runs last.** It happens after every migration in the run, because the record writers target the latest schema.
+- **Newer databases are refused.** If `app_migration` contains an id this build doesn't have, the runner fails without changing anything. That means the database was migrated by a newer build.
+
+### The one-off 001 cutover
 
 For an existing installation, this is a **maintenance-window cutover**, not a rolling migration:
 
@@ -45,7 +55,7 @@ The migration locks the legacy table, renames it to `workspace_legacy`, creates 
 
 ## SNOEE incremental migration
 
-`003-snoee-cost` adds nullable `snoee_kwh` prices to live tariffs and tariff snapshots, and a nonnegative `snoee` amount defaulting to zero on invoice breakdowns. It leaves historical totals and workspace versions unchanged. The migration runner applies these columns before legacy imports as well as when upgrading an existing relational installation. It does not require another JSON-to-relational cutover. Existing applications can still read their previous fields, but a stale client that does not understand SNOEE cannot preserve a newly entered charge when rewriting a whole workspace; reload clients onto the new version before using the feature.
+`003-snoee-cost` adds nullable `snoee_kwh` prices to live tariffs and tariff snapshots, and a nonnegative `snoee` amount defaulting to zero on invoice breakdowns. It leaves historical totals and workspace versions unchanged. It does not require another JSON-to-relational cutover. Existing applications can still read their previous fields, but a stale client that does not understand SNOEE cannot preserve a newly entered charge when rewriting a whole workspace; reload clients onto the new version before using the feature.
 
 ## Integration checks
 

@@ -1,5 +1,5 @@
 import { emailOTP } from "better-auth/plugins/email-otp";
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { waitUntil } from "@vercel/functions";
 import { getPool } from "./db";
 import { sendAccountEmail, sendAccountOTP } from "./email";
@@ -15,8 +15,8 @@ export function authConfigured() {
         process.env.EMAIL_MODE === "console")),
   );
 }
-function createAuth() {
-  return betterAuth({
+export function authOptions() {
+  return {
     appName: "Luz en claro",
     baseURL: authOrigins().baseURL,
     database: getPool(),
@@ -72,7 +72,10 @@ function createAuth() {
         "/sign-in/email-otp": { window: 60, max: 5 },
       },
     },
-  });
+  } satisfies BetterAuthOptions;
+}
+function createAuth() {
+  return betterAuth(authOptions());
 }
 let instance: ReturnType<typeof createAuth> | undefined;
 export function getAuth() {
