@@ -8,6 +8,7 @@ import SiteHeader from "@/components/site-header";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Privacidad · Luz en claro" };
+const contact = "contact@fercarmona.dev";
 
 export default function Privacy() {
   return (
@@ -20,15 +21,10 @@ export default function Privacy() {
         <article className="legal-page">
           <span className="eyebrow">PRIVACIDAD</span>
           <h1>Qué guardamos y por qué</h1>
-          <p className="notice" role="note">
-            Borrador pendiente de revisión. Los datos del responsable están por
-            completar.
-          </p>
-
           <h2>Quién es el responsable</h2>
           <p>
-            [Nombre o razón social del responsable], [dirección de contacto o
-            correo para ejercer tus derechos].
+            Fernando Carmona Ayuela. Puedes escribirme a{" "}
+            <a href={`mailto:${contact}`}>{contact}</a>.
           </p>
 
           <h2>Si usas el comparador sin cuenta</h2>
@@ -105,8 +101,9 @@ export default function Privacy() {
             Puedes descargar tus datos y eliminar tu cuenta cuando quieras desde{" "}
             <Link href="/mi-cuenta">Mi cuenta</Link>. Al eliminarla borramos la
             cuenta y todos sus datos de electricidad. También puedes pedirnos
-            acceso, corrección, oposición o limitación en [contacto], y reclamar
-            ante la Agencia Española de Protección de Datos (aepd.es).
+            acceso, corrección, oposición o limitación en{" "}
+            <a href={`mailto:${contact}`}>{contact}</a>, y reclamar ante la
+            Agencia Española de Protección de Datos (aepd.es).
           </p>
         </article>
         <SiteFooter />

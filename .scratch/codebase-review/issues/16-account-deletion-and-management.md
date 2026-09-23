@@ -8,7 +8,7 @@
 
 **Effort:** M
 
-**Implementation:** complete (privacy text awaiting the owner's review)
+**Implementation:** complete
 
 ## Why
 
@@ -59,9 +59,9 @@ Decision (user, 2026-09-23): in scope are account deletion with all data, changi
 - Confirmation by email link, not by password. It works the same for accounts that use codes and accounts with a password, and it proves both control of the mailbox and a live session. The cost is that the link has to be opened in the browser that has the session. The email and the page both say so.
 - Changing email and the session list stay out of scope, as decided.
 
-**For the owner**
+**Owner's review**
 
-- Fill in the operator and contact placeholders in `src/app/privacidad/page.tsx`, review the text, then remove the draft banner.
+The owner approved the text and provided the operator: Fernando Carmona Ayuela, contact@fercarmona.dev. Both are on the page, linked with `mailto:`, and the draft banner is gone.
 
 **Validation**
 

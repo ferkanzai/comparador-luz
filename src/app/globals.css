@@ -333,11 +333,7 @@ a.user-name:hover {
 .legal-page li {
   color: var(--muted);
   line-height: 1.6;
-}
-.legal-page .notice {
-  margin-bottom: 28px;
-}
-.shell {
+}.shell {
   max-width: 1400px;
   margin: auto;
   padding: 0 38px;
