@@ -10,7 +10,7 @@ const changed = (days: string): Workspace => ({
 });
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-test("edits persist immediately, debounce, and reverting cancels the pending write", async (t) => {
+test("edits persist locally after a short pause, debounce, and reverting cancels the pending write", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const writes: WorkspaceDraft[] = [];
   const requests: Workspace[] = [];
@@ -30,8 +30,10 @@ test("edits persist immediately, debounce, and reverting cancels the pending wri
   });
   t.after(() => sync.dispose());
   sync.update(changed("10"));
+  assert.equal(writes.length, 0);
+  t.mock.timers.tick(250);
   assert.equal(writes.at(-1)?.data.profile.days, "10");
-  t.mock.timers.tick(400);
+  t.mock.timers.tick(150);
   sync.update(emptyWorkspace());
   t.mock.timers.tick(800);
   await settle();
@@ -173,17 +175,21 @@ test("conflicting versions stop automatic writes while retaining edits locally",
   assert.equal(sync.snapshot.data.profile.days, "20");
 });
 
-test("guests save locally without requests and report storage failure truthfully", () => {
+test("guests save locally without requests and report storage failure truthfully", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const statuses: boolean[] = [];
   const sync = new WorkspaceSync({
     data: emptyWorkspace(),
     version: 0,
     saved: null,
     persist: () => false,
-    onChange: () => {},
+    onChange: (snapshot) => statuses.push(snapshot.stored),
   });
   sync.update(changed("30"));
+  t.mock.timers.tick(250);
   assert.equal(sync.snapshot.status, "local");
   assert.equal(sync.snapshot.stored, false);
+  assert.equal(statuses.at(-1), false);
   sync.dispose();
 });
 
@@ -244,4 +250,62 @@ test("unmount cancels a queued save and preserves its local copy for recovery", 
   await settle();
   assert.equal(requests, 0);
   assert.equal(local?.data.profile.days, "25");
+});
+
+test("keystrokes coalesce into one local write, and a queued write can be forced", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const writes: WorkspaceDraft[] = [];
+  const sync = new WorkspaceSync({
+    data: emptyWorkspace(),
+    version: 0,
+    saved: null,
+    persist: (draft) => {
+      writes.push(draft);
+      return true;
+    },
+    onChange: () => {},
+  });
+  t.after(() => sync.dispose());
+  for (const days of ["1", "12", "123"]) sync.update(changed(days));
+  t.mock.timers.tick(250);
+  assert.deepEqual(
+    writes.map((draft) => draft.data.profile.days),
+    ["123"],
+  );
+  sync.update(changed("30"));
+  sync.saveDraft();
+  sync.saveDraft();
+  assert.equal(writes.length, 2);
+  assert.equal(writes.at(-1)?.data.profile.days, "30");
+  t.mock.timers.tick(250);
+  assert.equal(writes.length, 2);
+});
+
+test("the local draft holds the exact snapshot before it is sent", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const writes: WorkspaceDraft[] = [];
+  const onDisk: (string | undefined)[] = [];
+  const sync = new WorkspaceSync({
+    data: emptyWorkspace(),
+    version: 1,
+    saved: emptyWorkspace(),
+    persist: (draft) => {
+      writes.push(draft);
+      return true;
+    },
+    send: async (data) => {
+      onDisk.push(writes.at(-1)?.pending?.profile.days);
+      assert.deepEqual(writes.at(-1)?.data, data);
+      return 2;
+    },
+    onChange: () => {},
+  });
+  t.after(() => sync.dispose());
+  sync.update(changed("10"));
+  sync.update(changed("11"));
+  t.mock.timers.tick(800);
+  await settle();
+  assert.deepEqual(onDisk, ["11"]);
+  assert.equal(writes.at(-1)?.version, 2);
+  assert.equal(writes.at(-1)?.pending, undefined);
 });

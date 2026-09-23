@@ -31,6 +31,23 @@ type Options = {
   onChange: (snapshot: SyncSnapshot) => void;
 };
 
+// Workspaces are immutable, so serialization and validity are cached per object.
+const serialized = new WeakMap<Workspace, string>();
+const validated = new WeakMap<
+  Workspace,
+  ReturnType<typeof workspaceSchema.safeParse>
+>();
+function serialize(data: Workspace) {
+  let json = serialized.get(data);
+  if (json === undefined) serialized.set(data, (json = JSON.stringify(data)));
+  return json;
+}
+function validate(data: Workspace) {
+  let result = validated.get(data);
+  if (!result) validated.set(data, (result = workspaceSchema.safeParse(data)));
+  return result;
+}
+
 /** One writer per mounted workspace; local durability precedes every network write. */
 export class WorkspaceSync {
   private data: Workspace;
@@ -42,6 +59,7 @@ export class WorkspaceSync {
   private blocked: boolean;
   private disposed = false;
   private timer?: ReturnType<typeof setTimeout>;
+  private draftTimer?: ReturnType<typeof setTimeout>;
   private error = "";
   private retryDelay = 5000;
 
@@ -59,7 +77,7 @@ export class WorkspaceSync {
     if (this.inFlight) return { ...base, status: "saving", issue: "" };
     if (this.equal(this.data, this.saved) && !this.pending)
       return { ...base, status: "saved", issue: "" };
-    const parsed = workspaceSchema.safeParse(this.data);
+    const parsed = validate(this.data);
     if (!parsed.success)
       return {
         ...base,
@@ -69,9 +87,22 @@ export class WorkspaceSync {
     return { ...base, status: this.error ? "error" : "pending", issue: "" };
   }
   private equal(a: Workspace, b: Workspace | null) {
-    return JSON.stringify(a) === JSON.stringify(b);
+    return b !== null && (a === b || serialize(a) === serialize(b));
+  }
+  /** Writes any debounced local copy now, e.g. before the page is hidden. */
+  saveDraft() {
+    if (this.draftTimer === undefined) return;
+    this.persist();
+  }
+  private persistSoon() {
+    // Typing fires an update per keystroke; the local copy only needs the last one.
+    if (this.draftTimer === undefined)
+      this.draftTimer = setTimeout(() => this.persist(), 250);
+    this.options.onChange(this.snapshot);
   }
   private persist() {
+    clearTimeout(this.draftTimer);
+    this.draftTimer = undefined;
     this.stored = this.options.persist({
       data: this.data,
       version: this.version,
@@ -85,7 +116,7 @@ export class WorkspaceSync {
     this.data = data;
     this.error = "";
     this.retryDelay = 5000;
-    this.persist();
+    this.persistSoon();
     this.schedule();
   }
   private schedule(delay = 800) {
@@ -96,7 +127,7 @@ export class WorkspaceSync {
       this.blocked ||
       !this.options.send ||
       (this.equal(this.data, this.saved) && !this.pending) ||
-      !workspaceSchema.safeParse(this.data).success
+      !validate(this.data).success
     )
       return;
     this.timer = setTimeout(() => {
@@ -111,7 +142,7 @@ export class WorkspaceSync {
   private async flush() {
     if (this.disposed || this.inFlight || this.blocked || !this.options.send)
       return;
-    const parsed = workspaceSchema.safeParse(this.data);
+    const parsed = validate(this.data);
     if (!parsed.success || (this.equal(this.data, this.saved) && !this.pending))
       return;
     const sent = parsed.data;
@@ -171,6 +202,7 @@ export class WorkspaceSync {
     }
   }
   dispose() {
+    this.saveDraft();
     this.disposed = true;
     clearTimeout(this.timer);
   }

@@ -115,6 +115,8 @@ export function useWorkspace(
         // Visiting the empty comparator must not replace account consumption on login.
         setSnapshot(sync.snapshot);
       }
+      // The guest copy may only go once the merged workspace is on disk.
+      sync.saveDraft();
       if (guest && sync.snapshot.stored) {
         try {
           removeDraft(localStorage, "guest");
@@ -173,18 +175,25 @@ export function useWorkspace(
         });
     }
     const retry = () => sync?.retry();
+    const saveDraft = () => sync?.saveDraft();
     window.addEventListener("online", retry);
+    window.addEventListener("pagehide", saveDraft);
+    document.addEventListener("visibilitychange", saveDraft);
     return () => {
       abort.abort();
       sync?.dispose();
       controller.current = null;
       window.removeEventListener("online", retry);
+      window.removeEventListener("pagehide", saveDraft);
+      document.removeEventListener("visibilitychange", saveDraft);
     };
   }, [userId, reload, initialWorkspace]);
 
   async function useAccountVersion() {
     try {
       const server = await readAccount(AbortSignal.timeout(20_000));
+      // A debounced local write must not land on top of the account copy.
+      controller.current?.saveDraft();
       // The existing copy stays intact if reading the account fails.
       if (!persist(userId!, { ...server, base: server.data })) {
         setLoadError(

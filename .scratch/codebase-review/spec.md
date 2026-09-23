@@ -39,7 +39,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 18  | [Replace the hand-written migration runner](issues/18-migration-runner.md)                                   | Migrations                | M      | completed       |            |
 | 19  | [Write a migration compatibility policy](issues/19-migration-compatibility-policy.md)                        | Migrations                | S      | completed       |            |
 | 20  | [One field registry for tariff, bill and profile storage](issues/20-field-registry.md)                       | Architecture, Migrations  | M      | completed       | 18         |
-| 21  | [Cut per-keystroke work in the sync layer](issues/21-sync-per-keystroke-cost.md)                             | Performance               | S–M    | ready-for-agent |            |
+| 21  | [Cut per-keystroke work in the sync layer](issues/21-sync-per-keystroke-cost.md)                             | Performance               | S–M    | completed       |            |
 | 22  | [Design tokens and a type scale in the stylesheet](issues/22-design-tokens.md)                               | Design                    | M–L    | ready-for-agent |            |
 | 23  | [Comparison table scrolling on desktop and phone](issues/23-comparison-table-scrolling.md)                   | Design                    | M      | completed       |            |
 | 24  | [Zero-value lines in cost breakdowns](issues/24-zero-value-breakdown-lines.md)                               | Design                    | S      | completed       |            |
@@ -60,6 +60,7 @@ Review of performance, architecture, composition, design, security, account and 
 4. Migrations: 19 (policy), 18, then 20. All implemented. The owner approved the policy for 19 in `docs/DATABASE.md`.
 5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. All implemented, including the owner-approved privacy notice for 16.
 6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code. 23, 24 and 27 implemented. The design session for 28 is done and recorded in ADR-0002; 28 is ready-for-agent, with no code yet.
+7. Leftovers: 21 before 28 (implemented), then 28. 25 and 26 need triage. 22 is independent and is easiest after 25 and 26 settle the UI.
 
 
 
