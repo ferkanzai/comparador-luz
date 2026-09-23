@@ -383,39 +383,8 @@ export function TariffDetails({
           )}
         </details>
         <div className="tariff-detail-actions">
-          <button
-            className="button secondary"
-            onClick={() => {
-              onClose();
-              actions.onEdit(tariff);
-            }}
-          >
-            <Pencil size={16} />
-            {current ? "Corregir datos" : "Editar tarifa"}
-          </button>
-          <button
-            className="button secondary"
-            onClick={() => {
-              onClose();
-              actions.onDuplicate(tariff);
-            }}
-          >
-            <Copy size={16} />
-            Duplicar
-          </button>
-          {!current && actions.onHistorical && (
-            <button
-              className="button secondary"
-              onClick={() => {
-                onClose();
-                actions.onHistorical?.(tariff);
-              }}
-            >
-              Registrar como anterior
-            </button>
-          )}
           {!current && (
-            <>
+            <div className="tariff-detail-register">
               <button
                 className="button primary"
                 onClick={() => {
@@ -425,8 +394,43 @@ export function TariffDetails({
               >
                 Registrar como actual
               </button>
+              {actions.onHistorical && (
+                <button
+                  className="button secondary"
+                  onClick={() => {
+                    onClose();
+                    actions.onHistorical?.(tariff);
+                  }}
+                >
+                  Registrar como anterior
+                </button>
+              )}
+            </div>
+          )}
+          <div className="tariff-detail-manage">
+            <button
+              className="button secondary"
+              onClick={() => {
+                onClose();
+                actions.onEdit(tariff);
+              }}
+            >
+              <Pencil size={16} />
+              {current ? "Corregir datos" : "Editar tarifa"}
+            </button>
+            <button
+              className="button secondary"
+              onClick={() => {
+                onClose();
+                actions.onDuplicate(tariff);
+              }}
+            >
+              <Copy size={16} />
+              Duplicar
+            </button>
+            {!current && (
               <button
-                className="text-link danger"
+                className="button danger"
                 onClick={() => {
                   actions.onRemove(tariff);
                   onClose();
@@ -435,8 +439,8 @@ export function TariffDetails({
                 <Trash2 size={16} />
                 Eliminar tarifa
               </button>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </Modal>

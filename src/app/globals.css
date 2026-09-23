@@ -4178,12 +4178,33 @@ button:disabled {
   border-color: #a02d28;
 }
 .tariff-detail-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 10px;
   border-top: 1px solid var(--line);
   padding-top: 22px;
   margin-top: 26px;
+}
+.tariff-detail-register,
+.tariff-detail-manage {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.tariff-detail-actions .button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  gap: 7px;
+  white-space: normal;
+}
+@media (max-width: 480px) {
+  .tariff-detail-manage .button {
+    padding: 9px 6px;
+    font-size: 0.8125rem;
+    gap: 5px;
+  }
 }
 .profile-strip > button + button {
   margin-left: -18px;
