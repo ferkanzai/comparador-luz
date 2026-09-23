@@ -7,7 +7,7 @@ Luz en claro helps a household compare manually entered electricity tariffs and 
 ### The household's comparison
 
 **Workspace**:
-The household's collection of comparison inputs, tariffs, current tariff, price history, and recorded bills. A guest can prepare a comparison without an account; an account holds its owner's saved workspace.
+The household's collection of comparison inputs, tariffs, current tariff, price history, and recorded bills. An account holds exactly one. A guest's workspace is kept only in their browser and moves into the account when they sign in. When the same account is used on several devices, each record keeps the last version saved.
 
 **Comparison profile (perfil de consumo)**:
 The billing days, consumption by energy period, contracted power by power period, and tax assumptions used to compare tariffs on the same basis. It describes an entered scenario, not necessarily a calendar month or a measured hourly consumption curve.

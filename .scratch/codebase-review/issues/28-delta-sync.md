@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 07
 
-**Status:** ready-for-agent
+**Status:** wontfix
 
 **Effort:** L
 
@@ -66,3 +66,5 @@ Design session (user, 2026-09-23), recorded in [ADR-0002](../../../docs/adr/0002
 14. Tombstones and applied ids are kept for 30 days; an older base gets "base too old", then a refetch and reapply.
 
 Moved to ready-for-agent: the checklist below is now fully specified. Additions implied by the decisions: a migration for row versions, tombstones and the applied change-set log; the conflict and rule-rejection UI; and the schema-version refusal.
+
+Abandoned (user, 2026-09-23). It was fully built and tested (kept as `git stash` "ticket 28: per-record change sets"), then dropped as too much for a single-person app that doesn't aim for concurrent editing. Replaced by ADR-0003 and `.scratch/simple-persistence/`: plain CRUD endpoints per record, where the last save wins.
