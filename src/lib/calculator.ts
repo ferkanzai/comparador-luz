@@ -6,6 +6,7 @@ import {
   type Profile,
   type Tariff,
 } from "./domain";
+import { electricityTax as iee, generalVat } from "./regulated-rates";
 export const cents = (value: number) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
 export function calculate(t: Tariff, p: Profile) {
@@ -91,7 +92,7 @@ export function calculateTotals(
     ? cents(
         Math.max(
           (electricityBase * n(p.electricityTax)) / 100,
-          p.minimumTax ? kwh * 0.001 : 0,
+          p.minimumTax ? kwh * iee.minimumPerKwh : 0,
         ),
       )
     : 0;
@@ -100,7 +101,9 @@ export function calculateTotals(
   );
   const vat = p.taxes ? cents((vatBase * n(p.vat)) / 100) : 0;
   // Separate maintenance services remain at the general IVA rate, even when supply IVA is reduced.
-  const servicesVat = p.taxes ? cents(services * 0.21) : 0;
+  const servicesVat = p.taxes
+    ? cents(services * (generalVat.percent / 100))
+    : 0;
   const total = cents(vatBase + services + vat + servicesVat);
   return {
     energy,

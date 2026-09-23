@@ -1,7 +1,7 @@
 import * as z from "zod";
 import { numberOf, profileSchema, today, type Profile } from "./domain";
 import { calculateTotals, cents } from "./calculator";
-import { socialEstimate2026 } from "./charge-estimates";
+import { pvpcPower2026, socialFinancing2026 } from "./regulated-rates";
 
 export const pvpcSource = "https://www.esios.ree.es/es/pvpc";
 export const pvpcPowerSource =
@@ -177,13 +177,14 @@ export function calculatePvpc(
       numberOf(p.valleyKwh) * data.mean.valley,
   );
   // BOE-A-2025-26348 + BOE-A-2025-26705; fixed marketing margin on P1 only.
+  const { peak, valley } = pvpcPower2026;
   const power = cents(
-    ((numberOf(p.peakKw) * (23.324952 + 4.379461 + 3.113) +
-      numberOf(p.valleyKw) * (0.44377 + 0.281653)) *
+    ((numberOf(p.peakKw) * (peak.tolls + peak.charges + peak.margin) +
+      numberOf(p.valleyKw) * (valley.tolls + valley.charges)) *
       days) /
       365,
   );
-  const social = cents((socialEstimate2026.annual * days) / 365);
+  const social = cents((socialFinancing2026.annual * days) / 365);
   // Published PVPC already includes RFE; do not add a separate SNOEE charge.
   return calculateTotals(
     {

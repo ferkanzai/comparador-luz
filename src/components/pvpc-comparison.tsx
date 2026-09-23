@@ -10,7 +10,12 @@ import {
 } from "@/lib/domain";
 import { calculate } from "@/lib/calculator";
 import { billLines } from "@/lib/bill-data";
-import { meterEstimates } from "@/lib/charge-estimates";
+import {
+  formatRate,
+  meterRental,
+  meterRentalLabel,
+  socialFinancing2026,
+} from "@/lib/regulated-rates";
 import {
   calculatePvpc,
   pvpcMonthSchema,
@@ -80,7 +85,7 @@ export default function PvpcComparison({
         : meter === "custom"
           ? customMeter
           : String(
-              (meterEstimates[meter === "three" ? "three-2013" : "single-2013"]
+              (meterRental[meter === "three" ? "three-2013" : "single-2013"]
                 .monthly *
                 12) /
                 365,
@@ -154,8 +159,12 @@ export default function PvpcComparison({
           <label className="auth-label">
             Alquiler para esta estimación
             <select value={meter} onChange={(e) => setMeter(e.target.value)}>
-              <option value="single">Monofásico · 0,81 €/mes (estimado)</option>
-              <option value="three">Trifásico · 1,36 €/mes (estimado)</option>
+              <option value="single">
+                {meterRentalLabel("single-2013")} (estimado)
+              </option>
+              <option value="three">
+                {meterRentalLabel("three-2013")} (estimado)
+              </option>
               <option value="owned">Contador en propiedad · 0 €</option>
               <option
                 value="current"
@@ -210,7 +219,8 @@ export default function PvpcComparison({
                 </dl>
                 <p className="small muted">
                   Potencia regulada de 2026, incluido el margen fijo de
-                  comercialización. Bono social: 9,011295 €/año, sin descuento
+                  comercialización. Bono social:{" "}
+                  {formatRate(socialFinancing2026.annual)} €/año, sin descuento
                   para beneficiarios. Alquiler:{" "}
                   {numberOf(meterDay).toLocaleString("es-ES", {
                     maximumFractionDigits: 6,

@@ -31,6 +31,12 @@ import ComparisonWorkspace from "./comparison-workspace";
 import type { TariffRecordDraft } from "./tariff-record-form";
 import { recordCurrent } from "@/lib/tariff-periods";
 import { syncStatusLabel } from "@/lib/sync-status";
+import {
+  electricityTax,
+  formatRate,
+  generalVat,
+  regulatedRatesReviewedLabel,
+} from "@/lib/regulated-rates";
 
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 const TariffHistory = dynamic(() => import("./tariff-history"));
@@ -616,14 +622,15 @@ export default function Dashboard({
               <li>
                 <strong>IEE:</strong> (energía + potencia + coste SNOEE +
                 financiación bono social, si está incluida en esta tarifa) ×
-                tipo indicado, con mínimo doméstico opcional de 0,001 €/kWh. El
+                tipo indicado, con mínimo doméstico opcional de{" "}
+                {formatRate(electricityTax.minimumPerKwh)} €/kWh. El
                 alquiler del contador y los servicios no forman parte de esta
                 base.
               </li>
               <li>
                 <strong>IVA:</strong> se aplica al suministro, incluido el IEE y
                 el alquiler del contador. Los servicios de mantenimiento se
-                calculan por separado al 21 %.
+                calculan por separado al {formatRate(generalVat.percent)} %.
               </li>
             </ol>
             <p>
@@ -640,8 +647,11 @@ export default function Dashboard({
               de redondeo.
             </p>
             <p>
-              Tipos generales de referencia: IVA 21 % e IEE 5,11269632 %.
-              Revisión: 22/09/2026. Usa los tipos de tu factura para períodos
+              Tipos generales de referencia: IVA{" "}
+              {formatRate(generalVat.percent)} % e IEE{" "}
+              {formatRate(electricityTax.percent)} %. Revisión:{" "}
+              {regulatedRatesReviewedLabel}. Usa los tipos de tu factura para
+              períodos
               con medidas temporales. No se aplica automáticamente un tipo por
               fecha.
             </p>
@@ -663,7 +673,7 @@ export default function Dashboard({
                 <ExternalLink size={14} />
               </a>
               <a
-                href="https://sede.agenciatributaria.gob.es/Sede/impuestos-especiales-medioambientales/impuesto-especial-sobre-electricidad/liquidacion-pago-impuesto/tipo-impositivo.html"
+                href={electricityTax.rateSource}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -671,7 +681,7 @@ export default function Dashboard({
                 <ExternalLink size={14} />
               </a>
               <a
-                href="https://www.boe.es/buscar/act.php?id=BOE-A-1992-28741"
+                href={electricityTax.source}
                 target="_blank"
                 rel="noreferrer"
               >

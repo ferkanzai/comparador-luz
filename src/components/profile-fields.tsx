@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
 import type { Profile } from "@/lib/domain";
+import {
+  electricityTax,
+  formatRate,
+  generalVat,
+} from "@/lib/regulated-rates";
 import { Field } from "./ui";
 
 export function ProfileFields({
@@ -109,10 +114,15 @@ export function TaxFields({
             type="button"
             className="link-button"
             onClick={() =>
-              onChange({ ...value, vat: "21", electricityTax: "5.11269632" })
+              onChange({
+                ...value,
+                vat: String(generalVat.percent),
+                electricityTax: String(electricityTax.percent),
+              })
             }
           >
-            Usar tipos generales: 21 % y 5,11269632 %
+            Usar tipos generales: {formatRate(generalVat.percent)} % y{" "}
+            {formatRate(electricityTax.percent)} %
           </button>
           <label className="checkbox small">
             <input
@@ -122,7 +132,8 @@ export function TaxFields({
                 onChange({ ...value, minimumTax: e.target.checked })
               }
             />{" "}
-            Aplicar mínimo doméstico IEE (0,001 €/kWh)
+            Aplicar mínimo doméstico IEE (
+            {formatRate(electricityTax.minimumPerKwh)} €/kWh)
           </label>
         </>
       )}
@@ -142,7 +153,7 @@ export function TaxAssumptions({ profile }: { profile: Profile }) {
           IVA {profile.vat.replace(".", ",") || "—"} % · IEE{" "}
           {profile.electricityTax.replace(".", ",") || "—"} % ·{" "}
           {profile.minimumTax
-            ? "Mínimo IEE 0,001 €/kWh"
+            ? `Mínimo IEE ${formatRate(electricityTax.minimumPerKwh)} €/kWh`
             : "Mínimo IEE desactivado"}
         </>
       ) : (

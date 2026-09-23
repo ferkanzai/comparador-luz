@@ -13,13 +13,13 @@ import { ProfileFields, TaxFields } from "./profile-fields";
 import InvoicePrices from "./invoice-prices";
 import { calculate } from "@/lib/calculator";
 import { billLines } from "@/lib/bill-data";
+import { estimateMeter, estimateSocial } from "@/lib/charge-estimates";
 import {
-  estimateMeter,
-  estimateSocial,
-  meterEstimateSource,
-  meterEstimates,
-  socialEstimate2026,
-} from "@/lib/charge-estimates";
+  formatRate,
+  meterRentalLabel,
+  meterRentalSource,
+  socialFinancing2026,
+} from "@/lib/regulated-rates";
 import EstimateNotice from "./estimate-notice";
 import type { PeriodCorrection } from "@/lib/tariff-periods";
 export default function TariffForm({
@@ -331,9 +331,9 @@ export default function TariffForm({
                         setTariff((t) => estimateMeter(t, kind));
                     }}
                   >
-                    {Object.entries(meterEstimates).map(([key, value]) => (
-                      <option key={key} value={key}>
-                        {value.label}
+                    {(["single-2013", "three-2013"] as const).map((kind) => (
+                      <option key={kind} value={kind}>
+                        {meterRentalLabel(kind)}
                       </option>
                     ))}
                   </select>
@@ -345,7 +345,7 @@ export default function TariffForm({
                 Prorrateamos el mes × 12 ÷ 365, sin impuestos.{" "}
                 <a
                   className="text-link"
-                  href={meterEstimateSource}
+                  href={meterRentalSource}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -369,12 +369,13 @@ export default function TariffForm({
                 </p>
               )}
               <p className="small muted">
-                Referencia de 2026: 9,011295 €/año ÷ 365, sin impuestos. En
+                Referencia de 2026: {formatRate(socialFinancing2026.annual)}{" "}
+                €/año ÷ 365, sin impuestos. En
                 mercado libre depende del contrato: si ya está incluido,
                 introduce 0 para no duplicarlo.{" "}
                 <a
                   className="text-link"
-                  href={socialEstimate2026.source}
+                  href={socialFinancing2026.source}
                   target="_blank"
                   rel="noreferrer"
                 >

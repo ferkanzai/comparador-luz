@@ -8,6 +8,8 @@
 
 **Effort:** S–M
 
+**Implementation:** complete
+
 ## Why
 
 When a rate changes in the BOE, the maths and the explanatory text can drift apart. Today the same values appear in several places:
@@ -21,7 +23,15 @@ When a rate changes in the BOE, the maths and the explanatory text can drift apa
 
 ## Checklist
 
-- [ ] Create `src/lib/regulated-rates.ts` containing each value, its source URL and its review date. Extend `charge-estimates.ts` rather than duplicating it if that reads better.
-- [ ] The calculator, estimates, PVPC and all copy read from it. Format numbers with the shared formatters (ticket 01 if it has landed).
-- [ ] Grep for the literal values afterwards. None should remain outside the module and the tests.
-- [ ] Calculation tests produce identical results.
+- [x] Create `src/lib/regulated-rates.ts` containing each value, its source URL and its review date. Extend `charge-estimates.ts` rather than duplicating it if that reads better.
+- [x] The calculator, estimates, PVPC and all copy read from it. Format numbers with the shared formatters (ticket 01 if it has landed).
+- [x] Grep for the literal values afterwards. None should remain outside the module and the tests.
+- [x] Calculation tests produce identical results.
+
+## Comments
+
+Implemented. `src/lib/regulated-rates.ts` holds the general IVA rate, the IEE rate and minimum, meter rental, social-bonus financing, and the review date, each with its source. It also holds the PVPC 2026 power terms from `pvpc.ts` (tolls, charges and the fixed marketing margin), which weren't in the original list but are regulated values too. `charge-estimates.ts` keeps only the estimate functions.
+
+The copy in the method modal, profile fields, tariff form and PVPC panel is generated with `formatRate` and `meterRentalLabel`, and `tests/regulated-rates.test.ts` pins it to the previous wording. Services IVA is computed as `generalVat.percent / 100`, which gives exactly the same double as `0.21`, so the numbers don't change.
+
+Validation: the literal grep is clean, 88 unit tests pass, and the 27-test browser suite passes.
