@@ -1458,14 +1458,15 @@ details.form-section > .field {
   margin: 20px 0;
 }
 .history-list {
-  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
 }
 .tariff-record {
   display: grid;
   grid-template-columns: minmax(210px, 1fr) minmax(0, 1.7fr);
   gap: 8px 32px;
-  padding: 18px 0 10px;
-  border-top: 1px solid var(--line);
+  padding: 18px;
+  background: var(--white);
 }
 .tariff-record > div {
   min-width: 0;
@@ -1823,19 +1824,15 @@ details.form-section > .field {
 }
 @media (min-width: 901px) {
   .history-list {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: 20px;
-    border-bottom: 0;
   }
   .tariff-record {
     display: flex;
     flex-direction: column;
     gap: 14px;
     padding: 20px 22px;
-    border-top: 0;
-    background: var(--white);
   }
   .tariff-record .comparison-rates {
     max-width: 420px;
@@ -1859,7 +1856,7 @@ details.form-section > .field {
   .tariff-record {
     grid-template-columns: 1fr;
     gap: 16px;
-    padding: 18px 0 12px;
+    padding: 16px;
   }
   .tariff-record .record-dates {
     margin-top: 3px;
@@ -1875,7 +1872,10 @@ details.form-section > .field {
     margin-top: -2px;
   }
   .tariff-record-actions {
-    gap: 4px 14px;
+    gap: 4px 8px;
+  }
+  .tariff-record-actions .record-edit {
+    padding: 0 8px;
   }
   .tariff-record-actions button {
     min-height: 44px;
