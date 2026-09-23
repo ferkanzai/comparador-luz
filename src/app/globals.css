@@ -3974,6 +3974,12 @@ button:disabled {
 .comparison-table tbody td:nth-child(5) {
   min-width: 135px;
 }
+.comparison-row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
 .comparison-table tbody td:last-child {
   padding-left: 3px;
   padding-right: 10px;

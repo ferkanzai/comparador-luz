@@ -624,13 +624,15 @@ test("preserves tariff duplication, deletion and current-contract designation", 
   await table
     .getByRole("checkbox", { name: "Comparar Clara Fija (copia)", exact: true })
     .check();
-  await table
-    .getByRole("button", { name: "Clara Fija (copia)", exact: true })
-    .click();
+  const remove = table.getByRole("button", {
+    name: "Eliminar Clara Fija (copia)",
+    exact: true,
+  });
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await remove.click();
+  await expect(table.getByRole("row")).toHaveCount(10);
   page.once("dialog", (dialog) => dialog.accept());
-  await page
-    .getByRole("button", { name: "Eliminar tarifa", exact: true })
-    .click();
+  await remove.click();
   await expect(table.getByRole("row")).toHaveCount(9);
   await expect(
     page.getByRole("button", {

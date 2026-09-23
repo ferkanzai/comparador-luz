@@ -300,6 +300,7 @@ export default function ComparisonWorkspace({
               unit={unit}
               onDetails={setDetailId}
               onEdit={actions.onEdit}
+              onRemove={actions.onRemove}
             />
             <div className="comparison-footnotes">
               <p>

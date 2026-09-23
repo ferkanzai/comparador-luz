@@ -116,6 +116,7 @@ export default function ComparisonTable({
   unit,
   onDetails,
   onEdit,
+  onRemove,
   selectedIds,
   onToggle,
 }: {
@@ -126,6 +127,7 @@ export default function ComparisonTable({
   unit: Tariff["powerUnit"];
   onDetails: (id: string) => void;
   onEdit: (tariff: Tariff) => void;
+  onRemove: (tariff: Tariff) => void;
 }) {
   const baseline = rows.find((row) => row.tariff.id === currentId)?.cost?.total;
   const best = rows.find((row) => row.cost)?.cost?.total;
@@ -274,13 +276,26 @@ export default function ComparisonTable({
                   </button>
                 </td>
                 <td>
-                  <button
-                    className="icon-button"
-                    onClick={() => onEdit(tariff)}
-                    aria-label={`Editar ${tariff.name}`}
-                  >
-                    <Pencil size={16} />
-                  </button>
+                  <div className="comparison-row-actions">
+                    <button
+                      className="icon-button"
+                      onClick={() => onEdit(tariff)}
+                      aria-label={`Editar ${tariff.name}`}
+                      title="Editar tarifa"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    {!current && (
+                      <button
+                        className="icon-button danger"
+                        onClick={() => onRemove(tariff)}
+                        aria-label={`Eliminar ${tariff.name}`}
+                        title="Eliminar tarifa"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
