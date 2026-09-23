@@ -1012,3 +1012,13 @@ test("sends security headers and renders the account page under the policy", asy
   expect(headers["permissions-policy"]).toContain("camera=()");
   await expect(page.locator('input[type="email"]').first()).toBeVisible();
 });
+
+test("keeps account hints out of field names", async ({ page }) => {
+  await page.goto("/cuenta?mode=signup");
+  await page.getByRole("button", { name: "Contraseña", exact: true }).click();
+  const password = page.getByLabel("Contraseña", { exact: true });
+  await expect(password).toHaveAccessibleName("Contraseña");
+  await expect(password).toHaveAccessibleDescription(
+    "Al menos 12 caracteres. Puedes usar una frase.",
+  );
+});

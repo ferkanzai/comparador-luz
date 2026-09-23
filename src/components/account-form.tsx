@@ -260,10 +260,11 @@ export default function AccountForm({
                 </label>
               )}
               {sent && method === "otp" && (
-                <label className="auth-label">
-                  Código de 6 dígitos
+                <div className="auth-label">
+                  <label htmlFor="otp">Código de 6 dígitos</label>
                   <InputOTP
                     ref={codeInput}
+                    id="otp"
                     name="otp"
                     value={otp}
                     onChange={setOtp}
@@ -286,13 +287,16 @@ export default function AccountForm({
                   <small id="otp-hint">
                     Enviado a {email}. Caduca en 10 minutos.
                   </small>
-                </label>
+                </div>
               )}
               {(method === "password" || mode === "reset") &&
                 mode !== "forgot" && (
-                  <label className="auth-label">
-                    {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
+                  <div className="auth-label">
+                    <label htmlFor="password">
+                      {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
+                    </label>
                     <input
+                      id="password"
                       name="password"
                       type="password"
                       required
@@ -301,13 +305,16 @@ export default function AccountForm({
                       autoComplete={
                         mode === "signin" ? "current-password" : "new-password"
                       }
+                      aria-describedby={
+                        mode === "signin" ? undefined : "password-hint"
+                      }
                     />
                     {mode !== "signin" && (
-                      <small>
+                      <small id="password-hint">
                         Al menos 12 caracteres. Puedes usar una frase.
                       </small>
                     )}
-                  </label>
+                  </div>
                 )}
               {mode === "signin" && method === "password" && (
                 <button

@@ -48,7 +48,7 @@ Review of performance, architecture, composition, design, security, account and 
 
 ## Suggested order
 
-1. Quick, independent wins: 01, 02, 03, 04, 05, 06, 09, 10, 17, 29.
+1. Quick, independent wins: 01, 02, 03, 04, 05, 06, 09, 10, 17, 29. All implemented, one commit each.
 2. 07 (fixes a real bug and unblocks 08 and 26), then 08.
 3. 11, then 12. Then 13.
 4. Migrations: 19 (policy), 18, then 20.
