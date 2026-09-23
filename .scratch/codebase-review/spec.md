@@ -58,7 +58,7 @@ Review of performance, architecture, composition, design, security, account and 
 2. 07 (fixes a real bug and unblocks 08 and 26), then 08. Both implemented.
 3. 11, then 12. Then 13. All implemented.
 4. Migrations: 19 (policy), 18, then 20. All implemented. The owner approved the policy for 19 in `docs/DATABASE.md`.
-5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. 15 implemented.
+5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. 15 and 14 implemented.
 6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code.
 
 

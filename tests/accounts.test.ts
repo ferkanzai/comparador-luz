@@ -54,6 +54,11 @@ test(
         .getSetCookie()
         .map((c) => c.split(";")[0])
         .join("; ");
+    const withoutCookieCache = (cookie: string) =>
+      cookie
+        .split("; ")
+        .filter((c) => !c.includes("session_data"))
+        .join("; ");
     const emailURL = () => {
       assert.ok(emails.length);
       return emails.at(-1)!.match(/https?:\/\/\S+/)![0];
@@ -148,6 +153,10 @@ test(
       const saved = await (
         await GET(request("/api/workspace", undefined, aliceCookie))
       ).json();
+      const recached = await GET(
+        request("/api/workspace", undefined, withoutCookieCache(aliceCookie)),
+      );
+      assert.ok(cookieOf(recached).includes("session_data"));
       assert.equal(saved.data.tariffs[0].name, "Private tariff");
       assert.equal(saved.data.bills[0].paid, "65.42");
       assert.equal(saved.version, 1);
@@ -187,8 +196,22 @@ test(
         }),
       );
       assert.equal(changed.status, 200);
+      // The cookie cache may serve reads for a few minutes; saves check the database.
       assert.equal(
         (await GET(request("/api/workspace", undefined, aliceCookie))).status,
+        200,
+      );
+      assert.equal((await put(aliceCookie, 2)).status, 401);
+      assert.equal(
+        (
+          await GET(
+            request(
+              "/api/workspace",
+              undefined,
+              withoutCookieCache(aliceCookie),
+            ),
+          )
+        ).status,
         401,
       );
       assert.equal(
@@ -207,8 +230,13 @@ test(
           .status,
         200,
       );
+      assert.equal((await put(bobCookie, 0)).status, 401);
       assert.equal(
-        (await GET(request("/api/workspace", undefined, bobCookie))).status,
+        (
+          await GET(
+            request("/api/workspace", undefined, withoutCookieCache(bobCookie)),
+          )
+        ).status,
         401,
       );
       // Someone pre-registers the owner's email with their own password.

@@ -10,22 +10,39 @@ import {
 } from "@/lib/workspace-store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const json = (body: unknown, status = 200) =>
-  Response.json(body, {
-    status,
-    headers: { "Cache-Control": "private, no-store" },
+// Session lookups may refresh the session and its cookie cache; forward those cookies.
+const json = (
+  body: unknown,
+  status = 200,
+  cookies: string[] = [],
+  extra: Record<string, string> = {},
+) => {
+  const headers = new Headers({
+    "Cache-Control": "private, no-store",
+    ...extra,
   });
-async function user(request: Request) {
-  if (!authConfigured()) return null;
-  const session = await getAuth().api.getSession({ headers: request.headers });
-  return session?.user.id ?? null;
+  for (const cookie of cookies) headers.append("Set-Cookie", cookie);
+  return Response.json(body, { status, headers });
+};
+async function user(request: Request, cookieCache: boolean) {
+  if (!authConfigured()) return { id: null, cookies: [] };
+  const { headers, response } = await getAuth().api.getSession({
+    headers: request.headers,
+    query: { disableCookieCache: !cookieCache },
+    returnHeaders: true,
+  });
+  return { id: response?.user.id ?? null, cookies: headers.getSetCookie() };
 }
 export async function GET(request: Request) {
   try {
-    const id = await user(request);
+    const { id, cookies } = await user(request, true);
     if (!id)
-      return json({ error: "Inicia sesión para acceder a tus datos." }, 401);
-    return json(await readWorkspace(id));
+      return json(
+        { error: "Inicia sesión para acceder a tus datos." },
+        401,
+        cookies,
+      );
+    return json(await readWorkspace(id), 200, cookies);
   } catch {
     return json(
       { error: "No se han podido cargar tus datos. Inténtalo de nuevo." },
@@ -38,32 +55,31 @@ export async function PUT(request: Request) {
   if (!authOrigins().origins.includes(request.headers.get("origin") ?? ""))
     return json({ error: "Origen no permitido." }, 403);
   try {
-    const id = await user(request);
+    // Always from the database, so sign-out and password resets stop saves immediately.
+    const { id, cookies } = await user(request, false);
+    const reply = (body: unknown, status: number) =>
+      json(body, status, cookies);
     if (!id)
-      return json(
+      return reply(
         { error: "Tu sesión ha caducado. Inicia sesión de nuevo." },
         401,
       );
     if (!request.headers.get("content-type")?.includes("application/json"))
-      return json({ error: "Formato no válido." }, 415);
+      return reply({ error: "Formato no válido." }, 415);
     // Before reading the body, so a flood of saves never reaches parsing.
     if (!(await consumeSaveAllowance(id)))
-      return Response.json(
+      return json(
         {
           error:
             "Demasiados guardados seguidos. Tus cambios siguen aquí; lo reintentaremos en breve.",
         },
-        {
-          status: 429,
-          headers: {
-            "Cache-Control": "private, no-store",
-            "Retry-After": String(workspaceSaveLimit.windowSeconds),
-          },
-        },
+        429,
+        cookies,
+        { "Retry-After": String(workspaceSaveLimit.windowSeconds) },
       );
     // Bound the actual streamed body, including requests without Content-Length.
     const reader = request.body?.getReader();
-    if (!reader) return json({ error: "Faltan datos." }, 400);
+    if (!reader) return reply({ error: "Faltan datos." }, 400);
     const chunks: Uint8Array[] = [];
     let length = 0;
     while (true) {
@@ -72,7 +88,7 @@ export async function PUT(request: Request) {
       length += value.byteLength;
       if (length > maxWorkspaceRequestBytes) {
         await reader.cancel();
-        return json({ error: "Demasiados datos (máximo 4 MB)." }, 413);
+        return reply({ error: "Demasiados datos (máximo 4 MB)." }, 413);
       }
       chunks.push(value);
     }
@@ -80,14 +96,14 @@ export async function PUT(request: Request) {
     try {
       body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
     } catch {
-      return json({ error: "JSON no válido." }, 400);
+      return reply({ error: "JSON no válido." }, 400);
     }
     // The only schema pass per save; saveWorkspace trusts this output.
     const parsed = z
       .object({ data: workspaceSchema, version: z.number().int().min(0) })
       .safeParse(body);
     if (!parsed.success)
-      return json(
+      return reply(
         { error: parsed.error.issues[0]?.message ?? "Revisa los datos." },
         400,
       );
@@ -97,14 +113,14 @@ export async function PUT(request: Request) {
       parsed.data.version,
     );
     if (version === null)
-      return json(
+      return reply(
         {
           error:
             "Hay cambios guardados desde otra pestaña. Exporta tus cambios y recarga antes de continuar.",
         },
         409,
       );
-    return json({ version });
+    return reply({ version }, 200);
   } catch {
     return json(
       {

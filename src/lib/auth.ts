@@ -104,7 +104,12 @@ export function authOptions() {
           });
       }),
     },
-    session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
+    session: {
+      expiresIn: 60 * 60 * 24 * 30,
+      updateAge: 60 * 60 * 24,
+      // Reads may see a revoked session for up to this long; saves always check the database.
+      cookieCache: { enabled: true, maxAge: 5 * 60 },
+    },
     rateLimit: {
       enabled: true,
       storage: "database",
