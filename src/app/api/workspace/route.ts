@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { authConfigured, getAuth } from "@/lib/auth";
 import { authOrigins } from "@/lib/auth-origins";
-import { workspaceSchema } from "@/lib/domain";
+import { maxWorkspaceRequestBytes, workspaceSchema } from "@/lib/domain";
 import { readWorkspace, saveWorkspace } from "@/lib/workspace-store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,9 +50,9 @@ export async function PUT(request: Request) {
       const { done, value } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > 1_000_000) {
+      if (length > maxWorkspaceRequestBytes) {
         await reader.cancel();
-        return json({ error: "Demasiados datos (máximo 1 MB)." }, 413);
+        return json({ error: "Demasiados datos (máximo 4 MB)." }, 413);
       }
       chunks.push(value);
     }
@@ -62,6 +62,7 @@ export async function PUT(request: Request) {
     } catch {
       return json({ error: "JSON no válido." }, 400);
     }
+    // The only schema pass per save; saveWorkspace trusts this output.
     const parsed = z
       .object({ data: workspaceSchema, version: z.number().int().min(0) })
       .safeParse(body);

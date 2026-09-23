@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import { getPool } from "./db";
-import { workspaceSchema, type Workspace } from "./domain";
+import type { Workspace } from "./domain";
 import {
   normalizeWorkspaceStorage,
   readWorkspaceRecords,
@@ -42,12 +42,13 @@ export async function readWorkspace(userId: string) {
     readWorkspaceRecords(client, userId),
   );
 }
+/** `input` must be the output of `workspaceSchema`; the API route validates it once. */
 export async function saveWorkspace(
   userId: string,
   input: Workspace,
   version: number,
 ): Promise<number | null> {
-  const data = normalizeWorkspaceStorage(workspaceSchema.parse(input));
+  const data = normalizeWorkspaceStorage(input);
   if (!Number.isSafeInteger(version) || version < 0)
     throw new Error("Invalid workspace version");
   return withWorkspaceTransaction(userId, false, async (client) => {

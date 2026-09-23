@@ -186,6 +186,9 @@ export const workspaceSchema = z
         });
     }
   });
+// A workspace at every list maximum with realistic content is about 2.3 MB.
+// Vercel rejects request bodies over 4.5 MB before the function runs.
+export const maxWorkspaceRequestBytes = 4_000_000;
 export type Profile = z.infer<typeof profileSchema>;
 export type Tariff = z.infer<typeof tariffSchema>;
 export type Bill = z.infer<typeof billSchema>;

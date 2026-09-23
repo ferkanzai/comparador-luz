@@ -91,6 +91,7 @@ const numericFields = new Set([
   "servicesVat",
 ]);
 // Match PostgreSQL NUMERIC/UUID text output without passing decimals through JS numbers.
+// Input must already satisfy workspaceSchema; these rewrites keep every value valid.
 export function normalizeWorkspaceStorage(input: Workspace): Workspace {
   function normalize(value: unknown, key = ""): unknown {
     if (typeof value === "string") {
@@ -107,8 +108,7 @@ export function normalizeWorkspaceStorage(input: Workspace): Workspace {
       );
     return value;
   }
-  const normalized = workspaceSchema.parse(normalize(input));
-  return normalized;
+  return normalize(input) as Workspace;
 }
 const dateFields = new Set([
   "checkedOn",

@@ -8,6 +8,8 @@
 
 **Effort:** S
 
+**Implementation:** complete
+
 ## Why
 
 - Each save runs the full Zod schema three times: `src/app/api/workspace/route.ts:65`, `src/lib/workspace-store.ts:50`, and inside `normalizeWorkspaceStorage` (`src/lib/workspace-records.ts:110`). That's about 4.5 ms per parse at 600 bills.
@@ -15,8 +17,18 @@
 
 ## Checklist
 
-- [ ] The route parses once. `saveWorkspace` takes already-validated data, or does the single parse itself while the route only checks the shape. Choose one and document it on the function.
-- [ ] `normalizeWorkspaceStorage` normalizes without re-parsing, or returns the parse result it already has.
-- [ ] Either raise the body limit so a workspace at the schema maxima fits (with margin), or lower the schema maxima so they fit under 1 MB. Keep the draft schema in `workspace-draft.ts` consistent.
-- [ ] Add a test that builds a maximum-size workspace and checks it fits the body limit.
-- [ ] `tests/workspace-storage.test.ts` still passes against a disposable database.
+- [x] The route parses once. `saveWorkspace` takes already-validated data, or does the single parse itself while the route only checks the shape. Choose one and document it on the function.
+- [x] `normalizeWorkspaceStorage` normalizes without re-parsing, or returns the parse result it already has.
+- [x] Either raise the body limit so a workspace at the schema maxima fits (with margin), or lower the schema maxima so they fit under 1 MB. Keep the draft schema in `workspace-draft.ts` consistent.
+- [x] Add a test that builds a maximum-size workspace and checks it fits the body limit.
+- [x] `tests/workspace-storage.test.ts` still passes against a disposable database.
+
+## Comments
+
+Implemented. The route is now the only validation point. `saveWorkspace` documents that it takes `workspaceSchema` output, and `normalizeWorkspaceStorage` no longer re-parses. Its rewrites (decimal comma to point, leading zeros, lowercase ids) keep values valid, and a test covers that. A full parse at the maximum counts takes about 15 ms, so each save saves about 30 ms.
+
+The limit went from 1 MB to 4 MB (`maxWorkspaceRequestBytes` in `domain.ts`). With every list at its maximum and every field realistically filled (`tests/fixtures/max-workspace.ts`), a request is about 2.3 MB. Vercel rejects bodies over 4.5 MB, so 4 MB is the practical ceiling. A workspace with 2,000-character notes and URLs in every record still wouldn't fit, and no serverless body limit could hold it. The schema maxima and draft schema are unchanged.
+
+Follow-up worth noting: the offline copy stores `data`, `base` and `pending` together in `localStorage`, whose quota is usually about 5 MB. A very large workspace can therefore fail to store its offline copy. `writeDraft` already returns `false` in that case.
+
+Validation: 86 tests pass, including the accounts and workspace-storage suites against a disposable local Postgres.
