@@ -33,6 +33,7 @@ import {
   updateProfile,
 } from "@/lib/workspace-actions";
 import { tariffLimitMessage } from "@/lib/tariff-periods";
+import { carryFinalists } from "@/lib/finalist-selection";
 import { billFromCalculation } from "@/lib/bill-data";
 import ComparisonTable, {
   TariffDetails,
@@ -80,6 +81,11 @@ export default function ComparisonWorkspace({
       }
     : data.profile;
   const [selected, setSelected] = useState<string[] | null>(null);
+  const [selectionBasis, setSelectionBasis] = useState(data);
+  if (selectionBasis !== data) {
+    setSelectionBasis(data);
+    if (selected) setSelected(carryFinalists(selected, selectionBasis, data));
+  }
   const selectedIds = (
     selected ?? (data.currentId ? [data.currentId] : [])
   ).filter((id) => data.tariffs.some((tariff) => tariff.id === id));

@@ -86,6 +86,15 @@ test("saveTariff records the first current tariff with its start date", () => {
   assert.equal(next.currentId, next.tariffs[0].id);
   assert.equal(next.currentSince, "2026-01-01");
   assert.ok(workspaceSchema.safeParse(next).success);
+  assert.throws(
+    () =>
+      saveTariff(
+        next,
+        { ...next.tariffs[0], energyPeak: "0.3" },
+        { since: "", profile, makeCurrent: false },
+      ),
+    /se corrige desde su registro/,
+  );
 });
 
 test("saveTariff refuses a 101st tariff but still edits at the limit", () => {

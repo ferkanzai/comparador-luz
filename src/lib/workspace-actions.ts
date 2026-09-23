@@ -22,6 +22,8 @@ export function saveTariff(
   tariff: Tariff,
   options: SaveTariffOptions,
 ): Workspace {
+  if (w.currentId && tariff.id === w.currentId)
+    throw new Error("El contrato actual se corrige desde su registro.");
   const next = { ...w, profile: options.profile };
   if (options.makeCurrent && !w.currentId)
     return recordCurrent(next, tariff, options.since);

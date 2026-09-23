@@ -45,7 +45,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 24  | [Zero-value lines in cost breakdowns](issues/24-zero-value-breakdown-lines.md)                               | Design                    | S      | ready-for-agent |            |
 | 25  | [Guest first-run screen](issues/25-guest-first-run.md)                                                       | Design                    | S      | needs-triage    |            |
 | 26  | [Avoid stacked dialogs](issues/26-stacked-dialogs.md)                                                        | Design                    | M      | needs-triage    | 07         |
-| 27  | [Record why the current contract lives in the offers list (ADR-0001)](issues/27-current-contract-storage.md) | Architecture              | S      | ready-for-agent |            |
+| 27  | [Record why the current contract lives in the offers list (ADR-0001)](issues/27-current-contract-storage.md) | Architecture              | S      | completed       |            |
 | 28  | [Send only changes instead of the whole workspace on each save](issues/28-delta-sync.md)                     | Performance, Architecture | L      | needs-triage    | 03, 07     |
 | 29  | [Keep hints out of form labels in the account form](issues/29-account-form-label-hints.md)                   | Accounts, Accessibility   | S      | completed       |            |
 
@@ -59,7 +59,7 @@ Review of performance, architecture, composition, design, security, account and 
 3. 11, then 12. Then 13. All implemented.
 4. Migrations: 19 (policy), 18, then 20. All implemented. The owner approved the policy for 19 in `docs/DATABASE.md`.
 5. Security and accounts: 15 first (it's the only security finding with a realistic abuse path), then 14 and 16. All implemented, including the owner-approved privacy notice for 16.
-6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code.
+6. Design follow-ups: 23, 24, 27. Then a design session and an ADR for 28 before any code. 27 implemented.
 
 
 
