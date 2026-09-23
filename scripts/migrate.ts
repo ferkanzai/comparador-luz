@@ -1,8 +1,9 @@
 import nextEnv from "@next/env";
 import { getMigrations } from "better-auth/db/migration";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { authOptions } from "../src/lib/auth";
 import { getPool } from "../src/lib/db";
-import { migrateWorkspaces } from "../src/lib/workspace-migrations";
 nextEnv.loadEnvConfig(process.cwd());
 const pool = getPool();
 // Serializes concurrent deployments across both schemas. Better Auth migrates
@@ -20,13 +21,9 @@ try {
   if (extended.length)
     console.info(`Adding auth columns to: ${extended.join(", ")}`);
   await auth.runMigrations();
-  const applied = await migrateWorkspaces(pool);
-  console.info(
-    applied.length
-      ? `Applied workspace migrations: ${applied.join(", ")}`
-      : "Workspace schema already up to date.",
-  );
-  console.info("Auth and relational workspace schema ready.");
+  // App tables reference Better Auth's "user", so they migrate second.
+  await migrate(drizzle({ client: pool }), { migrationsFolder: "migrations" });
+  console.info("Auth and app schema ready.");
 } finally {
   await lock.query("SELECT pg_advisory_unlock_all()").catch(() => {});
   lock.release();

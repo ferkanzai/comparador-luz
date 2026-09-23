@@ -1,0 +1,1080 @@
+{
+  "id": "90def2a7-07d9-4313-ae83-1e029ae0b9fb",
+  "prevId": "72fdbe28-9742-40ce-a42c-88a7d9fc6a56",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.bill": {
+      "name": "bill",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "name": "bill_seq_seq",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "startWith": "1",
+            "cache": "1",
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
+          }
+        },
+        "month": {
+          "name": "month",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "paid": {
+          "name": "paid",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credit": {
+          "name": "credit",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kwh": {
+          "name": "kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consumption_kind": {
+          "name": "consumption_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "peak_kwh": {
+          "name": "peak_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flat_kwh": {
+          "name": "flat_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valley_kwh": {
+          "name": "valley_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_signature": {
+          "name": "review_signature",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_reason": {
+          "name": "review_reason",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bill_user_id_workspace_user_id_fk": {
+          "name": "bill_user_id_workspace_user_id_fk",
+          "tableFrom": "bill",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "workspace",
+          "columnsTo": [
+            "user_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bill_user_id_id_pk": {
+          "name": "bill_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bill_breakdown": {
+      "name": "bill_breakdown",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_id": {
+          "name": "bill_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "energy": {
+          "name": "energy",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "power": {
+          "name": "power",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social": {
+          "name": "social",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snoee": {
+          "name": "snoee",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meter": {
+          "name": "meter",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "services": {
+          "name": "services",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "electricity_tax": {
+          "name": "electricity_tax",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vat": {
+          "name": "vat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "services_vat": {
+          "name": "services_vat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bill_breakdown_user_id_bill_id_bill_user_id_id_fk": {
+          "name": "bill_breakdown_user_id_bill_id_bill_user_id_id_fk",
+          "tableFrom": "bill_breakdown",
+          "columnsFrom": [
+            "user_id",
+            "bill_id"
+          ],
+          "tableTo": "bill",
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bill_breakdown_user_id_bill_id_pk": {
+          "name": "bill_breakdown_user_id_bill_id_pk",
+          "columns": [
+            "user_id",
+            "bill_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bill_profile": {
+      "name": "bill_profile",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_id": {
+          "name": "bill_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "days": {
+          "name": "days",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peak_kwh": {
+          "name": "peak_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flat_kwh": {
+          "name": "flat_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valley_kwh": {
+          "name": "valley_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peak_kw": {
+          "name": "peak_kw",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valley_kw": {
+          "name": "valley_kw",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "taxes": {
+          "name": "taxes",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vat": {
+          "name": "vat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "electricity_tax": {
+          "name": "electricity_tax",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "minimum_tax": {
+          "name": "minimum_tax",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bill_profile_user_id_bill_id_bill_user_id_id_fk": {
+          "name": "bill_profile_user_id_bill_id_bill_user_id_id_fk",
+          "tableFrom": "bill_profile",
+          "columnsFrom": [
+            "user_id",
+            "bill_id"
+          ],
+          "tableTo": "bill",
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bill_profile_user_id_bill_id_pk": {
+          "name": "bill_profile_user_id_bill_id_pk",
+          "columns": [
+            "user_id",
+            "bill_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bill_tariff": {
+      "name": "bill_tariff",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_id": {
+          "name": "bill_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tariff_id": {
+          "name": "tariff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "energy_peak": {
+          "name": "energy_peak",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "energy_flat": {
+          "name": "energy_flat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "energy_valley": {
+          "name": "energy_valley",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_peak": {
+          "name": "power_peak",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_valley": {
+          "name": "power_valley",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_kind": {
+          "name": "power_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "power_unit": {
+          "name": "power_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meter_day": {
+          "name": "meter_day",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meter_estimate": {
+          "name": "meter_estimate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social_day": {
+          "name": "social_day",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "social_estimate": {
+          "name": "social_estimate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social_in_electricity_tax": {
+          "name": "social_in_electricity_tax",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snoee_kwh": {
+          "name": "snoee_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "services_month": {
+          "name": "services_month",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_on": {
+          "name": "checked_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valid_until": {
+          "name": "valid_until",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bill_tariff_user_id_bill_id_bill_user_id_id_fk": {
+          "name": "bill_tariff_user_id_bill_id_bill_user_id_id_fk",
+          "tableFrom": "bill_tariff",
+          "columnsFrom": [
+            "user_id",
+            "bill_id"
+          ],
+          "tableTo": "bill",
+          "columnsTo": [
+            "user_id",
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bill_tariff_user_id_bill_id_pk": {
+          "name": "bill_tariff_user_id_bill_id_pk",
+          "columns": [
+            "user_id",
+            "bill_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.save_rate": {
+      "name": "save_rate",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tariff": {
+      "name": "tariff",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "name": "tariff_seq_seq",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "startWith": "1",
+            "cache": "1",
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "energy_peak": {
+          "name": "energy_peak",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "energy_flat": {
+          "name": "energy_flat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "energy_valley": {
+          "name": "energy_valley",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_peak": {
+          "name": "power_peak",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_valley": {
+          "name": "power_valley",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_kind": {
+          "name": "power_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "power_unit": {
+          "name": "power_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meter_day": {
+          "name": "meter_day",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meter_estimate": {
+          "name": "meter_estimate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social_day": {
+          "name": "social_day",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "social_estimate": {
+          "name": "social_estimate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social_in_electricity_tax": {
+          "name": "social_in_electricity_tax",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snoee_kwh": {
+          "name": "snoee_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "services_month": {
+          "name": "services_month",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_on": {
+          "name": "checked_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valid_until": {
+          "name": "valid_until",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tariff_user_id_workspace_user_id_fk": {
+          "name": "tariff_user_id_workspace_user_id_fk",
+          "tableFrom": "tariff",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "workspace",
+          "columnsTo": [
+            "user_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "tariff_user_id_id_pk": {
+          "name": "tariff_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tariff_period": {
+      "name": "tariff_period",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "name": "tariff_period_seq_seq",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "startWith": "1",
+            "cache": "1",
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
+          }
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tariff_id": {
+          "name": "tariff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "energy_peak": {
+          "name": "energy_peak",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "energy_flat": {
+          "name": "energy_flat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "energy_valley": {
+          "name": "energy_valley",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_peak": {
+          "name": "power_peak",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_valley": {
+          "name": "power_valley",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "power_kind": {
+          "name": "power_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "power_unit": {
+          "name": "power_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meter_day": {
+          "name": "meter_day",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meter_estimate": {
+          "name": "meter_estimate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social_day": {
+          "name": "social_day",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "social_estimate": {
+          "name": "social_estimate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "social_in_electricity_tax": {
+          "name": "social_in_electricity_tax",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snoee_kwh": {
+          "name": "snoee_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "services_month": {
+          "name": "services_month",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_on": {
+          "name": "checked_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valid_until": {
+          "name": "valid_until",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tariff_period_user_id_workspace_user_id_fk": {
+          "name": "tariff_period_user_id_workspace_user_id_fk",
+          "tableFrom": "tariff_period",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "workspace",
+          "columnsTo": [
+            "user_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "tariff_period_user_id_id_pk": {
+          "name": "tariff_period_user_id_id_pk",
+          "columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.workspace": {
+      "name": "workspace",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "days": {
+          "name": "days",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peak_kwh": {
+          "name": "peak_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flat_kwh": {
+          "name": "flat_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valley_kwh": {
+          "name": "valley_kwh",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peak_kw": {
+          "name": "peak_kw",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valley_kw": {
+          "name": "valley_kw",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "taxes": {
+          "name": "taxes",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vat": {
+          "name": "vat",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "electricity_tax": {
+          "name": "electricity_tax",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "minimum_tax": {
+          "name": "minimum_tax",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_tariff_id": {
+          "name": "current_tariff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_since": {
+          "name": "current_since",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

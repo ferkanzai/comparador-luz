@@ -13,6 +13,7 @@
     "test": "tsx --test tests/*.test.ts",
     "email:preview": "tsx scripts/preview-emails.ts",
     "email:dev": "email dev --dir src/emails --port 3003",
+    "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "test:browser": "playwright test"
   },
@@ -20,6 +21,7 @@
     "@next/env": "^16.3.5",
     "@vercel/functions": "^3.9.8",
     "better-auth": "^1.7.5",
+    "drizzle-orm": "^0.45.3",
     "input-otp": "^1.5.0",
     "lucide-react": "^1.47.0",
     "next": "^16.3.5",
@@ -38,6 +40,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "axe-core": "^4.13.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^16.5.0",
