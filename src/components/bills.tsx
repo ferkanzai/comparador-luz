@@ -6,6 +6,7 @@ import {
   today,
   numberOf,
   shortDate,
+  shortMonthLabel,
   type Bill,
   type Workspace,
 } from "@/lib/domain";
@@ -63,10 +64,7 @@ export default function Bills({
     }
     return {
       month,
-      label: new Intl.DateTimeFormat("es-ES", {
-        month: "short",
-        timeZone: "UTC",
-      }).format(new Date(`${month}-01`)),
+      label: shortMonthLabel(month),
       amount: entries.reduce((sum, b) => sum + numberOf(b.paid), 0),
       count: entries.length,
       totals,

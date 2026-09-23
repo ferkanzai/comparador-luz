@@ -234,26 +234,32 @@ export const newTariff = (): Tariff => ({
   validUntil: "",
   notes: "",
 });
-export const today = () =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-export const money = (n: number) =>
-  new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(
-    n,
-  );
+const isoDateFormat = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Madrid",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const moneyFormat = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+});
+const shortDateFormat = new Intl.DateTimeFormat("es-ES", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const shortMonthFormat = new Intl.DateTimeFormat("es-ES", {
+  month: "short",
+  timeZone: "UTC",
+});
+export const today = () => isoDateFormat.format(new Date());
+export const money = (n: number) => moneyFormat.format(n);
 export const shortDate = (s: string) =>
-  s
-    ? new Intl.DateTimeFormat("es-ES", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(s))
-    : "Sin fecha";
+  s ? shortDateFormat.format(new Date(s)) : "Sin fecha";
+export const shortMonthLabel = (month: string) =>
+  shortMonthFormat.format(new Date(`${month}-01`));
 
 export const powerUnitLabels = {
   day: "€/kW/día",

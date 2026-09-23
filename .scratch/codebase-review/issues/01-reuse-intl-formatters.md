@@ -8,6 +8,8 @@
 
 **Effort:** S
 
+**Implementation:** complete
+
 ## Why
 
 `money()`, `today()` and `shortDate()` in `src/lib/domain.ts` (lines 237–256) build a new formatter on each call. Measured with Node: `money()` takes about 14 µs per call, against 0.2 µs with a shared formatter (roughly 75× slower). Every render calls them many times:
@@ -18,7 +20,11 @@
 
 ## Checklist
 
-- [ ] Hoist formatters to module constants, following the existing `powerPriceFormat` in `domain.ts:281`.
-- [ ] `today()` keeps the `Europe/Madrid` time zone and still returns the current date on every call. Only the formatter is cached, not the result.
-- [ ] Replace the inline `toLocaleString("es-ES", …)` calls that repeat the same options with shared helpers where it makes sense.
-- [ ] Existing tests pass. Add a test that `money`, `shortDate` and `today` output is unchanged for a few sample values.
+- [x] Hoist formatters to module constants, following the existing `powerPriceFormat` in `domain.ts:281`.
+- [x] `today()` keeps the `Europe/Madrid` time zone and still returns the current date on every call. Only the formatter is cached, not the result.
+- [x] Replace the inline `toLocaleString("es-ES", …)` calls that repeat the same options with shared helpers where it makes sense.
+- [x] Existing tests pass. Add a test that `money`, `shortDate` and `today` output is unchanged for a few sample values.
+
+## Comments
+
+Implemented. `domain.ts` now holds module-level formatters, plus a new `shortMonthLabel` shared by `bills.tsx` and `bill-consumption.ts`. `bill-data.ts` and `pvpc-comparison.tsx` hoist their long-month formatters. The remaining `toLocaleString` calls each use different options and run a handful of times per render, so they stay inline. `tests/formatters.test.ts` pins the output.

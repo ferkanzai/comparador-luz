@@ -2,6 +2,7 @@ import {
   consumptionSchema,
   decimal,
   numberOf,
+  shortMonthLabel,
   type Bill,
   type Consumption,
 } from "./domain";
@@ -69,10 +70,7 @@ export function consumptionMonths(bills: Bill[], year: string) {
     }
     return {
       month,
-      label: new Intl.DateTimeFormat("es-ES", {
-        month: "short",
-        timeZone: "UTC",
-      }).format(new Date(`${month}-01`)),
+      label: shortMonthLabel(month),
       totals,
       recorded,
       missing: entries.length - recorded,

@@ -17,11 +17,12 @@ export const billGroups = [
   ["unknown", "Sin desglose"],
   ["credit", "Créditos"],
 ] as const;
+const longMonthFormat = new Intl.DateTimeFormat("es-ES", {
+  month: "long",
+  timeZone: "UTC",
+});
 export function billMonthLabel(month: string) {
-  const name = new Intl.DateTimeFormat("es-ES", {
-    month: "long",
-    timeZone: "UTC",
-  }).format(new Date(`${month}-01`));
+  const name = longMonthFormat.format(new Date(`${month}-01`));
   return `${name[0].toUpperCase()}${name.slice(1)} ${month.slice(0, 4)}`;
 }
 export function billTotal(bill: Pick<Bill, "paid" | "credit">) {

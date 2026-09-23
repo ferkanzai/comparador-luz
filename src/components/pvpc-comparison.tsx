@@ -22,6 +22,12 @@ import {
 } from "@/lib/pvpc";
 import { Field } from "./ui";
 
+const monthYearFormat = new Intl.DateTimeFormat("es-ES", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
 export default function PvpcComparison({
   profile,
   current,
@@ -84,11 +90,7 @@ export default function PvpcComparison({
   const ineligible =
     numberOf(profile.peakKw) > 10 || numberOf(profile.valleyKw) > 10;
   const monthLabel = data
-    ? new Intl.DateTimeFormat("es-ES", {
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(`${data.month}-01T12:00:00Z`))
+    ? monthYearFormat.format(new Date(`${data.month}-01T12:00:00Z`))
     : "";
   return (
     <section
