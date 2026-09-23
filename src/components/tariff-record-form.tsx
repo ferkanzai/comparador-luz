@@ -3,11 +3,10 @@ import { shortDate, type Tariff, type Workspace } from "@/lib/domain";
 import {
   correctPeriod,
   type PeriodCorrection,
-  recordCurrent,
-  recordHistorical,
   tariffPeriods,
 } from "@/lib/tariff-periods";
 import TariffForm from "./tariff-form";
+import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 
 export type TariffRecordDraft = { tariff: Tariff; title: string } & (
   | { kind: "historical" | "current"; periodId?: never }
@@ -17,12 +16,12 @@ export type TariffRecordDraft = { tariff: Tariff; title: string } & (
 export default function TariffRecordForm({
   workspace,
   draft,
-  update,
+  run,
   onClose,
 }: {
   workspace: Workspace;
   draft: TariffRecordDraft;
-  update: (w: Workspace) => void;
+  run: (command: WorkspaceCommand) => void;
   onClose: () => void;
 }) {
   const periods = tariffPeriods(workspace);
@@ -72,13 +71,13 @@ export default function TariffRecordForm({
         preview: draft.kind === "correction" ? preview : undefined,
         onSave: (tariff, dates) => {
           const { start, end } = dates;
-          const next =
+          run(
             draft.kind === "correction"
-              ? correctPeriod(workspace, draft.periodId, tariff, dates)
+              ? commands.correctPeriod(draft.periodId, tariff, dates)
               : draft.kind === "current"
-                ? recordCurrent(workspace, tariff, start)
-                : recordHistorical(workspace, tariff, start, end);
-          update(next);
+                ? commands.recordCurrent(tariff, start)
+                : commands.recordHistorical(tariff, start, end),
+          );
           onClose();
         },
       }}

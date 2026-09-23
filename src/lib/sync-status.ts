@@ -1,32 +1,33 @@
 import type * as z from "zod";
 import { billMonthLabel } from "./bill-data";
 import { shortDate, type Workspace } from "./domain";
-import type { SyncSnapshot } from "./workspace-sync";
 
-export function syncStatusLabel(
-  status: SyncSnapshot["status"],
-  stored: boolean,
-): string {
-  if (!stored && status !== "saved")
-    return "No se pudo guardar en este dispositivo";
+/** How saving stands, as shown next to the workspace tabs. */
+export type SaveStatus =
+  | "local"
+  | "saved"
+  | "saving"
+  | "invalid"
+  | "error"
+  | "outdated";
+
+export function saveStatusLabel(status: SaveStatus): string {
   switch (status) {
-    case "saved":
-      return "Guardado en tu cuenta";
     case "local":
       return "Guardado en este dispositivo";
-    case "pending":
-      return "Guardado aquí · se enviará a tu cuenta";
+    case "saved":
+      return "Guardado en tu cuenta";
     case "saving":
-      return "Sincronizando…";
+      return "Guardando…";
     case "invalid":
-      return "Guardado aquí · no se puede sincronizar";
+      return "Completa el perfil para guardarlo";
     case "error":
-      return "Guardado aquí · sin sincronizar";
-    case "conflict":
-      return "Guardado aquí · revisa la versión de tu cuenta";
+      return "No se ha guardado el último cambio";
+    case "outdated":
+      return "Recarga la página para seguir guardando";
     default: {
       const unhandled: never = status;
-      throw new Error(`Unhandled sync status: ${unhandled}`);
+      throw new Error(`Unhandled save status: ${unhandled}`);
     }
   }
 }

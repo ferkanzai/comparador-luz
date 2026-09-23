@@ -18,12 +18,7 @@ import {
   powerDescription,
   type Workspace,
 } from "@/lib/domain";
-import {
-  tariffPeriods,
-  periodProblem,
-  comparePeriod,
-  removePeriod,
-} from "@/lib/tariff-periods";
+import { tariffPeriods, periodProblem } from "@/lib/tariff-periods";
 import { Empty, Modal } from "./ui";
 import ConfirmDialog from "./confirm-dialog";
 import EstimateNotice from "./estimate-notice";
@@ -34,15 +29,16 @@ import { EnergyRates } from "./tariff-rates";
 import TariffPriceComparison from "./tariff-price-comparison";
 
 import type { TariffRecordDraft } from "./tariff-record-form";
+import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 
 export default function TariffHistory({
   workspace,
-  update,
+  run,
   onCompare,
 }: {
   workspace: Workspace;
-  update: (w: Workspace) => void;
+  run: (command: WorkspaceCommand) => void;
   onCompare: () => void;
 }) {
   const [draft, setDraft] = useState<TariffRecordDraft | null>(null);
@@ -252,7 +248,7 @@ export default function TariffHistory({
                   className="record-compare"
                   onClick={() => {
                     try {
-                      update(comparePeriod(workspace, period.id));
+                      run(commands.comparePeriod(period.id));
                       onCompare();
                     } catch (e) {
                       setError(
@@ -312,7 +308,7 @@ export default function TariffHistory({
           }
           confirmLabel="Eliminar registro"
           onConfirm={() => {
-            update(removePeriod(workspace, removing.id));
+            run(commands.removePeriod(removing.id));
             setRemovingId(null);
           }}
           onClose={() => setRemovingId(null)}
@@ -368,7 +364,7 @@ export default function TariffHistory({
         <TariffRecordForm
           workspace={workspace}
           draft={draft}
-          update={update}
+          run={run}
           onClose={() => setDraft(null)}
         />
       )}

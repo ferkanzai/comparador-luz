@@ -86,11 +86,33 @@ export async function readWorkspace(
     .from(tariffPeriod)
     .where(eq(tariffPeriod.userId, userId))
     .orderBy(asc(tariffPeriod.seq));
-  const bills = await tx.query.bill.findMany({
-    where: eq(bill.userId, userId),
-    orderBy: asc(bill.seq),
-    with: { tariff: true, profile: true, breakdown: true },
-  });
+  // Plain selects: nested relational queries pass NUMERIC through JSON numbers,
+  // which would round decimals.
+  const rows = await tx
+    .select()
+    .from(bill)
+    .where(eq(bill.userId, userId))
+    .orderBy(asc(bill.seq));
+  const byBill = async <T extends { billId: string }>(table: PgTable) =>
+    new Map(
+      (
+        (await tx
+          .select()
+          .from(table)
+          .where(eq(getTableColumns(table).userId, userId))) as T[]
+      ).map((part) => [part.billId, part]),
+    );
+  const [billTariffs, billProfiles, billBreakdowns] = await Promise.all([
+    byBill<typeof billTariff.$inferSelect>(billTariff),
+    byBill<typeof billProfile.$inferSelect>(billProfile),
+    byBill<typeof billBreakdown.$inferSelect>(billBreakdown),
+  ]);
+  const bills = rows.map((b) => ({
+    ...b,
+    tariff: billTariffs.get(b.id),
+    profile: billProfiles.get(b.id),
+    breakdown: billBreakdowns.get(b.id),
+  }));
   return workspaceSchema.parse({
     profile: readProfile(row),
     tariffs: tariffs.map((t) => readTariff(t, t.id)),

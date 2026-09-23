@@ -3,12 +3,7 @@ import FeedbackNotice from "./feedback-notice";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Download, ShieldCheck } from "lucide-react";
-import {
-  newTariff,
-  type Bill,
-  type Tariff,
-  type Workspace,
-} from "@/lib/domain";
+import { newTariff, type Bill, type Tariff } from "@/lib/domain";
 import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
 import ConfirmDialog from "./confirm-dialog";
@@ -22,11 +17,9 @@ import type { CurrentUser } from "@/lib/current-user";
 import { downloadWorkspace } from "@/lib/workspace-export";
 import {
   duplicateTariff,
-  removeTariff,
-  saveBill,
-  saveTariff,
   type SaveTariffOptions,
 } from "@/lib/workspace-actions";
+import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 const TariffHistory = dynamic(() => import("./tariff-history"));
@@ -52,7 +45,7 @@ export default function Dashboard({
   hero: ReactNode;
 }) {
   const workspace = useWorkspace(user?.id, initialWorkspace);
-  const { data: w, loaded, loadError, stored, status } = workspace;
+  const { data: w, loaded, loadError, status } = workspace;
   const [busy, setBusy] = useState(false);
   const { message, setMessage, dismiss, error, setError, openMethod } =
     usePage();
@@ -84,13 +77,13 @@ export default function Dashboard({
   const removingTariff = w.tariffs.find(
     (tariff) => tariff.id === removingTariffId && tariff.id !== w.currentId,
   );
-  function update(next: Workspace) {
-    workspace.update(next);
+  function run(command: WorkspaceCommand) {
+    workspace.run(command);
     setMessage("");
     setError("");
   }
   function handleTariffSave(tariff: Tariff, options: SaveTariffOptions) {
-    update(saveTariff(w, tariff, options));
+    run(commands.saveTariff(tariff, options));
     setEditing(null);
     setMessage(
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
@@ -107,9 +100,9 @@ export default function Dashboard({
         <WorkspaceTabs ref={navigation} tab={tab} onChange={setTab} />
         <WorkspaceStatus
           loaded={loaded}
-          signedIn={Boolean(user)}
-          snapshot={workspace}
-          onRetry={workspace.retry}
+          status={status}
+          error={workspace.error}
+          onRetry={workspace.reload}
         />
       </div>
       {loaded && (
@@ -129,25 +122,23 @@ export default function Dashboard({
           </button>
         </div>
       )}
-      {status === "invalid" && workspace.issue && (
-        <div className="notice" role="status">
-          No podemos guardar en tu cuenta hasta corregirlo. {workspace.issue}
-        </div>
-      )}
-      {status === "conflict" && (
-        <div className="notice">
-          Tu cuenta tiene cambios más recientes.{" "}
-          {stored
-            ? "Tus cambios siguen guardados en este dispositivo."
-            : "Tus cambios siguen abiertos en esta pestaña."}{" "}
-          Puedes exportarlos antes de cargar la versión de tu cuenta.
+      {status === "outdated" ? (
+        <div className="notice" role="alert">
+          Hay una versión nueva de la aplicación. Recarga la página para seguir
+          guardando.{" "}
           <button
             className="button secondary small-button"
-            onClick={workspace.useAccountVersion}
+            onClick={() => window.location.reload()}
           >
-            Cargar versión de mi cuenta
+            Recargar
           </button>
         </div>
+      ) : (
+        workspace.error && (
+          <div className="notice error" role="alert">
+            {workspace.error}
+          </div>
+        )
       )}
       {user && !user.emailVerified && (
         <VerificationBanner
@@ -189,9 +180,8 @@ export default function Dashboard({
           {tab === "compare" ? (
             <>
               <ComparisonWorkspace
-                key={`${user?.id ?? "guest"}:${workspace.generation}`}
                 data={w}
-                onChange={update}
+                run={run}
                 onAdd={() => setEditing({ tariff: newTariff() })}
                 onMethod={openMethod}
                 onBill={user ? setBillDraft : undefined}
@@ -224,12 +214,11 @@ export default function Dashboard({
           ) : !user ? (
             <AccountRequired section={tab} />
           ) : tab === "bills" ? (
-            <Bills workspace={w} update={update} />
+            <Bills workspace={w} run={run} />
           ) : (
             <TariffHistory
-              key={workspace.generation}
               workspace={w}
-              update={update}
+              run={run}
               onCompare={() => setTab("compare")}
             />
           )}
@@ -256,7 +245,7 @@ export default function Dashboard({
           }
           confirmLabel="Eliminar tarifa"
           onConfirm={() => {
-            update(removeTariff(w, removingTariff.id));
+            run(commands.removeTariff(removingTariff.id));
             setRemovingTariffId(null);
           }}
           onClose={() => setRemovingTariffId(null)}
@@ -268,7 +257,7 @@ export default function Dashboard({
           workspace={w}
           onClose={() => setBillDraft(null)}
           onSave={async (bill, newTariff) => {
-            update(saveBill(w, bill, newTariff));
+            run(commands.saveBill(bill, newTariff));
             setBillDraft(null);
             setTab("bills");
             setMessage("Factura añadida, con su consumo y desglose.");
@@ -285,7 +274,7 @@ export default function Dashboard({
               periodId: w.currentId!,
               title: "Corregir datos",
             }}
-            update={update}
+            run={run}
             onClose={() => setEditing(null)}
           />
         ) : (
@@ -308,7 +297,7 @@ export default function Dashboard({
         <TariffRecordForm
           workspace={w}
           draft={recordDraft}
-          update={update}
+          run={run}
           onClose={() => setRecordDraft(null)}
         />
       )}

@@ -56,7 +56,7 @@ Each mutation loads the workspace, runs the existing pure action, validates the 
 | 03  | [Profile and offer endpoints](issues/03-profile-and-offers.md)                   | S      | completed       | 02         |
 | 04  | [Contract endpoints](issues/04-contract.md)                                      | M      | completed       | 02         |
 | 05  | [Bill endpoints](issues/05-bills.md)                                             | S      | completed       | 02         |
-| 06  | [Client on TanStack Query](issues/06-client-tanstack-query.md)                   | M–L    | ready-for-agent | 03, 04, 05 |
+| 06  | [Client on TanStack Query](issues/06-client-tanstack-query.md)                   | M–L    | completed       | 03, 04, 05 |
 | 07  | [Export on the account page](issues/07-export-on-account-page.md)                | S      | ready-for-agent | 06         |
 | 08  | [Remove the old persistence and rewrite the docs](issues/08-cleanup-and-docs.md) | M      | ready-for-agent | 06         |
 

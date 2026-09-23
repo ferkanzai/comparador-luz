@@ -15,7 +15,7 @@ import {
   billReconciliation,
 } from "../src/lib/bill-data";
 import { tariffFromInvoiceAmounts } from "../src/lib/invoice-prices";
-import { readDraft, writeDraft } from "../src/lib/workspace-draft";
+import { readGuestDraft, writeGuestDraft } from "../src/lib/workspace-draft";
 
 const profile = {
   ...emptyWorkspace().profile,
@@ -172,8 +172,8 @@ test("SNOEE prices and amounts survive history, JSON exports and browser draft r
       entries.delete(key);
     },
   };
-  assert.ok(writeDraft(storage, "guest", { data: exported, version: 0 }));
-  assert.deepEqual(readDraft(storage, "guest")!.data, exported);
+  assert.ok(writeGuestDraft(storage, exported));
+  assert.deepEqual(readGuestDraft(storage), exported);
   const legacy = JSON.parse(JSON.stringify(exported));
   for (const t of legacy.tariffs) delete t.snoeeKwh;
   for (const h of legacy.history) delete h.tariff.snoeeKwh;
@@ -186,7 +186,7 @@ test("SNOEE prices and amounts survive history, JSON exports and browser draft r
     "luz:comparison-draft:v1:guest",
     JSON.stringify({ data: legacy, version: 0 }),
   );
-  const restored = readDraft(storage, "guest")!.data;
+  const restored = readGuestDraft(storage)!;
   assert.equal(restored.tariffs[0].snoeeKwh, "");
   assert.equal(restored.history[0].tariff.snoeeKwh, "");
   assert.equal(restored.bills[0].breakdown!.snoee, "0");

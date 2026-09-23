@@ -27,11 +27,7 @@ import {
   type ConsumptionSimulation,
 } from "@/lib/consumption-simulation";
 import ConsumptionSimulator from "./consumption-simulator";
-import {
-  adoptSimulation,
-  canAddTariff,
-  updateProfile,
-} from "@/lib/workspace-actions";
+import { canAddTariff } from "@/lib/workspace-actions";
 import { tariffLimitMessage } from "@/lib/tariff-periods";
 import { carryFinalists } from "@/lib/finalist-selection";
 import { billFromCalculation } from "@/lib/bill-data";
@@ -45,20 +41,21 @@ import { ProfileFields, TaxFields, TaxAssumptions } from "./profile-fields";
 import { Empty, Modal } from "./ui";
 import FinalistComparison from "./finalist-comparison";
 import PvpcComparison from "./pvpc-comparison";
+import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 
 const quantity = (value: number) =>
   value.toLocaleString("es-ES", { maximumFractionDigits: 3 });
 
 export default function ComparisonWorkspace({
   data,
-  onChange,
+  run,
   onAdd,
   actions,
   onBill,
   onMethod,
 }: {
   data: Workspace;
-  onChange: (next: Workspace) => void;
+  run: (command: WorkspaceCommand) => void;
   onAdd: () => void;
   actions: TariffActions;
   onBill?: (bill: Bill) => void;
@@ -100,7 +97,7 @@ export default function ComparisonWorkspace({
     );
   }
   const changeProfile = (profile: Profile) =>
-    onChange(updateProfile(data, profile));
+    run(commands.updateProfile(profile));
   const tariffRoom = canAddTariff(data);
   const [profileOpen, setProfileOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -205,7 +202,7 @@ export default function ComparisonWorkspace({
           }}
           onAdopt={() => {
             if (simulationResult.consumption) {
-              onChange(adoptSimulation(data, simulationResult.consumption));
+              run(commands.adoptSimulation(simulationResult.consumption));
               setSimulation(null);
               setSimulationOpen(false);
             }

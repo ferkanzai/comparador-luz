@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   type AnyPgColumn,
   bigint,
@@ -193,28 +192,3 @@ export const saveRate = pgTable("save_rate", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull(),
 });
-
-export const billRelations = relations(bill, ({ one }) => ({
-  tariff: one(billTariff),
-  profile: one(billProfile),
-  breakdown: one(billBreakdown),
-}));
-export const billTariffRelations = relations(billTariff, ({ one }) => ({
-  bill: one(bill, {
-    fields: [billTariff.userId, billTariff.billId],
-    references: [bill.userId, bill.id],
-  }),
-}));
-export const billProfileRelations = relations(billProfile, ({ one }) => ({
-  bill: one(bill, {
-    fields: [billProfile.userId, billProfile.billId],
-    references: [bill.userId, bill.id],
-  }),
-}));
-export const billBreakdownRelations = relations(billBreakdown, ({ one }) => ({
-  bill: one(bill, {
-    fields: [billBreakdown.userId, billBreakdown.billId],
-    references: [bill.userId, bill.id],
-  }),
-}));
-

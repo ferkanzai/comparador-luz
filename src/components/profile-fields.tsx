@@ -1,11 +1,7 @@
 "use client";
 import { useState } from "react";
 import { decimalComma, type Profile } from "@/lib/domain";
-import {
-  electricityTax,
-  formatRate,
-  generalVat,
-} from "@/lib/regulated-rates";
+import { electricityTax, formatRate, generalVat } from "@/lib/regulated-rates";
 import { Field } from "./ui";
 
 export function ProfileFields({

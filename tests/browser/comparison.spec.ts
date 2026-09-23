@@ -2,7 +2,7 @@ import axe from "axe-core";
 import type { Page } from "@playwright/test";
 import { comparisonFixture, openComparison } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
-import { signUpVerified } from "./sign-up";
+import { seedWorkspace, signUpVerified } from "./sign-up";
 
 async function enterConsumption(
   page: Page,
@@ -249,17 +249,18 @@ test("accepts invoice kWh, distinguishes missing values from zero and withholds 
   ).toContainText("10,35");
 });
 
-test("account autosave isolates simulations, reports failures and resets transient state on account replacement", async ({
+test("account autosave keeps simulations local, reports failed saves and shows refusals", async ({
   page,
 }) => {
   test.skip(
     !process.env.COMPARISON_TEST_DATABASE_URL,
     "Requires a server configured with a disposable local test database and console email.",
   );
+  const email = `comparison-${crypto.randomUUID()}@example.test`;
   await signUpVerified(
     page,
     "Browser test",
-    `comparison-${crypto.randomUUID()}@example.test`,
+    email,
     "comparison-test-only-password",
   );
   const data = comparisonFixture();
@@ -275,11 +276,7 @@ test("account autosave isolates simulations, reports failures and resets transie
       },
     },
   ];
-  const saved = await page.request.put("/api/workspace", {
-    headers: { origin: "http://localhost:3000" },
-    data: { data, version: 0 },
-  });
-  expect(saved.ok()).toBeTruthy();
+  await seedWorkspace(email, data);
   const initialWorkspaceReads: string[] = [];
   page.on("request", (request) => {
     if (
@@ -376,16 +373,29 @@ test("account autosave isolates simulations, reports failures and resets transie
     .getByRole("button", { name: "Simular consumo", exact: true })
     .click();
   await enterConsumption(page, "120", "180", "300");
-  await page.route("**/api/workspace", async (route) => {
-    if (route.request().method() === "PUT") await route.abort();
-    else await route.continue();
-  });
+  // A save that can't reach the server is retried, then reported, and the
+  // screen goes back to the account's copy.
+  await page.route("**/api/profile", (route) => route.abort());
   await page
     .getByRole("button", { name: "Usar este consumo", exact: true })
     .click();
-  await expect(page.getByText(/Guardado aquí · sin sincronizar/)).toBeVisible();
-  await page.unroute("**/api/workspace");
-  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expect(
+    page.getByText(/No se ha guardado el último cambio/),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.getByRole("alert").filter({ hasText: "No se ha podido conectar" }),
+  ).toBeVisible();
+  await expect(
+    table.getByRole("row").filter({ hasText: "Clara Guardada" }),
+  ).toContainText("80,35");
+  await page.unroute("**/api/profile");
+  await page
+    .getByRole("button", { name: "Simular consumo", exact: true })
+    .click();
+  await enterConsumption(page, "120", "180", "300");
+  await page
+    .getByRole("button", { name: "Usar este consumo", exact: true })
+    .click();
   await expect(
     page.getByText("Guardado en tu cuenta", { exact: true }),
   ).toBeVisible();
@@ -393,82 +403,41 @@ test("account autosave isolates simulations, reports failures and resets transie
   await expect(
     table.getByRole("row").filter({ hasText: "Clara Guardada" }),
   ).toContainText("94,35");
-  await page.route("**/api/workspace", async (route) => {
-    if (route.request().method() === "PUT")
-      await route.fulfill({
-        status: 409,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "Cambios en otra pestaña" }),
-      });
-    else await route.continue();
-  });
-  await page
-    .getByRole("button", { name: "Editar perfil", exact: true })
-    .click();
-  await page.getByLabel("Días del período", { exact: true }).fill("31");
-  await page
-    .getByRole("button", { name: "Volver a la comparativa", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", {
-      name: "Cargar versión de mi cuenta",
-      exact: true,
+  // A refusal from the server shows its reason.
+  await page.route("**/api/bills/*", (route) =>
+    route.fulfill({
+      status: 422,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Regla de prueba." }),
     }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Simular consumo", exact: true })
-    .click();
-  await enterConsumption(page, "140", "210", "350");
-  await table
-    .getByRole("checkbox", { name: "Comparar Clara Guardada", exact: true })
-    .check();
-  await page.unroute("**/api/workspace");
-  let releaseRead!: () => void;
-  let startedRead!: () => void;
-  const readPending = new Promise<void>((resolve) => {
-    releaseRead = resolve;
-  });
-  const readStarted = new Promise<void>((resolve) => {
-    startedRead = resolve;
-  });
-  await page.route("**/api/workspace", async (route) => {
-    if (route.request().method() === "GET") {
-      startedRead();
-      await readPending;
-    }
-    await route.continue();
-  });
-  await page
-    .getByRole("button", { name: "Cargar versión de mi cuenta", exact: true })
-    .click();
-  await readStarted;
-  // An experiment made while the replacement is loading belongs to the old workspace.
-  await page
-    .getByRole("button", { name: "Simular consumo", exact: true })
-    .click();
-  await enterConsumption(page, "160", "240", "400");
-  releaseRead();
-  await expect(
-    page.getByRole("region", { name: "Simulación de consumo", exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    table.getByRole("row").filter({ hasText: "Clara Guardada" }),
-  ).toContainText("94,35");
-  await expect(
-    table.getByRole("checkbox", {
-      name: "Comparar Clara Guardada",
-      exact: true,
-    }),
-  ).not.toBeChecked();
+  );
   await page
     .getByRole("button", {
       name: "Guardar este período como factura",
       exact: true,
     })
     .click();
-  await expect(page.getByLabel("Total pagado", { exact: true })).toHaveValue(
-    "130.35",
-  );
+  await page
+    .getByRole("button", { name: "Guardar factura", exact: true })
+    .click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Regla de prueba." }),
+  ).toBeVisible();
+  await page.unroute("**/api/bills/*");
+  await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
+  await expect(
+    page.getByText("Tu historial empieza con una factura."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Comparador", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Guardar este período como factura",
+      exact: true,
+    })
+    .click();
+  const total = await page
+    .getByLabel("Total pagado", { exact: true })
+    .inputValue();
   await page
     .getByRole("button", { name: "Guardar factura", exact: true })
     .click();
@@ -478,8 +447,67 @@ test("account autosave isolates simulations, reports failures and resets transie
   ).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
-  await expect(page.getByRole("main")).toContainText("130,35");
-  await expect(page.getByRole("main")).toContainText("600");
+  await expect(page.getByRole("main")).toContainText(total.replace(".", ","));
+});
+
+test("a guest's comparison moves into the account on sign-in, and profile typing is saved", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.COMPARISON_TEST_DATABASE_URL,
+    "Requires a server configured with a disposable local test database and console email.",
+  );
+  await page.clock.setFixedTime(new Date("2026-09-22T12:00:00Z"));
+  await page.goto("/");
+  await page.evaluate(
+    (data) =>
+      localStorage.setItem(
+        "luz:comparison-draft:v1:guest",
+        JSON.stringify({ data }),
+      ),
+    comparisonFixture(),
+  );
+  await signUpVerified(
+    page,
+    "Guest import",
+    `guest-${crypto.randomUUID()}@example.test`,
+    "guest-import-test-password",
+  );
+  await page.goto("/");
+  const table = page.getByRole("table", {
+    name: "Comparativa de tarifas",
+    exact: true,
+  });
+  await expect(
+    table.getByRole("row").filter({ hasText: "Clara Fija" }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByText("Guardado en tu cuenta", { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("luz:comparison-draft:v1:guest"),
+    ),
+  ).toBeNull();
+  await page
+    .getByRole("button", { name: "Editar perfil", exact: true })
+    .click();
+  const days = page.getByLabel("Días del período", { exact: true });
+  await days.fill("");
+  await days.pressSequentially("29");
+  await expect(
+    page.getByText("Guardado en tu cuenta", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    table.getByRole("row").filter({ hasText: "Clara Fija" }),
+  ).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Editar perfil", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Días del período", { exact: true }),
+  ).toHaveValue("29");
 });
 
 test("shows one card per tariff on a phone, in ranking order, with selection and actions", async ({

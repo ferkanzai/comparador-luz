@@ -170,7 +170,13 @@ function fullWorkspace(): Workspace {
     credit: "11.5",
     kwh: "60",
     notes: "Con crédito",
-    tariff: { ...current, name: "En la factura", energyPeak: "0.3" },
+    // Bill parts are read separately; decimals must stay exact there too.
+    tariff: {
+      ...current,
+      name: "En la factura",
+      energyPeak: "0.30",
+      energyFlat: "0.1234567890123456789012",
+    },
     profile: structuredClone(w.profile),
     consumption: { peakKwh: "10", flatKwh: "20", valleyKwh: "30" },
     tariffReview: { signature: "review-1", reason: "Revisada" },
