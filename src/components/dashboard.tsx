@@ -113,13 +113,16 @@ export default function Dashboard({
               ? "Tus datos se guardan automáticamente en este dispositivo."
               : "Los cambios se guardan automáticamente."}
           </span>
-          <button
-            className="button secondary small-button"
-            onClick={() => downloadWorkspace(w)}
-          >
-            <Download size={15} />
-            Exportar
-          </button>
+          {/* Signed-in users download their data from the account page. */}
+          {!user && (
+            <button
+              className="button secondary small-button"
+              onClick={() => downloadWorkspace(w)}
+            >
+              <Download size={15} />
+              Exportar
+            </button>
+          )}
         </div>
       )}
       {status === "outdated" ? (

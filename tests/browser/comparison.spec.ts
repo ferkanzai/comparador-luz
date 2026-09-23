@@ -467,6 +467,11 @@ test("a guest's comparison moves into the account on sign-in, and profile typing
       ),
     comparisonFixture(),
   );
+  // Guests export from the home page; accounts from Mi cuenta.
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Exportar", exact: true }),
+  ).toBeVisible();
   await signUpVerified(
     page,
     "Guest import",
@@ -489,6 +494,9 @@ test("a guest's comparison moves into the account on sign-in, and profile typing
       localStorage.getItem("luz:comparison-draft:v1:guest"),
     ),
   ).toBeNull();
+  await expect(
+    page.getByRole("button", { name: "Exportar", exact: true }),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Editar perfil", exact: true })
     .click();
