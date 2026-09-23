@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { authConfigured, getAuth } from "@/lib/auth";
 import Dashboard from "@/components/dashboard";
+import MethodText from "@/components/method-text";
 import { readWorkspace } from "@/lib/workspace-store";
 export const dynamic = "force-dynamic";
 export default async function Home({
@@ -34,6 +35,7 @@ export default async function Home({
       key={user?.id ?? "guest"}
       user={user}
       accountsAvailable={configured && !unavailable}
+      method={<MethodText />}
       initialWorkspace={
         user
           ? readWorkspace(user.id).catch(() => ({
