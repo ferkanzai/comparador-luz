@@ -11,9 +11,9 @@ import {
 } from "@/lib/domain";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import type { TariffPeriod } from "@/lib/tariff-periods";
+import CostCategoryLabel, { type CostCategory } from "./cost-category-label";
+import { formatTariffPrice as price } from "@/lib/tariff-price-format";
 import { usePowerComparisonUnit } from "./use-power-comparison-unit";
-
-const price = (value: string) => value.replace(".", ",") || "—";
 
 export default function TariffPriceComparison({
   periods,
@@ -37,10 +37,11 @@ export default function TariffPriceComparison({
     label: string,
     unitLabel: string,
     render: (tariff: Tariff) => ReactNode,
+    category: CostCategory = "other",
   ) => (
     <tr key={label}>
       <th scope="row">
-        {label}
+        <CostCategoryLabel category={category}>{label}</CostCategoryLabel>
         <small aria-hidden="true">{unitLabel}</small>
       </th>
       {records.map((p) => (
@@ -154,26 +155,77 @@ export default function TariffPriceComparison({
                   <tbody>
                     {byPeriod ? (
                       <>
-                        {row("Energía · Punta", "€/kWh", (t) =>
-                          price(t.energyPeak),
+                        {row(
+                          "Energía · Punta",
+                          "€/kWh",
+                          (t) => price(t.energyPeak),
+                          "energy",
                         )}
-                        {row("Energía · Llano", "€/kWh", (t) =>
-                          price(
-                            t.kind === "fixed" ? t.energyPeak : t.energyFlat,
-                          ),
+                        {row(
+                          "Energía · Llano",
+                          "€/kWh",
+                          (t) =>
+                            price(
+                              t.kind === "fixed" ? t.energyPeak : t.energyFlat,
+                            ),
+                          "energy",
                         )}
-                        {row("Energía · Valle", "€/kWh", (t) =>
-                          price(
-                            t.kind === "fixed" ? t.energyPeak : t.energyValley,
-                          ),
+                        {row(
+                          "Energía · Valle",
+                          "€/kWh",
+                          (t) =>
+                            price(
+                              t.kind === "fixed"
+                                ? t.energyPeak
+                                : t.energyValley,
+                            ),
+                          "energy",
                         )}
                       </>
                     ) : (
-                      row("Energía · 24 h", "€/kWh", (t) => price(t.energyPeak))
+                      row(
+                        "Energía · 24 h",
+                        "€/kWh",
+                        (t) => price(t.energyPeak),
+                        "energy",
+                      )
                     )}
-                    {row("Potencia", powerUnitLabels[unit], (t) =>
-                      formatPowerPrice(comparablePowerPrice(t, unit)),
-                    )}
+                    <tr>
+                      <th scope="row">
+                        <CostCategoryLabel category="power">
+                          Potencia
+                        </CostCategoryLabel>
+                        <small aria-hidden="true">
+                          {powerUnitLabels[unit]}
+                        </small>
+                        <span
+                          className="history-power-reference"
+                          aria-hidden="true"
+                        >
+                          Precio unitario · 1 kW en cada período
+                        </span>
+                      </th>
+                      {records.map((p) => (
+                        <td
+                          key={p.id}
+                          className={p.current ? "is-current" : undefined}
+                        >
+                          <span>
+                            {formatPowerPrice(
+                              comparablePowerPrice(p.tariff, unit),
+                            )}
+                            <span className="sr-only">
+                              {" "}
+                              {powerUnitLabels[unit]}. Referencia: 1 kW en cada
+                              período.
+                            </span>
+                          </span>
+                          <small className="history-power-original">
+                            Original: {powerDescription(p.tariff)}
+                          </small>
+                        </td>
+                      ))}
+                    </tr>
                     {row("Alquiler de contador", "€/día", (t) =>
                       price(t.meterDay),
                     )}
@@ -189,25 +241,6 @@ export default function TariffPriceComparison({
                   </tbody>
                 </table>
               </div>
-              <p className="history-comparison-note">
-                Potencia calculada con 1 kW en cada período. Son precios
-                unitarios, no el importe de tu factura.
-              </p>
-              <details className="history-original-prices">
-                <summary>
-                  <ChevronDown size={14} /> Ver precios originales de potencia
-                </summary>
-                <dl>
-                  {records.map((p) => (
-                    <div key={p.id}>
-                      <dt>
-                        {p.tariff.name} · {shortDate(p.start)}
-                      </dt>
-                      <dd>{powerDescription(p.tariff)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </details>
             </>
           ) : (
             <p className="history-comparison-note">

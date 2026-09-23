@@ -1517,7 +1517,7 @@ details.form-section > .field {
   letter-spacing: 0.06em;
   margin-bottom: 6px;
 }
-.record-price-label span {
+.record-price-label > span:last-child {
   color: var(--muted);
   font-weight: 400;
   text-transform: none;
@@ -1545,8 +1545,7 @@ details.form-section > .field {
   font-weight: 400;
   letter-spacing: 0;
 }
-.record-price-details summary,
-.history-original-prices summary {
+.record-price-details summary {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1557,12 +1556,10 @@ details.form-section > .field {
   cursor: pointer;
   list-style: none;
 }
-.record-price-details summary::-webkit-details-marker,
-.history-original-prices summary::-webkit-details-marker {
+.record-price-details summary::-webkit-details-marker {
   display: none;
 }
-.record-price-details[open] summary svg,
-.history-original-prices[open] summary svg {
+.record-price-details[open] summary svg {
   transform: rotate(180deg);
 }
 .record-extra-prices {
@@ -1655,11 +1652,9 @@ details.form-section > .field {
   transform: rotate(180deg);
 }
 .history-comparison-body {
-  max-width: 660px;
-  padding: 4px 0 18px;
-}
-.history-comparison-body:has(thead th:nth-child(4)) {
   max-width: 860px;
+  margin-inline: auto;
+  padding: 4px 0 18px;
 }
 .history-comparison-toolbar {
   display: flex;
@@ -1689,14 +1684,14 @@ details.form-section > .field {
 }
 .history-comparison-selection {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
-  max-height: 180px;
-  overflow-y: auto;
+  overflow-x: auto;
   padding: 3px;
   margin: 10px -3px 16px;
 }
 .history-comparison-selection label {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1721,7 +1716,11 @@ details.form-section > .field {
 }
 .history-comparison-scroll {
   overflow-x: auto;
-  max-width: 100%;
+  max-width: 660px;
+  margin-inline: auto;
+}
+.history-comparison-scroll:has(thead th:nth-child(4)) {
+  max-width: 860px;
 }
 .history-comparison-table {
   width: 100%;
@@ -1811,21 +1810,110 @@ details.form-section > .field {
   font-size: 0.75rem;
   max-width: 660px;
 }
-.history-original-prices dl {
+/* Keep secondary information close to the record without changing its height. */
+.record-heading-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-height: 24px;
+  margin-bottom: 5px;
+}
+.record-heading-line .record-status {
   margin: 0;
+}
+.record-date-notice {
+  position: relative;
+  margin-left: auto;
+}
+.record-date-notice summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  color: #81571c;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  list-style: none;
+}
+.record-date-notice summary::-webkit-details-marker {
+  display: none;
+}
+.record-date-explanation {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  width: min(270px, calc(100vw - 68px));
+  padding: 12px 14px;
+  background: #fff8e9;
+  border: 1px solid #d9c394;
+  border-radius: 4px;
+  color: #694a1e;
   font-size: 0.8125rem;
+  box-shadow: 0 4px 14px #243d3210;
 }
-.history-original-prices dl > div {
-  margin: 6px 0;
+.record-date-explanation p + p {
+  margin-top: 6px;
 }
-.history-original-prices dd {
-  margin: 0;
+.record-price-details summary {
+  flex-wrap: wrap;
+}
+.record-estimate-label {
   color: var(--muted);
+  font-size: 0.6875rem;
+  border-bottom: 1px dotted var(--control-line);
+}
+.record-price-details .estimate-note {
+  padding: 0;
+  margin: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.record-original-energy {
+  margin: 12px 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.record-original-energy .comparison-rates {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.record-original-energy .comparison-rates > div {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 8px;
+}
+.tariff-record .record-original-energy .comparison-rates dd {
+  font-size: 0.8125rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.tariff-record .record-original-energy .comparison-rates dd span {
+  display: inline;
+}
+.history-comparison-table th > .cost-category-label {
+  display: inline-flex;
+  gap: 6px;
+}
+.history-power-original,
+.history-comparison-table .history-power-reference {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.5;
 }
 @media (min-width: 901px) {
   .history-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+    align-items: stretch;
     gap: 20px;
   }
   .tariff-record {
@@ -1838,6 +1926,7 @@ details.form-section > .field {
     max-width: 420px;
   }
   .tariff-record-actions {
+    margin-top: auto;
     gap: 4px 14px;
   }
 }
@@ -1888,14 +1977,6 @@ details.form-section > .field {
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;
-  }
-  .history-comparison-selection {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    max-height: none;
-  }
-  .history-comparison-selection label {
-    flex-shrink: 0;
   }
   .history-comparison-table th,
   .history-comparison-table td {

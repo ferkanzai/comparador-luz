@@ -10,6 +10,7 @@ import {
   type Tariff,
 } from "@/lib/domain";
 import { type Calculation, cents } from "@/lib/calculator";
+import { formatTariffPrice } from "@/lib/tariff-price-format";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import { billLines } from "@/lib/bill-data";
 import CostCategoryLabel, { billLineCategories } from "./cost-category-label";
@@ -29,7 +30,13 @@ export type TariffActions = {
   onRemove: (tariff: Tariff) => void;
 };
 
-export function EnergyRates({ tariff }: { tariff: Tariff }) {
+export function EnergyRates({
+  tariff,
+  compact = false,
+}: {
+  tariff: Tariff;
+  compact?: boolean;
+}) {
   const rates =
     tariff.kind === "fixed"
       ? [["24 h", tariff.energyPeak]]
@@ -44,7 +51,10 @@ export function EnergyRates({ tariff }: { tariff: Tariff }) {
         <div key={label}>
           <dt>{label}</dt>
           <dd>
-            {value.replace(".", ",") || "—"} <span>€/kWh</span>
+            {compact
+              ? formatTariffPrice(value)
+              : value.replace(".", ",") || "—"}{" "}
+            <span>€/kWh</span>
           </dd>
         </div>
       ))}

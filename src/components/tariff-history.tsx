@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   RefreshCw,
   ChevronDown,
+  TriangleAlert,
 } from "lucide-react";
 import {
   newTariff,
@@ -24,6 +25,9 @@ import {
 } from "@/lib/tariff-periods";
 import { Empty, Modal } from "./ui";
 import EstimateNotice from "./estimate-notice";
+import CostCategoryLabel from "./cost-category-label";
+import { estimatedCharges } from "@/lib/charge-estimates";
+import { formatTariffPrice } from "@/lib/tariff-price-format";
 import { EnergyRates } from "./comparison-table";
 import TariffPriceComparison from "./tariff-price-comparison";
 
@@ -80,131 +84,197 @@ export default function TariffHistory({
       )}
       {periods.length > 0 && <TariffPriceComparison periods={periods} />}
       <div className="history-list">
-        {periods.map((period) => (
-          <article className="tariff-record" key={period.id}>
-            <div className="tariff-record-identity">
-              <span
-                className={`record-status ${period.current ? "is-current" : ""}`}
-              >
-                {period.current ? "Tu tarifa actual" : "Tarifa anterior"}
-              </span>
-              <h3>{period.tariff.name}</h3>
-              <p className="record-provider">{period.tariff.provider}</p>
-              <p className="record-dates">
-                <span>{shortDate(period.start)}</span>
-                <span aria-hidden="true"> → </span>
-                <span className="sr-only"> hasta </span>
-                <span>{period.current ? "Hoy" : shortDate(period.end)}</span>
-              </p>
-            </div>
-            <div className="tariff-record-prices">
-              <p className="record-price-label">
-                Energía <span>· sin impuestos</span>
-              </p>
-              <EnergyRates tariff={period.tariff} />
-              <details className="record-price-details">
-                <summary>
-                  <ChevronDown size={14} /> Potencia y otros cargos
-                </summary>
-                <dl className="record-extra-prices">
-                  <div>
-                    <dt>Potencia</dt>
-                    <dd>{powerDescription(period.tariff)}</dd>
-                  </div>
-                  <div>
-                    <dt>Alquiler</dt>
-                    <dd>
-                      {period.tariff.meterDay.replace(".", ",") || "—"} €/día
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Bono social</dt>
-                    <dd>
-                      {period.tariff.socialDay.replace(".", ",") || "—"} €/día
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Coste SNOEE</dt>
-                    <dd>
-                      {period.tariff.snoeeKwh.replace(".", ",") || "—"} €/kWh
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Servicios</dt>
-                    <dd>
-                      {period.tariff.servicesMonth.replace(".", ",") || "—"}{" "}
-                      €/mes
-                    </dd>
-                  </div>
-                </dl>
-                {period.tariff.notes && (
-                  <p className="small muted">{period.tariff.notes}</p>
-                )}
-              </details>
-              <EstimateNotice tariff={period.tariff} />
-              {periodProblem(period, periods) && (
-                <p className="notice">
-                  Revisa las fechas: {periodProblem(period, periods)}
+        {periods.map((period) => {
+          const problem = periodProblem(period, periods);
+          const hasEstimates = Boolean(estimatedCharges(period.tariff));
+          const energyValues =
+            period.tariff.kind === "fixed"
+              ? [period.tariff.energyPeak]
+              : [
+                  period.tariff.energyPeak,
+                  period.tariff.energyFlat,
+                  period.tariff.energyValley,
+                ];
+          const roundedEnergy = energyValues.some(
+            (v) => formatTariffPrice(v) !== (v.replace(".", ",") || "—"),
+          );
+          return (
+            <article className="tariff-record" key={period.id}>
+              <div className="tariff-record-identity">
+                <div className="record-heading-line">
+                  <span
+                    className={`record-status ${period.current ? "is-current" : ""}`}
+                  >
+                    {period.current ? "Tu tarifa actual" : "Tarifa anterior"}
+                  </span>
+                  {problem && (
+                    <details
+                      className="record-date-notice"
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.currentTarget.open = false;
+                          event.currentTarget.querySelector("summary")?.focus();
+                        }
+                      }}
+                      onBlur={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget))
+                          event.currentTarget.open = false;
+                      }}
+                    >
+                      <summary
+                        aria-label={`Revisar fechas de ${period.tariff.name}`}
+                      >
+                        <TriangleAlert size={13} /> Revisar fechas
+                      </summary>
+                      <div className="record-date-explanation">
+                        <p>{problem}</p>
+                        <p>Usa «Corregir datos» para ajustar este período.</p>
+                      </div>
+                    </details>
+                  )}
+                </div>
+                <h3>{period.tariff.name}</h3>
+                <p className="record-provider">{period.tariff.provider}</p>
+                <p className="record-dates">
+                  <span>{shortDate(period.start)}</span>
+                  <span aria-hidden="true"> → </span>
+                  <span className="sr-only"> hasta </span>
+                  <span>{period.current ? "Hoy" : shortDate(period.end)}</span>
                 </p>
-              )}
-            </div>
-            <div className="tariff-record-actions">
-              <button
-                className="record-edit"
-                aria-label={`Corregir datos de ${period.tariff.name}`}
-                onClick={() =>
-                  setDraft({
-                    tariff: period.tariff,
-                    kind: "correction",
-                    periodId: period.id,
-                    title: "Corregir datos",
-                  })
-                }
-              >
-                <Pencil size={14} /> Corregir datos
-              </button>
-              {period.current && (
+              </div>
+              <div className="tariff-record-prices">
+                <p className="record-price-label">
+                  <CostCategoryLabel category="energy">
+                    Energía
+                  </CostCategoryLabel>{" "}
+                  <span>· sin impuestos</span>
+                </p>
+                <EnergyRates tariff={period.tariff} compact />
+                <details className="record-price-details">
+                  <summary>
+                    <ChevronDown size={14} /> Potencia y otros cargos
+                    {hasEstimates && (
+                      <span className="record-estimate-label">
+                        Incluye estimaciones
+                      </span>
+                    )}
+                  </summary>
+                  <dl className="record-extra-prices">
+                    <div>
+                      <dt>
+                        <CostCategoryLabel category="power">
+                          Potencia
+                        </CostCategoryLabel>
+                      </dt>
+                      <dd>{powerDescription(period.tariff)}</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <CostCategoryLabel category="other">
+                          Alquiler
+                        </CostCategoryLabel>
+                      </dt>
+                      <dd>{formatTariffPrice(period.tariff.meterDay)} €/día</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <CostCategoryLabel category="other">
+                          Bono social
+                        </CostCategoryLabel>
+                      </dt>
+                      <dd>
+                        {formatTariffPrice(period.tariff.socialDay)} €/día
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <CostCategoryLabel category="other">
+                          Coste SNOEE
+                        </CostCategoryLabel>
+                      </dt>
+                      <dd>{formatTariffPrice(period.tariff.snoeeKwh)} €/kWh</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <CostCategoryLabel category="other">
+                          Servicios
+                        </CostCategoryLabel>
+                      </dt>
+                      <dd>
+                        {formatTariffPrice(period.tariff.servicesMonth)} €/mes
+                      </dd>
+                    </div>
+                  </dl>
+                  {roundedEnergy && (
+                    <div className="record-original-energy">
+                      <p>Precios de energía originales · sin redondear</p>
+                      <EnergyRates tariff={period.tariff} />
+                    </div>
+                  )}
+                  {hasEstimates && <EstimateNotice tariff={period.tariff} />}
+                  {period.tariff.notes && (
+                    <p className="small muted">{period.tariff.notes}</p>
+                  )}
+                </details>
+              </div>
+              <div className="tariff-record-actions">
                 <button
-                  className="record-change"
+                  className="record-edit"
+                  aria-label={`Corregir datos de ${period.tariff.name}`}
                   onClick={() =>
                     setDraft({
                       tariff: period.tariff,
-                      kind: "current",
-                      title: "Registrar cambio de precios",
+                      kind: "correction",
+                      periodId: period.id,
+                      title: "Corregir datos",
                     })
                   }
                 >
-                  <RefreshCw size={14} /> Registrar cambio de precios
+                  <Pencil size={14} /> Corregir datos
                 </button>
-              )}
-              <button
-                className="record-compare"
-                onClick={() => {
-                  try {
-                    update(comparePeriod(workspace, period.id));
-                    onCompare();
-                  } catch (e) {
-                    setError(
-                      e instanceof Error
-                        ? e.message
-                        : "No se pudo copiar la tarifa.",
-                    );
-                  }
-                }}
-              >
-                Volver a comparar <ArrowUpRight size={14} />
-              </button>
-              <button
-                className="record-remove"
-                aria-label={`Eliminar registro de ${period.tariff.name}`}
-                title="Eliminar registro"
-                onClick={() => setRemovingId(period.id)}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </article>
-        ))}
+                {period.current && (
+                  <button
+                    className="record-change"
+                    onClick={() =>
+                      setDraft({
+                        tariff: period.tariff,
+                        kind: "current",
+                        title: "Registrar cambio de precios",
+                      })
+                    }
+                  >
+                    <RefreshCw size={14} /> Registrar cambio de precios
+                  </button>
+                )}
+                <button
+                  className="record-compare"
+                  onClick={() => {
+                    try {
+                      update(comparePeriod(workspace, period.id));
+                      onCompare();
+                    } catch (e) {
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "No se pudo copiar la tarifa.",
+                      );
+                    }
+                  }}
+                >
+                  Volver a comparar <ArrowUpRight size={14} />
+                </button>
+                <button
+                  className="record-remove"
+                  aria-label={`Eliminar registro de ${period.tariff.name}`}
+                  title="Eliminar registro"
+                  onClick={() => setRemovingId(period.id)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
       {!periods.length && (
         <div className="panel">

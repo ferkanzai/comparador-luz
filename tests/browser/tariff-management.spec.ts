@@ -423,3 +423,110 @@ test("registers a real price change in Mis tarifas and preserves the old period"
     table.getByRole("row").filter({ hasText: "Casa 24h" }),
   ).toContainText("85,35");
 });
+
+test("keeps conditional card content quiet and comparison selection stable", async ({
+  page,
+}) => {
+  const data = comparisonFixture();
+  data.history = [
+    {
+      id: crypto.randomUUID(),
+      start: "2025-01-01",
+      end: "2025-01-01",
+      tariff: {
+        ...data.tariffs[0],
+        name: "Tarifa por revisar",
+        kind: "periods",
+        energyFlat: "0.113",
+        energyValley: "0.081739130435",
+        meterDay: "0.02663",
+        meterEstimate: "single-2013",
+        powerUnit: "year",
+        powerPeak: "29.2",
+        powerValley: "7.3",
+      },
+    },
+    {
+      id: crypto.randomUUID(),
+      start: "2024-01-01",
+      end: "2025-01-01",
+      tariff: { ...data.tariffs[0], name: "Contrato anterior" },
+    },
+    {
+      id: crypto.randomUUID(),
+      start: "2023-01-01",
+      end: "2024-01-01",
+      tariff: { ...data.tariffs[0], name: "Primer contrato" },
+    },
+  ];
+  await openTariffs(page, data);
+  const cards = page.getByRole("article");
+  const card = cards.filter({ hasText: "Tarifa por revisar" });
+  const currentBox = (await cards.first().boundingBox())!;
+  const previousBox = (await card.boundingBox())!;
+  expect(Math.abs(currentBox.height - previousBox.height)).toBeLessThan(1);
+  await expect(
+    card.getByText("0,081739", { exact: false }).first(),
+  ).toBeVisible();
+  await expect(
+    card.getByText("La fecha final debe ser posterior al inicio."),
+  ).not.toBeVisible();
+  const warning = card.getByText("Revisar fechas", { exact: true });
+  await warning.focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    card.getByText("La fecha final debe ser posterior al inicio."),
+  ).toBeVisible();
+  expect((await card.boundingBox())!.height).toBe(previousBox.height);
+  await page.keyboard.press("Escape");
+  await expect(
+    card.getByText("La fecha final debe ser posterior al inicio."),
+  ).not.toBeVisible();
+  await expect(card.getByText("Incluye estimaciones")).toBeVisible();
+  await expect(card.getByText(/Cálculo aproximado/)).not.toBeVisible();
+  await card.getByText("Potencia y otros cargos", { exact: false }).click();
+  await expect(card.getByText(/Cálculo aproximado/)).toBeVisible();
+  await expect(
+    card.getByText("0,081739130435", { exact: false }),
+  ).toBeVisible();
+  expect(
+    Math.abs(
+      (await cards.first().boundingBox())!.height -
+        (await card.boundingBox())!.height,
+    ),
+  ).toBeLessThan(1);
+  await page
+    .getByRole("button", { name: "Comparar precios", exact: true })
+    .click();
+  const selection = page.getByRole("group", {
+    name: "Períodos que quieres comparar",
+  });
+  const selectorBox = (await selection.boundingBox())!;
+  const positions = await selection
+    .getByRole("checkbox")
+    .evaluateAll((inputs) =>
+      inputs.map((input) => input.getBoundingClientRect().top),
+    );
+  expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(1);
+  await selection
+    .getByRole("checkbox", { name: /Comparar Contrato anterior/ })
+    .check();
+  expect((await selection.boundingBox())!.width).toBe(selectorBox.width);
+  const table = page.getByRole("table", {
+    name: "Precios de tus tarifas",
+    exact: true,
+  });
+  const power = table.getByRole("row").filter({
+    has: page.getByRole("rowheader", { name: "Potencia", exact: true }),
+  });
+  await expect(power.getByRole("cell").nth(1)).toContainText(
+    "Original: P1 29,2 · P2 7,3 €/kW/año",
+  );
+  await expect(
+    page.getByText("Ver precios originales de potencia"),
+  ).toHaveCount(0);
+  const saved = await page.request.get("/api/workspace");
+  expect((await saved.json()).data.history[0].tariff.energyValley).toBe(
+    "0.081739130435",
+  );
+});
