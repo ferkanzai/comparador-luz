@@ -51,7 +51,7 @@ Each mutation loads the workspace, runs the existing pure action, validates the 
 
 | #   | Ticket                                                                           | Effort | Status          | Blocked by |
 | --- | -------------------------------------------------------------------------------- | ------ | --------------- | ---------- |
-| 01  | [Drizzle schema and a fresh baseline](issues/01-drizzle-baseline.md)             | M      | ready-for-agent |            |
+| 01  | [Drizzle schema and a fresh baseline](issues/01-drizzle-baseline.md)             | M      | completed       |            |
 | 02  | [Read endpoint and mutation plumbing](issues/02-read-and-plumbing.md)            | M      | ready-for-agent | 01         |
 | 03  | [Profile and offer endpoints](issues/03-profile-and-offers.md)                   | S      | ready-for-agent | 02         |
 | 04  | [Contract endpoints](issues/04-contract.md)                                      | M      | ready-for-agent | 02         |
