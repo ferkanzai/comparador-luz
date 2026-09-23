@@ -6,7 +6,7 @@ import {
   type Tariff,
 } from "@/lib/domain";
 import { calculate } from "@/lib/calculator";
-import { billLines } from "@/lib/bill-data";
+import { estimateLines } from "@/lib/bill-data";
 import { estimateMeter, estimateSocial } from "@/lib/charge-estimates";
 import {
   formatRate,
@@ -458,7 +458,7 @@ export function TariffPreview({
             {profile.taxes ? "Con impuestos" : "Sin impuestos"}
           </p>
           <dl className="bill-breakdown">
-            {billLines.map(([key, label]) => (
+            {estimateLines([cost]).map(([key, label]) => (
               <div key={key}>
                 <dt>{label}</dt>
                 <dd>{money(cost[key])}</dd>

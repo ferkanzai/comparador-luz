@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import { money, shortDate, type Profile, type Tariff } from "@/lib/domain";
-import { billLines } from "@/lib/bill-data";
+import { estimateLines } from "@/lib/bill-data";
 import CostCategoryLabel, {
   billLineCategories,
   type CostCategory,
@@ -107,7 +107,7 @@ export default function FinalistComparison({
                   <span className="comparison-exclusion">{reason}</span>
                 ),
               )}
-              {billLines.map(([key, label]) =>
+              {estimateLines(rows.map((row) => row.cost)).map(([key, label]) =>
                 detailRow(
                   label,
                   ({ cost }) => (cost ? money(cost[key]) : "—"),

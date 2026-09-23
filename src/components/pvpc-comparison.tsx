@@ -9,7 +9,7 @@ import {
   type Tariff,
 } from "@/lib/domain";
 import { calculate } from "@/lib/calculator";
-import { billLines } from "@/lib/bill-data";
+import { estimateLines } from "@/lib/bill-data";
 import {
   formatRate,
   meterRental,
@@ -210,7 +210,7 @@ export default function PvpcComparison({
               <details className="pvpc-details">
                 <summary>Desglose y supuestos</summary>
                 <dl className="bill-breakdown">
-                  {billLines.map(([key, label]) => (
+                  {estimateLines([cost]).map(([key, label]) => (
                     <div key={key}>
                       <dt>{label}</dt>
                       <dd>{money(cost[key])}</dd>

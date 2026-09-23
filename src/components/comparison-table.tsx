@@ -2,7 +2,7 @@ import { ArrowUpRight, Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { money, shortDate, today, type Tariff } from "@/lib/domain";
 import { type Calculation, cents } from "@/lib/calculator";
 import { estimatedCharges } from "@/lib/charge-estimates";
-import { billLines } from "@/lib/bill-data";
+import { estimateLines } from "@/lib/bill-data";
 import { tariffLimitMessage } from "@/lib/tariff-periods";
 import CostCategoryLabel, { billLineCategories } from "./cost-category-label";
 import EstimateNotice from "./estimate-notice";
@@ -252,7 +252,7 @@ export function TariffDetails({
           <>
             <h3>Desglose del período</h3>
             <dl className="breakdown">
-              {billLines.map(([key, label]) => (
+              {estimateLines([cost]).map(([key, label]) => (
                 <div key={key}>
                   <dt>
                     <CostCategoryLabel category={billLineCategories[key]}>

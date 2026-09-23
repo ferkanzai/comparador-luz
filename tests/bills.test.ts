@@ -11,6 +11,7 @@ import {
   billFromCalculation,
   billBuckets,
   billTotal,
+  estimateLines,
 } from "../src/lib/bill-data";
 
 test("saving a calculation preserves consumption and cost snapshots for stacked monthly history", () => {
@@ -50,6 +51,47 @@ test("saving a calculation preserves consumption and cost snapshots for stacked 
   assert.equal(bill.profile!.peakKwh, "100");
   assert.equal(bill.breakdown!.energy, "10");
   assert.equal(billSchema.safeParse({ ...bill, paid: "1" }).success, false);
+});
+test("estimates hide optional charges that are zero in every compared cost", () => {
+  const p = {
+    ...emptyWorkspace().profile,
+    days: "30",
+    peakKwh: "100",
+    flatKwh: "0",
+    valleyKwh: "0",
+    peakKw: "4",
+    valleyKw: "4",
+    taxes: false,
+  };
+  const t = {
+    ...newTariff(),
+    energyPeak: "0.1",
+    energyFlat: "0",
+    energyValley: "0",
+    powerPeak: "0.1",
+    powerValley: "0.03",
+  };
+  const cost = calculate(t, p)!;
+  const zero = {
+    ...cost,
+    energy: 0,
+    social: 0,
+    snoee: 0,
+    meter: 0,
+    services: 0,
+    electricityTax: 0,
+    vat: 0,
+    servicesVat: 0,
+  };
+  const keys = (costs: Parameters<typeof estimateLines>[0]) =>
+    estimateLines(costs).map(([key]) => key);
+  assert.deepEqual(keys([zero]), ["energy", "power"]);
+  assert.deepEqual(keys([{ ...zero, meter: 0.004 }]), ["energy", "power"]);
+  assert.deepEqual(keys([zero, { ...zero, meter: 0.9 }, null]), [
+    "energy",
+    "power",
+    "meter",
+  ]);
 });
 test("existing workspaces keep old tariffs and total-only bills readable", () => {
   const t = newTariff();

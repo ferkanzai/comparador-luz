@@ -40,6 +40,16 @@ export const billLines = [
   ["vat", "IVA suministro"],
   ["servicesVat", "IVA servicios"],
 ] as const;
+// Estimates hide optional charges that are zero in every compared cost;
+// recorded bills always show every line because zero is a recorded value.
+export function estimateLines(costs: readonly (Calculation | null)[]) {
+  return billLines.filter(
+    ([key]) =>
+      key === "energy" ||
+      key === "power" ||
+      costs.some((cost) => cost && cents(cost[key]) !== 0),
+  );
+}
 export function billFromCalculation(
   tariff: Tariff,
   profile: Profile,

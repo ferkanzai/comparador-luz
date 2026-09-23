@@ -933,6 +933,50 @@ test("conserves a rounding-sensitive total through simulation and adoption", asy
   );
 });
 
+test("hides zero charges in estimates and keeps a finalist row when any finalist pays it", async ({
+  page,
+}) => {
+  await openComparison(page);
+  await page
+    .getByRole("button", { name: "Ver desglose de Casa 24h", exact: true })
+    .click();
+  const breakdown = page.getByRole("dialog").locator(".breakdown");
+  await expect(breakdown).toContainText("Energía");
+  await expect(breakdown).toContainText("Potencia");
+  await expect(breakdown).not.toContainText("Alquiler de contador");
+  await expect(breakdown).not.toContainText("IVA servicios");
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+
+  await page
+    .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Ver comparación (2)", exact: true })
+    .click();
+  const finalists = page.getByRole("table", {
+    name: "Comparación de finalistas",
+    exact: true,
+  });
+  await expect(finalists).toContainText("Potencia");
+  await expect(finalists).not.toContainText("Alquiler de contador");
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+
+  await page
+    .getByRole("checkbox", { name: "Comparar Verde Completa", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Ver comparación (3)", exact: true })
+    .click();
+  const meter = finalists.getByRole("row").filter({
+    has: page.getByRole("rowheader", {
+      name: "Alquiler de contador",
+      exact: true,
+    }),
+  });
+  await expect(meter.getByRole("cell")).toHaveCount(3);
+  await expect(meter.getByRole("cell").first()).toContainText("0,00");
+});
+
 test("fits three finalists on desktop and audits the tariff breakdown contrast", async ({
   page,
 }) => {
