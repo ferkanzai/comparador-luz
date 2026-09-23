@@ -1,7 +1,8 @@
 import { Pool } from "pg";
 import axe from "axe-core";
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { comparisonFixture } from "./comparison.fixture";
+import { expect, test } from "./strict-test";
 import type { Workspace } from "../../src/lib/domain";
 
 test.beforeEach(async () => {

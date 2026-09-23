@@ -1,6 +1,7 @@
 import axe from "axe-core";
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { comparisonFixture, openComparison } from "./comparison.fixture";
+import { expect, test } from "./strict-test";
 
 async function enterConsumption(
   page: Page,
@@ -999,4 +1000,15 @@ test("keeps section navigation in a consistent position across all three tabs", 
       .poll(async () => Math.round((await navigation.boundingBox())!.y))
       .toBe(0);
   }
+});
+
+test("sends security headers and renders the account page under the policy", async ({
+  page,
+}) => {
+  const response = await page.goto("/cuenta");
+  const headers = response!.headers();
+  expect(headers["content-security-policy"]).toContain("connect-src 'self'");
+  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(headers["permissions-policy"]).toContain("camera=()");
+  await expect(page.locator('input[type="email"]').first()).toBeVisible();
 });
