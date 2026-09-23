@@ -1,0 +1,153 @@
+import type { Page } from "@playwright/test";
+import { Client } from "pg";
+import { calculate } from "../../src/lib/calculator";
+import { billFromCalculation } from "../../src/lib/bill-data";
+import type { Workspace } from "../../src/lib/domain";
+import {
+  comparisonFixture,
+  openComparison,
+} from "../browser/comparison.fixture";
+import { seedWorkspace, signUpVerified } from "../browser/sign-up";
+import { expect, test } from "../browser/strict-test";
+
+/** Full pages, except dialogs, which show what is on screen. */
+const shot = async (page: Page, name: string, fullPage = true) => {
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page).toHaveScreenshot(
+    `${name}-${test.info().project.name}.png`,
+    { fullPage, stylePath: "tests/visual/screenshot.css" },
+  );
+};
+const dialog = (page: Page, name: string) => shot(page, name, false);
+
+/** The comparison fixture with a past contract and three bills, all dated. */
+function accountFixture(): Workspace {
+  const data = comparisonFixture();
+  const contract = data.tariffs.find((t) => t.id === data.currentId)!;
+  data.currentSince = "2026-01-01";
+  data.history = [
+    {
+      id: crypto.randomUUID(),
+      start: "2025-01-01",
+      end: "2026-01-01",
+      tariff: {
+        ...contract,
+        id: crypto.randomUUID(),
+        name: "Contrato anterior",
+        energyPeak: "0.24",
+      },
+    },
+  ];
+  const bill = billFromCalculation(
+    contract,
+    data.profile,
+    calculate(contract, data.profile)!,
+  );
+  data.bills = [
+    ["2026-06", "2026-06-01", "2026-07-01"],
+    ["2026-07", "2026-07-01", "2026-08-01"],
+    ["2026-08", "2026-08-01", "2026-09-01"],
+  ].map(([month, periodStart, periodEnd]) => ({
+    ...bill,
+    id: crypto.randomUUID(),
+    month,
+    periodStart,
+    periodEnd,
+  }));
+  return data;
+}
+
+test("guest screens", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-22T12:00:00Z"));
+  await page.goto("/");
+  await shot(page, "guest-empty");
+  await openComparison(page);
+  await expect(
+    page.getByRole("heading", { name: "Tu espacio de electricidad" }),
+  ).toBeVisible();
+  await shot(page, "guest-comparison");
+  await page
+    .getByRole("button", { name: "Editar perfil", exact: true })
+    .click();
+  await shot(page, "guest-profile");
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Simular consumo", exact: true })
+    .click();
+  await shot(page, "guest-simulation");
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Añadir tarifa", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await dialog(page, "guest-tariff-form");
+  await page.goto("/cuenta");
+  await shot(page, "sign-in");
+  await page.goto("/privacidad");
+  await shot(page, "privacy");
+});
+
+test("finalists", async ({ page }) => {
+  test.skip(
+    test.info().project.name === "phone",
+    "Cards choose finalists differently on a phone.",
+  );
+  await openComparison(page);
+  const table = page.getByRole("table", {
+    name: "Comparativa de tarifas",
+    exact: true,
+  });
+  await table
+    .getByRole("checkbox", { name: "Comparar Clara Fija", exact: true })
+    .check();
+  await table
+    .getByRole("checkbox", { name: "Comparar Luna Noche", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Ver comparación (3)", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await dialog(page, "finalists");
+});
+
+test("account screens", async ({ page }) => {
+  test.skip(
+    !process.env.COMPARISON_TEST_DATABASE_URL,
+    "Requires a disposable local account database.",
+  );
+  // A fixed address, so the account page looks the same on every run.
+  const email = `visual-${test.info().project.name}@example.test`;
+  const db = new Client({
+    connectionString: process.env.COMPARISON_TEST_DATABASE_URL,
+  });
+  await db.connect();
+  await db.query('DELETE FROM "user" WHERE email = $1', [email]);
+  await db.end();
+  await page.clock.setFixedTime(new Date("2026-09-22T12:00:00Z"));
+  await signUpVerified(page, "Visual", email, "visual-test-only-password");
+  await seedWorkspace(email, accountFixture());
+  await page.goto("/");
+  // The save status is hidden on a phone; the saved tariffs show the data loaded.
+  await expect(page.getByText("Casa 24h").first()).toBeVisible();
+  await shot(page, "account-comparison");
+  await page.getByRole("button", { name: "Mis tarifas", exact: true }).click();
+  await expect(page.getByRole("article").first()).toBeVisible();
+  await shot(page, "account-tariffs");
+  await page
+    .getByRole("button", { name: "Mis facturas", exact: true })
+    .click();
+  await expect(page.getByText("Cargando tus facturas…")).toHaveCount(0);
+  await expect(page.getByRole("main")).toContainText("ago 2026");
+  await shot(page, "account-bills");
+  await page.getByRole("button", { name: "Comparador", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Guardar este período como factura",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await dialog(page, "account-bill-form");
+  await page.goto("/mi-cuenta");
+  await shot(page, "account-settings");
+});
