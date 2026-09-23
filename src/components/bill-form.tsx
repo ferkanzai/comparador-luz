@@ -159,7 +159,7 @@ export default function BillForm({
               />
             </div>
             <Field
-              label="Descuento o descuento sobre el total (opcional)"
+              label="Descuento sobre el total (opcional)"
               decimal
               unit="€"
               hint="Importe positivo que se resta después de impuestos. Si el descuento reduce una base imponible, copia los conceptos e impuestos ya descontados de tu factura y no lo restes aquí otra vez."
