@@ -6,7 +6,8 @@ import { PageProvider } from "@/components/page-context";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
 import { currentUser } from "@/lib/current-user";
-import { readWorkspace } from "@/lib/workspace-store";
+import { withAccount } from "@/db";
+import { readWorkspace } from "@/db/workspace";
 import { redirect } from "next/navigation";
 
 // Rendered whole per request: a prerendered shell with streamed content
@@ -31,10 +32,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           hero={<Hero />}
           initialWorkspace={
             user
-              ? readWorkspace(user.id).catch(() => ({
-                  error:
-                    "No se han podido cargar tus datos. Inténtalo de nuevo.",
-                }))
+              ? withAccount(user.id, "read", (tx) => readWorkspace(tx, user.id))
+                  // Until the client moves to per-record saves (ticket 06).
+                  .then((data) => ({ data, version: 0 }))
+                  .catch(() => ({
+                    error:
+                      "No se han podido cargar tus datos. Inténtalo de nuevo.",
+                  }))
               : undefined
           }
         />

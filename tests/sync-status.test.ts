@@ -6,7 +6,10 @@ import {
   workspaceSchema,
   type Workspace,
 } from "../src/lib/domain";
-import { describeWorkspaceIssue, syncStatusLabel } from "../src/lib/sync-status";
+import {
+  describeWorkspaceIssue,
+  syncStatusLabel,
+} from "../src/lib/sync-status";
 import { WorkspaceSync, type SyncSnapshot } from "../src/lib/workspace-sync";
 
 const statuses: SyncSnapshot["status"][] = [
@@ -44,7 +47,10 @@ test("a failed local write wins over every status except saved", () => {
 });
 
 const issueFor = (data: Workspace) =>
-  describeWorkspaceIssue(data, workspaceSchema.safeParse(data).error?.issues[0]);
+  describeWorkspaceIssue(
+    data,
+    workspaceSchema.safeParse(data).error?.issues[0],
+  );
 
 test("invalid workspaces name the record to fix", () => {
   const tariff = { ...newTariff(), name: "Luz Fija", energyPeak: "abc" };
