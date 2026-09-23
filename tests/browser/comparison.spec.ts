@@ -628,11 +628,35 @@ test("preserves tariff duplication, deletion and current-contract designation", 
     name: "Eliminar Clara Fija (copia)",
     exact: true,
   });
-  page.once("dialog", (dialog) => dialog.dismiss());
   await remove.click();
+  const confirmation = page.getByRole("dialog", {
+    name: "Eliminar tarifa",
+    exact: true,
+  });
+  await expect(confirmation).toContainText("Clara Fija (copia)");
+  await expect(
+    confirmation.getByRole("button", { name: "Cancelar", exact: true }),
+  ).toBeFocused();
+  await confirmation
+    .getByRole("button", { name: "Cancelar", exact: true })
+    .click();
   await expect(table.getByRole("row")).toHaveCount(10);
-  page.once("dialog", (dialog) => dialog.accept());
   await remove.click();
+  await page.keyboard.press("Escape");
+  await expect(confirmation).toHaveCount(0);
+  await expect(table.getByRole("row")).toHaveCount(10);
+  await table
+    .getByRole("button", { name: "Clara Fija (copia)", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Eliminar tarifa", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(confirmation).toContainText("Clara Fija (copia)");
+  await confirmation
+    .getByRole("button", { name: "Eliminar tarifa", exact: true })
+    .click();
   await expect(table.getByRole("row")).toHaveCount(9);
   await expect(
     page.getByRole("button", {

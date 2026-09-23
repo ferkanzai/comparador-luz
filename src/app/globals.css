@@ -1272,6 +1272,54 @@ small {
 .modal.finalist-modal {
   width: min(1440px, calc(100vw - 32px));
 }
+.modal.tariff-delete-modal {
+  width: min(440px, calc(100vw - 32px));
+}
+.tariff-delete-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.tariff-delete-summary > div {
+  min-width: 0;
+}
+.tariff-delete-summary h3 {
+  overflow-wrap: anywhere;
+}
+.tariff-delete-summary p {
+  font-size: 0.8125rem;
+}
+.tariff-delete-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fbe9e5;
+  color: #a02d28;
+}
+.tariff-delete-modal .modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 0;
+  border-top: 0;
+}
+.tariff-delete-modal .button {
+  min-height: 44px;
+  padding: 12px;
+  font-size: 0.875rem;
+  white-space: normal;
+}
+.tariff-delete-confirm {
+  background: #a02d28;
+  color: white;
+}
+.tariff-delete-confirm:hover {
+  background: #84241f;
+}
 .modal::backdrop {
   background: #152b2390;
   backdrop-filter: blur(4px);

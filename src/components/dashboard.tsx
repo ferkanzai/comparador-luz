@@ -14,6 +14,7 @@ import {
   Receipt,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   Zap,
 } from "lucide-react";
 import {
@@ -87,6 +88,11 @@ export default function Dashboard({
     null,
   );
   const [taxHelp, setTaxHelp] = useState(false);
+  const [removingTariffId, setRemovingTariffId] = useState<string | null>(null);
+  const cancelTariffRemoval = useRef<HTMLButtonElement>(null);
+  const removingTariff = w.tariffs.find(
+    (tariff) => tariff.id === removingTariffId && tariff.id !== w.currentId,
+  );
   function update(next: Workspace) {
     workspace.update(next);
     setMessage("");
@@ -409,17 +415,7 @@ export default function Dashboard({
                             title: "Registrar como anterior",
                           })
                       : undefined,
-                    onRemove: (tariff) => {
-                      if (
-                        window.confirm(
-                          `¿Eliminar ${tariff.name} de la comparativa?`,
-                        )
-                      )
-                        update({
-                          ...w,
-                          tariffs: w.tariffs.filter((t) => t.id !== tariff.id),
-                        });
-                    },
+                    onRemove: (tariff) => setRemovingTariffId(tariff.id),
                   }}
                 />
                 {!user && (
@@ -494,6 +490,55 @@ export default function Dashboard({
           </div>
         </footer>
       </main>
+      {removingTariff && (
+        <Modal
+          title="Eliminar tarifa"
+          className="tariff-delete-modal"
+          initialFocusRef={cancelTariffRemoval}
+          onClose={() => setRemovingTariffId(null)}
+        >
+          <div className="modal-body">
+            <div className="tariff-delete-summary">
+              <span className="tariff-delete-icon" aria-hidden="true">
+                <Trash2 size={22} />
+              </span>
+              <div>
+                {removingTariff.provider && (
+                  <p className="muted">{removingTariff.provider}</p>
+                )}
+                <h3>{removingTariff.name}</h3>
+              </div>
+            </div>
+            <p>Esta oferta se eliminará de la comparativa.</p>
+            <p className="muted">
+              Tus tarifas registradas y tus facturas se conservan.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="button secondary"
+                ref={cancelTariffRemoval}
+                onClick={() => setRemovingTariffId(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="button tariff-delete-confirm"
+                onClick={() => {
+                  update({
+                    ...w,
+                    tariffs: w.tariffs.filter(
+                      (t) => t.id !== removingTariff.id,
+                    ),
+                  });
+                  setRemovingTariffId(null);
+                }}
+              >
+                <Trash2 size={16} /> Eliminar tarifa
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {billDraft && (
         <BillForm
           initial={billDraft}
