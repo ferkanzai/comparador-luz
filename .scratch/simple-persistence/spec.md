@@ -53,9 +53,9 @@ Each mutation loads the workspace, runs the existing pure action, validates the 
 | --- | -------------------------------------------------------------------------------- | ------ | --------------- | ---------- |
 | 01  | [Drizzle schema and a fresh baseline](issues/01-drizzle-baseline.md)             | M      | completed       |            |
 | 02  | [Read endpoint and mutation plumbing](issues/02-read-and-plumbing.md)            | M      | completed       | 01         |
-| 03  | [Profile and offer endpoints](issues/03-profile-and-offers.md)                   | S      | ready-for-agent | 02         |
-| 04  | [Contract endpoints](issues/04-contract.md)                                      | M      | ready-for-agent | 02         |
-| 05  | [Bill endpoints](issues/05-bills.md)                                             | S      | ready-for-agent | 02         |
+| 03  | [Profile and offer endpoints](issues/03-profile-and-offers.md)                   | S      | completed       | 02         |
+| 04  | [Contract endpoints](issues/04-contract.md)                                      | M      | completed       | 02         |
+| 05  | [Bill endpoints](issues/05-bills.md)                                             | S      | completed       | 02         |
 | 06  | [Client on TanStack Query](issues/06-client-tanstack-query.md)                   | M–L    | ready-for-agent | 03, 04, 05 |
 | 07  | [Export on the account page](issues/07-export-on-account-page.md)                | S      | ready-for-agent | 06         |
 | 08  | [Remove the old persistence and rewrite the docs](issues/08-cleanup-and-docs.md) | M      | ready-for-agent | 06         |
