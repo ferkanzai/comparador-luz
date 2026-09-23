@@ -1,7 +1,7 @@
 import { openComparison } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
 
-test("streams guest header actions into the prerendered shell and opens the method from the footer", async ({
+test("renders guest header actions with the page and opens the method from the footer", async ({
   page,
 }) => {
   await page.goto("/");
@@ -25,6 +25,14 @@ test("streams guest header actions into the prerendered shell and opens the meth
   await expect(method).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(method).toHaveCount(0);
+});
+
+test("sends the header actions and hero in the first HTML, so nothing shifts in later", async ({
+  request,
+}) => {
+  const html = await (await request.get("/")).text();
+  expect(html).toContain("Iniciar sesión");
+  expect(html).toContain("Que tu próxima factura");
 });
 
 test("opens the method from the comparator's tax settings", async ({

@@ -28,24 +28,10 @@ import {
   type SaveTariffOptions,
 } from "@/lib/workspace-actions";
 
-// Each lazy view needs its own boundary: suspending up to the page's
-// streaming boundary leaves the triggering update uncommitted.
-const TariffRecordForm = dynamic(() => import("./tariff-record-form"), {
-  loading: () => null,
-});
-const TariffHistory = dynamic(() => import("./tariff-history"), {
-  loading: () => (
-    <div className="panel loading" role="status">
-      Cargando tus tarifas…
-    </div>
-  ),
-});
-const TariffForm = dynamic(() => import("./tariff-form"), {
-  loading: () => null,
-});
-const BillForm = dynamic(() => import("./bill-form"), {
-  loading: () => null,
-});
+const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
+const TariffHistory = dynamic(() => import("./tariff-history"));
+const TariffForm = dynamic(() => import("./tariff-form"));
+const BillForm = dynamic(() => import("./bill-form"));
 const Bills = dynamic(() => import("./bills"), {
   loading: () => (
     <div className="panel loading" role="status">

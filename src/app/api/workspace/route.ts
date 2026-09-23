@@ -8,16 +8,16 @@ import {
   saveWorkspace,
   workspaceSaveLimit,
 } from "@/lib/workspace-store";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 const json = (body: unknown, status = 200) =>
   Response.json(body, {
     status,
     headers: { "Cache-Control": "private, no-store" },
   });
 async function user(request: Request) {
-  // Read the request first so a build without auth can't prerender the 401.
-  const headers = request.headers;
   if (!authConfigured()) return null;
-  const session = await getAuth().api.getSession({ headers });
+  const session = await getAuth().api.getSession({ headers: request.headers });
   return session?.user.id ?? null;
 }
 export async function GET(request: Request) {

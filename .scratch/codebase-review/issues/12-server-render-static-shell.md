@@ -24,6 +24,19 @@
 
 ## Comments
 
+**Update: the prerendered shell was rolled back.** In production, the shell (brand, loading panel, footer) showed first. Then the hero, the tabs, the workspace and the header links streamed in and pushed the page around. The shifts cost far more than the gain, which was about 1.6 ms of TTFB locally with no JavaScript saved.
+
+`cacheComponents` is off. `/` and `/cuenta` are `force-dynamic` again, and `page.tsx` awaits the session before rendering, so the first HTML contains the whole page as it did before this ticket. The API routes and the lazy views are back to their earlier state; they only changed to work with Cache Components.
+
+What's kept:
+- the server components (header shell, hero, footer, method text);
+- `HeaderActions`, `PageProvider`, and `currentUser()` with React `cache`;
+- the page-shell browser tests, plus a new one that checks the header links and hero are in the first HTML.
+
+Everything below describes the original attempt. Don't reintroduce a streamed shell unless its fallback reproduces the final layout.
+
+A shift remains that predates this ticket: a guest's comparison lives in `localStorage`. The server can only render the loading panel inside the workspace, and the panel swaps for the guest's content after hydration.
+
 `cacheComponents: true` is on, and `/` and `/cuenta` are now partial prerenders (◐ in the build output). The build writes a static shell for them. Everything that depends on the request streams in afterwards inside `<Suspense>`. The APIs stay dynamic (ƒ).
 
 **Page structure.** `src/app/page.tsx` is a server component that renders the skip link, `SiteHeader`, `<main>` and `SiteFooter`, all without `"use client"`. Two parts read the request, each inside its own `<Suspense>`:

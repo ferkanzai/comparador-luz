@@ -34,10 +34,7 @@ import { EnergyRates } from "./tariff-rates";
 import TariffPriceComparison from "./tariff-price-comparison";
 
 import type { TariffRecordDraft } from "./tariff-record-form";
-// Needs its own boundary; see the lazy views in dashboard.tsx.
-const TariffRecordForm = dynamic(() => import("./tariff-record-form"), {
-  loading: () => null,
-});
+const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 
 export default function TariffHistory({
   workspace,

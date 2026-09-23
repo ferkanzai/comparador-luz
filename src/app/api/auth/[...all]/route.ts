@@ -1,7 +1,6 @@
 import { authConfigured, getAuth } from "@/lib/auth";
+export const runtime = "nodejs";
 async function handle(request: Request) {
-  // Read the request first so a build without auth can't prerender the 503.
-  void request.headers;
   if (!authConfigured())
     return Response.json(
       {
