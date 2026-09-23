@@ -2,6 +2,7 @@ import axe from "axe-core";
 import type { Page } from "@playwright/test";
 import { comparisonFixture, openComparison } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
+import { signUpVerified } from "./sign-up";
 
 async function enterConsumption(
   page: Page,
@@ -255,15 +256,12 @@ test("account autosave isolates simulations, reports failures and resets transie
     !process.env.COMPARISON_TEST_DATABASE_URL,
     "Requires a server configured with a disposable local test database and console email.",
   );
-  const signup = await page.request.post("/api/auth/sign-up/email", {
-    headers: { origin: "http://localhost:3000" },
-    data: {
-      name: "Browser test",
-      email: `comparison-${crypto.randomUUID()}@example.test`,
-      password: "comparison-test-only-password",
-    },
-  });
-  expect(signup.ok()).toBeTruthy();
+  await signUpVerified(
+    page,
+    "Browser test",
+    `comparison-${crypto.randomUUID()}@example.test`,
+    "comparison-test-only-password",
+  );
   const data = comparisonFixture();
   data.history = [
     {
@@ -1058,7 +1056,9 @@ test("sends security headers and renders the account page under the policy", asy
   const response = await page.goto("/cuenta");
   const headers = response!.headers();
   expect(headers["content-security-policy"]).toContain("connect-src 'self'");
-  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(headers["content-security-policy"]).toContain(
+    "frame-ancestors 'none'",
+  );
   expect(headers["permissions-policy"]).toContain("camera=()");
   await expect(page.locator('input[type="email"]').first()).toBeVisible();
 });

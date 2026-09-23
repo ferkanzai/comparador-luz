@@ -106,7 +106,7 @@ export default function AccountForm({
         const code = result.error.code;
         throw new Error(
           code === "EMAIL_NOT_VERIFIED"
-            ? "Verifica tu correo. Te hemos enviado un nuevo enlace."
+            ? "Confirma tu correo antes de entrar. Te hemos enviado un nuevo enlace: ábrelo en este navegador."
             : code === "INVALID_EMAIL_OR_PASSWORD"
               ? "El correo o la contraseña no son correctos."
               : result.error.status === 429
@@ -114,7 +114,11 @@ export default function AccountForm({
                 : "No se ha podido completar la solicitud. Revisa tus datos o solicita un enlace nuevo.",
         );
       }
-      if (mode === "signin" || mode === "signup") window.location.assign("/");
+      if (mode === "signin") window.location.assign("/");
+      else if (mode === "signup")
+        setMessage(
+          `Te hemos enviado un enlace a ${email}. Ábrelo en este navegador para entrar con tu contraseña. Si lo abres en otro, entrarás allí y, por seguridad, tendrás que crear una contraseña nueva.`,
+        );
       else if (mode === "forgot")
         setMessage(
           "Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña.",

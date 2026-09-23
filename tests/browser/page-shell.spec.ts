@@ -1,5 +1,6 @@
 import { openComparison } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
+import { signUpVerified } from "./sign-up";
 
 test("renders guest header actions with the page and opens the method from the footer", async ({
   page,
@@ -68,15 +69,12 @@ test("greets a signed-in user in the header and signs out", async ({
     !process.env.COMPARISON_TEST_DATABASE_URL,
     "Requires disposable local account database.",
   );
-  const signup = await page.request.post("/api/auth/sign-up/email", {
-    headers: { origin: "http://localhost:3000" },
-    data: {
-      name: "Shell test",
-      email: `shell-${crypto.randomUUID()}@example.test`,
-      password: "local-shell-test-password",
-    },
-  });
-  expect(signup.ok(), await signup.text()).toBeTruthy();
+  await signUpVerified(
+    page,
+    "Shell test",
+    `shell-${crypto.randomUUID()}@example.test`,
+    "local-shell-test-password",
+  );
   await page.goto("/");
   const header = page.getByRole("banner");
   await expect(header.getByText("Hola, Shell", { exact: true })).toBeVisible();

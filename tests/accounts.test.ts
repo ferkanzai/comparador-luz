@@ -91,20 +91,20 @@ test(
         }
         assert.equal(signup.status, 200);
         assert.equal(new URL(emailURL()).origin, base);
+        assert.ok(!cookieOf(signup).includes("session_token"));
+        assert.ok(cookieOf(signup).includes("luz_signup_proof"));
         const unverified = await auth.handler(
           request("/api/auth/sign-in/email", { email, password }),
         );
-        assert.equal(unverified.status, 200);
-        assert.ok(cookieOf(signup).includes("session_token"));
-        assert.equal(
-          (await GET(request("/api/workspace", undefined, cookieOf(signup))))
-            .status,
-          200,
-        );
+        assert.equal(unverified.status, 403);
+        assert.equal((await unverified.json()).code, "EMAIL_NOT_VERIFIED");
         const verified = await auth.handler(
-          new Request(emailURL(), { headers: { origin: base } }),
+          new Request(emailURL(), {
+            headers: { origin: base, cookie: cookieOf(signup) },
+          }),
         );
         assert.equal(verified.status, 302);
+        assert.ok(cookieOf(verified).includes("session_token"));
         const signedIn = await auth.handler(
           request("/api/auth/sign-in/email", { email, password }),
         );
@@ -210,6 +210,52 @@ test(
       assert.equal(
         (await GET(request("/api/workspace", undefined, bobCookie))).status,
         401,
+      );
+      // Someone pre-registers the owner's email with their own password.
+      // When the owner opens the link elsewhere, that password and every earlier session stop working.
+      await getPool().query('DELETE FROM "rateLimit"');
+      const victim = `victim-${randomBytes(4).toString("hex")}@example.com`;
+      users.push(victim);
+      const attackerSignup = await auth.handler(
+        request("/api/auth/sign-up/email", {
+          name: "Attacker",
+          email: victim,
+          password,
+          callbackURL: `${base}/`,
+        }),
+      );
+      assert.equal(attackerSignup.status, 200);
+      const victimLink = emailURL();
+      const { rows: victimRows } = await getPool().query(
+        'SELECT id FROM "user" WHERE email = $1',
+        [victim],
+      );
+      const { internalAdapter } = await auth.$context;
+      const earlier = await internalAdapter.createSession(victimRows[0].id);
+      const ownerClick = await auth.handler(
+        new Request(victimLink, { headers: { origin: base } }),
+      );
+      assert.equal(ownerClick.status, 302);
+      assert.equal(
+        (
+          await getPool().query("SELECT 1 FROM session WHERE token = $1", [
+            earlier.token,
+          ])
+        ).rowCount,
+        0,
+      );
+      assert.equal(
+        (
+          await auth.handler(
+            request("/api/auth/sign-in/email", { email: victim, password }),
+          )
+        ).status,
+        401,
+      );
+      assert.equal(
+        (await GET(request("/api/workspace", undefined, cookieOf(ownerClick))))
+          .status,
+        200,
       );
       // Email codes create verified sessions, cannot be reused, and retain an existing account's workspace.
       await getPool().query('DELETE FROM "rateLimit"');

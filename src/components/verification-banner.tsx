@@ -16,7 +16,7 @@ export default function VerificationBanner({
   return (
     <div className="notice verification-banner">
       <span>
-        Ya estás dentro. Te hemos enviado un correo para confirmar tu dirección.
+        Confirma tu dirección de correo con el enlace que te hemos enviado.
       </span>
       <button
         type="button"

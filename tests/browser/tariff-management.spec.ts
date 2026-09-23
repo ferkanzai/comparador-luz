@@ -3,6 +3,7 @@ import axe from "axe-core";
 import type { Page } from "@playwright/test";
 import { comparisonFixture } from "./comparison.fixture";
 import { expect, test } from "./strict-test";
+import { signUpVerified } from "./sign-up";
 import { money, type Workspace } from "../../src/lib/domain";
 import { calculate } from "../../src/lib/calculator";
 import { billFromCalculation, billTotal } from "../../src/lib/bill-data";
@@ -83,15 +84,12 @@ async function openTariffs(page: Page, data: Workspace = comparisonFixture()) {
     "Requires disposable local account database.",
   );
   await page.clock.setFixedTime(new Date("2026-09-22T12:00:00Z"));
-  const signup = await page.request.post("/api/auth/sign-up/email", {
-    headers: { origin: "http://localhost:3000" },
-    data: {
-      name: "Tariff test",
-      email: `tariffs-${crypto.randomUUID()}@example.test`,
-      password: "local-tariff-test-password",
-    },
-  });
-  expect(signup.ok(), await signup.text()).toBeTruthy();
+  await signUpVerified(
+    page,
+    "Tariff test",
+    `tariffs-${crypto.randomUUID()}@example.test`,
+    "local-tariff-test-password",
+  );
   const saved = await page.request.put("/api/workspace", {
     headers: { origin: "http://localhost:3000" },
     data: { data, version: 0 },
@@ -259,7 +257,10 @@ test("removes current and historical records only after confirmation without rea
     .click();
   await page.keyboard.press("Tab");
   await expect(
-    confirmation.getByRole("button", { name: "Eliminar registro", exact: true }),
+    confirmation.getByRole("button", {
+      name: "Eliminar registro",
+      exact: true,
+    }),
   ).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("article")).toHaveCount(1);
