@@ -11,8 +11,8 @@
   --cost-power: #4275c6;
   --cost-other: #b7830e;
   --cost-taxes: #855bd0;
-  --display: "Manrope", sans-serif;
-  --body: "DM Sans", sans-serif;
+  --display: var(--font-manrope), sans-serif;
+  --body: var(--font-dm-sans), sans-serif;
   --radius: 16px;
   color-scheme: light;
 }
