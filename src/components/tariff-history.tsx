@@ -328,7 +328,7 @@ export default function TariffHistory({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-10 rounded-sm text-muted-foreground hover:bg-accent hover:text-destructive max-[700px]:size-11"
+                  className="size-10 rounded-sm text-muted-foreground hover:bg-destructive-muted hover:text-destructive max-[700px]:size-11"
                   aria-label={`Eliminar registro de ${period.tariff.name}`}
                   title="Eliminar registro"
                   onClick={() => setRemovingId(period.id)}

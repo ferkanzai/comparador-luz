@@ -48,7 +48,7 @@ export function ProfileFields({
     <>
       <div className={section}>
         <div className={sectionTitle}>Consumo de tu factura · kWh</div>
-        <div className={cn(grid, three, periodDots)}>
+        <div className={cn(grid, three, periodDots, "items-end")}>
           {field("peakKwh", "Consumo P1 · Punta", "kWh")}
           {field("flatKwh", "Consumo P2 · Llano", "kWh")}
           {field("valleyKwh", "Consumo P3 · Valle", "kWh")}

@@ -72,7 +72,7 @@ function BillActions({ bill, onEdit, onRemove }: BillProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="hover:bg-destructive/10 hover:text-destructive"
+        className="hover:bg-destructive-muted hover:text-destructive"
 
         aria-label={`Eliminar factura ${bill.month}`}
         onClick={() => onRemove(bill)}

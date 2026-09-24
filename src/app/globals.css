@@ -54,6 +54,10 @@
   --period-1: #335e48;
   --period-2: #88a460;
   --period-3: #a9c25a;
+  /* The hero note and the tariff preview kept their own tints. */
+  --note: #edf1e1;
+  --note-border: #e1e8d2;
+  --tint: #eaf0df;
   --lime: #d7ee87;
   --brand-leaf: #65823a;
   --success: #42713b;
@@ -136,6 +140,9 @@
   --color-period-2: var(--period-2);
   --color-period-3: var(--period-3);
   --color-lime: var(--lime);
+  --color-note: var(--note);
+  --color-note-border: var(--note-border);
+  --color-tint: var(--tint);
   --color-brand-leaf: var(--brand-leaf);
   --color-success: var(--success);
   --color-success-muted: var(--success-muted);

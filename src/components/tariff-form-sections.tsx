@@ -503,7 +503,7 @@ export function TariffPreview({
   const cost = calculate(tariff, profile);
   return (
     <section
-      className={cn(formSection, "rounded-lg bg-accent p-6 max-[520px]:p-4")}
+      className={cn(formSection, "rounded-lg bg-tint p-6 max-[520px]:p-4")}
       aria-label="Resultado de esta tarifa"
     >
       <h3 className={sectionTitle}>Así quedaría tu factura</h3>

@@ -190,7 +190,7 @@ function RowActions({
         <Button
           variant="ghost"
           size="icon"
-          className="hover:bg-destructive/10 hover:text-destructive"
+          className="hover:bg-destructive-muted hover:text-destructive"
           onClick={() => onRemove(tariff)}
           aria-label={`Eliminar ${tariff.name}`}
           title="Eliminar tarifa"

@@ -197,8 +197,8 @@ export function Modal({
           showCloseButton={false}
           onOpenAutoFocus={onOpenAutoFocus}
           className={cn(
-            "flex max-h-[90dvh] flex-col gap-0 overflow-hidden bg-background p-0 sm:max-w-[510px]",
-            size === "wide" && "sm:max-w-[800px]",
+            "flex max-h-[90dvh] flex-col gap-0 overflow-hidden bg-background p-0 sm:max-w-[640px]",
+            size === "wide" && "sm:max-w-[960px]",
             size === "full" && "sm:max-w-[min(1440px,calc(100vw-2rem))]",
             content,
           )}

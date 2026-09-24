@@ -17,7 +17,7 @@ export default function Hero() {
           <br /> Y elige cuándo te compensa cambiar.
         </p>
       </div>
-      <div className="relative min-w-0 rotate-1 rounded-sm rounded-tr-2xl border border-muted-strong bg-muted bg-[repeating-linear-gradient(0deg,transparent,transparent_27px,color-mix(in_oklab,var(--border)_20%,transparent)_28px)] px-8 pt-7 pb-6 max-[1000px]:p-5 max-[800px]:hidden">
+      <div className="relative min-w-0 rotate-1 rounded-sm rounded-tr-2xl border border-note-border bg-note bg-[repeating-linear-gradient(0deg,transparent,transparent_27px,color-mix(in_oklab,var(--border)_20%,transparent)_28px)] px-8 pt-7 pb-6 max-[1000px]:p-5 max-[800px]:hidden">
         <div className="absolute -top-4 right-[22px] grid size-[39px] -rotate-12 place-items-center rounded-full bg-lime">
           <Zap size={21} />
         </div>

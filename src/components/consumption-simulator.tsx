@@ -36,7 +36,7 @@ export default function ConsumptionSimulator({
     : null;
   return (
     <section
-      className="-mt-3.5 mb-7 rounded-lg border border-t-[3px] border-border-accent border-t-primary bg-card px-6 py-5 max-[600px]:p-4"
+      className="-mt-3.5 mb-7 rounded-lg border border-border-accent bg-card px-6 py-5 max-[600px]:p-4"
       aria-label="Simulación de consumo"
     >
       <div className="mb-2 flex items-start justify-between">

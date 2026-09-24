@@ -338,6 +338,7 @@ export default function ComparisonWorkspace({
               <Button
                 variant="link"
                 size="inline"
+                className="ml-auto text-xs whitespace-nowrap disabled:text-muted-foreground disabled:opacity-100"
                 disabled={selectedIds.length < 2}
                 onClick={() => setFinalistsOpen(true)}
               >
