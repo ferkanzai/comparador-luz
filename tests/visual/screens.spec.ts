@@ -13,6 +13,10 @@ import { expect, test } from "../browser/strict-test";
 /** Full pages, except dialogs, which show what is on screen. */
 const shot = async (page: Page, name: string, fullPage = true) => {
   await page.evaluate(() => document.fonts.ready);
+  // Dialogs and drawers slide or fade in; capture them once settled.
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((a) => a.finished)),
+  );
   // Soft, so one run reports every changed screen.
   await expect
     .soft(page)
@@ -76,7 +80,8 @@ test("guest screens", async ({ page }) => {
   await page
     .getByRole("button", { name: "Editar perfil", exact: true })
     .click();
-  await shot(page, "guest-profile");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await dialog(page, "guest-profile");
   await page.reload();
   await page
     .getByRole("button", { name: "Simular consumo", exact: true })
