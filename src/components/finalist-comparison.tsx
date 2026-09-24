@@ -95,7 +95,7 @@ export default function FinalistComparison({
           tabIndex={0}
         >
           <table
-            className="w-full border-separate border-spacing-0 text-left text-base leading-[1.45] [&_.estimate-note]:m-0"
+            className="w-full border-separate border-spacing-0 text-left text-base leading-[1.45]"
             aria-label="Comparación de finalistas"
           >
             <thead>
@@ -170,7 +170,7 @@ export default function FinalistComparison({
                 "Cargos estimados",
                 ({ tariff }) =>
                   estimatedCharges(tariff) ? (
-                    <EstimateNotice tariff={tariff} />
+                    <EstimateNotice tariff={tariff} className="m-0" />
                   ) : (
                     "Ninguno"
                   ),

@@ -20,8 +20,14 @@ import {
   PeriodDatesSection,
   PowerSection,
   TariffPreview,
+  checkboxLabel,
+  formSection,
+  sectionNote,
+  sectionTitle,
+  two,
   type TariffUpdate,
 } from "./tariff-form-sections";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert } from "@/components/ui/alert";
@@ -147,13 +153,17 @@ export default function TariffForm({
   }
   const first = mode.kind === "offer" && mode.first;
   const form = (
-    <form ref={formRef} onSubmit={submit} className="modal-body">
+    <form ref={formRef} onSubmit={submit} className="p-6 max-[520px]:p-5">
       {mode.kind === "offer" && mode.duplicatedFrom && (
-        <div className="tariff-copy-notice">
-          <Copy size={20} aria-hidden="true" />
+        <div className="mb-5 flex items-start gap-3 rounded-lg border border-border-accent bg-secondary p-4 wrap-anywhere">
+          <Copy
+            size={20}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-primary"
+          />
           <div>
             <strong>A partir de {mode.duplicatedFrom}</strong>
-            <p>
+            <p className="m-0 mt-1.5 text-sm-plus text-muted-foreground">
               La copia conserva los precios, las fechas y las condiciones.
               Revisa los datos y dale un nombre antes de guardarla como una
               nueva tarifa.
@@ -161,7 +171,7 @@ export default function TariffForm({
           </div>
         </div>
       )}
-      <p className="muted">
+      <p className="m-0 mb-5 text-sm-plus text-muted-foreground">
         Copia los precios <strong>sin impuestos</strong> de tu factura u oferta,
         con todos sus decimales. Usa 0 cuando un término no tenga coste.
       </p>
@@ -174,7 +184,7 @@ export default function TariffForm({
         />
       )}
       {first && (
-        <label className="checkbox">
+        <label className={checkboxLabel}>
           <Checkbox
             checked={makeCurrent}
             onCheckedChange={(checked) => setMakeCurrent(checked === true)}
@@ -182,7 +192,7 @@ export default function TariffForm({
           Esta es mi tarifa actual
         </label>
       )}
-      <div className="form-grid two">
+      <div className={cn(two, "mb-4")}>
         <Field
           label="Nombre de la tarifa"
           value={tariff.name}
@@ -204,13 +214,13 @@ export default function TariffForm({
       </ChargesSection>
       {mode.kind !== "record" && (
         <>
-          <section className="form-section">
-            <h3>
+          <section className={formSection}>
+            <h3 className={sectionTitle}>
               {mode.kind === "invoice"
                 ? "04 / Tu factura de referencia"
                 : "04 / Perfil compartido de consumo"}
             </h3>
-            <p className="small muted">
+            <p className={sectionNote}>
               {mode.kind === "invoice"
                 ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
                 : "Estos datos pertenecen a tu perfil compartido. Al cambiarlos aquí, cambiarán para todas las tarifas; no incluyen simulaciones sin adoptar."}
@@ -234,6 +244,7 @@ export default function TariffForm({
           onChange={setSince}
           required
           hint="Fecha en la que empezaron estas condiciones de tu contrato actual."
+          className="mb-4"
         />
       )}
       {error && (
@@ -241,7 +252,7 @@ export default function TariffForm({
           {error}
         </Alert>
       )}
-      <div className="modal-actions">
+      <div className="mt-6 flex flex-wrap justify-end gap-2.5 border-t border-border pt-5">
         <Button variant="outline" type="button" onClick={onClose}>
           {inline && mode.kind === "invoice"
             ? "Volver a la factura"

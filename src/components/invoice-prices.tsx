@@ -8,6 +8,8 @@ import {
 } from "@/lib/invoice-prices";
 import { Field } from "./ui";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { formDisclosure, two } from "./tariff-form-sections";
 
 export default function InvoicePrices({
   tariff,
@@ -22,16 +24,16 @@ export default function InvoicePrices({
   const { setMessage } = useFeedback();
   const quantities = invoicePriceQuantities(tariff, profile);
   return (
-    <details className="form-section invoice-prices">
+    <details className={formDisclosure}>
       <summary>Calcular precios desde los importes</summary>
-      <p className="small muted">
+      <p className="my-3.5 text-sm-plus text-muted-foreground">
         Si tu factura redondea los precios, copia aquí los importes sin
         impuestos. Calcularemos precios efectivos usando el consumo, los kW y
         los días de esta factura. No añadas de nuevo sus peajes y cargos: ya
         están incluidos. Introduce el importe SNOEE solo si no forma parte del
         importe de energía que has copiado.
       </p>
-      <div className="form-grid two">
+      <div className={cn(two, "my-4")}>
         {quantities.map(([key, label]) => (
           <Field
             key={key}
@@ -48,7 +50,6 @@ export default function InvoicePrices({
       <Button
         variant="outline"
         type="button"
-
         onClick={() => {
           try {
             onApply(tariffFromInvoiceAmounts(tariff, profile, amounts));

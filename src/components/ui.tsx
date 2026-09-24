@@ -65,6 +65,7 @@ export function Field({
   maxLength = 100,
   decimal = false,
   signed = false,
+  className,
 }: {
   label: string;
   value: string;
@@ -77,6 +78,7 @@ export function Field({
   maxLength?: number;
   decimal?: boolean;
   signed?: boolean;
+  className?: string;
 }) {
   const id = useId();
   const pattern = signed ? "-?[0-9]+([.,][0-9]+)?" : "[0-9]+([.,][0-9]+)?";
@@ -105,7 +107,10 @@ export function Field({
   };
   // `field` stays as a hook for the layouts around it (spacing, period dots).
   return (
-    <UiField className="field" data-invalid={invalid || undefined}>
+    <UiField
+      className={cn("field", className)}
+      data-invalid={invalid || undefined}
+    >
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {unit ? (
         <InputGroup>

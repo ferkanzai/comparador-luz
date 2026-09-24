@@ -29,12 +29,14 @@ const dotColours: Record<CostCategory, string> = {
 export default function CostCategoryLabel({
   category,
   children,
+  className,
 }: {
   category: CostCategory;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-2.5 [.history-comparison-table_th>&]:gap-1.5">
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
       <span
         className={cn("size-2 shrink-0 rounded-full", dotColours[category])}
         aria-hidden="true"

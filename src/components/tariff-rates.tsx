@@ -11,11 +11,6 @@ import { cents } from "@/lib/calculator";
 import { formatTariffPrice } from "@/lib/tariff-price-format";
 import { cn } from "@/lib/utils";
 
-/*
- * `comparison-rates` stays: Mis tarifas restyles these rates through it
- * (`.tariff-record .comparison-rates`), until that screen moves over.
- */
-
 export function EnergyRates({
   tariff,
   compact = false,
@@ -34,13 +29,18 @@ export function EnergyRates({
           ["Valle", tariff.energyValley],
         ];
   return (
-    <dl className={cn("comparison-rates", className)}>
+    <dl
+      className={cn(
+        "m-0 flex flex-col gap-1 text-xs/[inherit] text-muted-foreground tabular-nums",
+        className,
+      )}
+    >
       {rates.map(([label, value]) => (
-        <div key={label}>
+        <div key={label} className="flex justify-between gap-3">
           <dt>{label}</dt>
-          <dd>
+          <dd className="m-0 whitespace-nowrap text-foreground">
             {compact ? formatTariffPrice(value) : decimalComma(value)}{" "}
-            <span>€/kWh</span>
+            <span className="text-3xs text-muted-foreground">€/kWh</span>
           </dd>
         </div>
       ))}
