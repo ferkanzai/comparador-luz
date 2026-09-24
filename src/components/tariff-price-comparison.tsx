@@ -14,6 +14,11 @@ import type { TariffPeriod } from "@/lib/tariff-periods";
 import CostCategoryLabel, { type CostCategory } from "./cost-category-label";
 import { formatTariffPrice as price } from "@/lib/tariff-price-format";
 import { usePowerComparisonUnit } from "./use-power-comparison-unit";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function TariffPriceComparison({
   periods,
@@ -73,28 +78,27 @@ export default function TariffPriceComparison({
             </p>
             <label className="history-power-unit">
               Potencia en
-              <select
+              <NativeSelect
                 aria-label="Comparar potencia en"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as Tariff["powerUnit"])}
               >
-                <option value="day">€/kW/día</option>
-                <option value="month">€/kW/mes</option>
-                <option value="year">€/kW/año</option>
-              </select>
+                <NativeSelectOption value="day">€/kW/día</NativeSelectOption>
+                <NativeSelectOption value="month">€/kW/mes</NativeSelectOption>
+                <NativeSelectOption value="year">€/kW/año</NativeSelectOption>
+              </NativeSelect>
             </label>
           </div>
           <fieldset className="history-comparison-selection">
             <legend className="sr-only">Períodos que quieres comparar</legend>
             {periods.map((p) => (
               <label key={p.id}>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selectedIds.includes(p.id)}
                   disabled={
                     selectedIds.length >= 3 && !selectedIds.includes(p.id)
                   }
-                  onChange={() =>
+                  onCheckedChange={() =>
                     setSelected(
                       selectedIds.includes(p.id)
                         ? selectedIds.filter((id) => id !== p.id)

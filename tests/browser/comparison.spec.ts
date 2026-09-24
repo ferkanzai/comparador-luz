@@ -383,7 +383,9 @@ test("account autosave keeps simulations local, reports failed saves and shows r
     page.getByText(/No se ha guardado el último cambio/),
   ).toBeVisible({ timeout: 15_000 });
   await expect(
-    page.getByRole("alert").filter({ hasText: "No se ha podido conectar" }),
+    page
+      .getByRole("region", { name: "Avisos" })
+      .getByText(/No se ha podido conectar/),
   ).toBeVisible();
   await expect(
     table.getByRole("row").filter({ hasText: "Clara Guardada" }),
@@ -421,7 +423,7 @@ test("account autosave keeps simulations local, reports failed saves and shows r
     .getByRole("button", { name: "Guardar factura", exact: true })
     .click();
   await expect(
-    page.getByRole("alert").filter({ hasText: "Regla de prueba." }),
+    page.getByRole("region", { name: "Avisos" }).getByText("Regla de prueba."),
   ).toBeVisible();
   await page.unroute("**/api/bills/*");
   await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
@@ -899,7 +901,7 @@ test("starts with no sample tariffs and lets the first tariff be the current ref
   await page
     .getByLabel("Nombre de la tarifa", { exact: true })
     .fill("Mi primera tarifa");
-  await page.getByRole("button", { name: "Precio único", exact: true }).click();
+  await page.getByRole("radio", { name: "Precio único", exact: true }).click();
   await page.getByLabel("Precio las 24 horas", { exact: true }).fill("0.20");
   await page.getByLabel("P1 · Punta", { exact: true }).fill("0.08");
   await page.getByLabel("P2 · Valle", { exact: true }).fill("0.02");
@@ -1139,7 +1141,7 @@ test("sends security headers and renders the account page under the policy", asy
 
 test("keeps account hints out of field names", async ({ page }) => {
   await page.goto("/cuenta?mode=signup");
-  await page.getByRole("button", { name: "Contraseña", exact: true }).click();
+  await page.getByRole("radio", { name: "Contraseña", exact: true }).click();
   const password = page.getByLabel("Contraseña", { exact: true });
   await expect(password).toHaveAccessibleName("Contraseña");
   await expect(password).toHaveAccessibleDescription(

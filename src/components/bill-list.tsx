@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { money, numberOf, shortDate, type Bill } from "@/lib/domain";
 import { billLines, billMonthLabel, billTotal } from "@/lib/bill-data";
+import { Button } from "@/components/ui/button";
 
 type BillProps = {
   bill: Bill;
@@ -47,20 +48,25 @@ function BillSource({ bill }: BillProps) {
 function BillActions({ bill, onEdit, onRemove }: BillProps) {
   return (
     <div className="row-actions">
-      <button
-        className="icon-button"
+      <Button
+        variant="ghost"
+        size="icon"
+
         aria-label={`Editar factura ${bill.month}`}
         onClick={() => onEdit(bill)}
       >
         <Pencil size={16} />
-      </button>
-      <button
-        className="icon-button danger"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="hover:bg-destructive/10 hover:text-destructive"
+
         aria-label={`Eliminar factura ${bill.month}`}
         onClick={() => onRemove(bill)}
       >
         <Trash2 size={16} />
-      </button>
+      </Button>
     </div>
   );
 }

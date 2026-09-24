@@ -1,4 +1,6 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 export default function VerificationBanner({
   email,
@@ -14,13 +16,15 @@ export default function VerificationBanner({
   onError: (message: string) => void;
 }) {
   return (
-    <div className="notice verification-banner">
+    <Alert className="verification-banner" role="note">
       <span>
         Confirma tu dirección de correo con el enlace que te hemos enviado.
       </span>
-      <button
+      <Button
+        variant="link"
+        size="inline"
         type="button"
-        className="link-button"
+
         disabled={busy}
         onClick={async () => {
           onBusyChange(true);
@@ -42,7 +46,7 @@ export default function VerificationBanner({
         }}
       >
         Reenviar correo
-      </button>
-    </div>
+      </Button>
+    </Alert>
   );
 }

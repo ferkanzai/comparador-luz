@@ -8,6 +8,10 @@ import CostCategoryLabel, { billLineCategories } from "./cost-category-label";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";
 import { CostDifference, EnergyRates, PowerRates } from "./tariff-rates";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 export type ComparisonRow = {
   tariff: Tariff;
@@ -59,13 +63,12 @@ function TariffIdentity({
 }: RowProps) {
   return (
     <>
-      <input
+      <Checkbox
         className="finalist-checkbox"
-        type="checkbox"
         aria-label={`Comparar ${tariff.name}`}
         checked={selected}
         disabled={!selectable}
-        onChange={() => onToggle(tariff.id)}
+        onCheckedChange={() => onToggle(tariff.id)}
       />
       <span className="comparison-provider">
         {tariff.provider || "Sin comercializadora"}
@@ -77,10 +80,23 @@ function TariffIdentity({
         {tariff.name}
       </button>
       <div className="comparison-tags">
-        {current && <span className="comparison-tag">Tu tarifa actual</span>}
-        {cheapest && <span className="comparison-tag best">Menor coste</span>}
+        {current && (
+          <Badge variant="outline" className="comparison-tag">
+            Tu tarifa actual
+          </Badge>
+        )}
+        {cheapest && (
+          <Badge className="comparison-tag bg-lime text-foreground">
+            Menor coste
+          </Badge>
+        )}
         {estimatedCharges(tariff) && (
-          <span className="comparison-tag approximate">Cargos estimados</span>
+          <Badge
+            variant="outline"
+            className="comparison-tag border-warning-border bg-warning-muted text-warning"
+          >
+            Cargos estimados
+          </Badge>
         )}
       </div>
       {tariff.validUntil && (
@@ -128,23 +144,28 @@ function DetailsLink({ row: { tariff }, onDetails }: RowProps) {
 function RowActions({ row: { tariff }, current, onEdit, onRemove }: RowProps) {
   return (
     <div className="comparison-row-actions">
-      <button
-        className="icon-button"
+      <Button
+        variant="ghost"
+        size="icon"
+
         onClick={() => onEdit(tariff)}
         aria-label={`Editar ${tariff.name}`}
         title="Editar tarifa"
       >
         <Pencil size={16} />
-      </button>
+      </Button>
       {!current && (
-        <button
-          className="icon-button danger"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-destructive/10 hover:text-destructive"
+
           onClick={() => onRemove(tariff)}
           aria-label={`Eliminar ${tariff.name}`}
           title="Eliminar tarifa"
         >
           <Trash2 size={16} />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -339,7 +360,7 @@ export function TariffDetails({
           {tariff.provider || "Comercializadora sin indicar"} ·{" "}
           {current ? "Tu tarifa actual" : "Oferta para comparar"}
         </p>
-        {reason && <p className="notice">{reason}</p>}
+        {reason && <Alert role="note">{reason}</Alert>}
         <h3>Precios sin impuestos</h3>
         <EnergyRates tariff={tariff} />
         <PowerRates tariff={tariff} unit={unit} />
@@ -398,31 +419,32 @@ export function TariffDetails({
         <div className="tariff-detail-actions">
           {!current && (
             <div className="tariff-detail-register">
-              <button
-                className="button primary"
+              <Button
                 onClick={() => {
                   onClose();
                   actions.onCurrent(tariff);
                 }}
               >
                 Registrar como actual
-              </button>
+              </Button>
               {actions.onHistorical && (
-                <button
-                  className="button secondary"
+                <Button
+                  variant="outline"
+
                   onClick={() => {
                     onClose();
                     actions.onHistorical?.(tariff);
                   }}
                 >
                   Registrar como anterior
-                </button>
+                </Button>
               )}
             </div>
           )}
           <div className="tariff-detail-manage">
-            <button
-              className="button secondary"
+            <Button
+              variant="outline"
+
               onClick={() => {
                 onClose();
                 actions.onEdit(tariff);
@@ -430,9 +452,10 @@ export function TariffDetails({
             >
               <Pencil size={16} />
               {current ? "Corregir datos" : "Editar tarifa"}
-            </button>
-            <button
-              className="button secondary"
+            </Button>
+            <Button
+              variant="outline"
+
               disabled={!canDuplicate}
               aria-describedby={
                 canDuplicate ? undefined : "tariff-detail-limit"
@@ -444,10 +467,11 @@ export function TariffDetails({
             >
               <Copy size={16} />
               Duplicar
-            </button>
+            </Button>
             {!current && (
-              <button
-                className="button danger"
+              <Button
+                variant="destructive"
+
                 onClick={() => {
                   actions.onRemove(tariff);
                   onClose();
@@ -455,7 +479,7 @@ export function TariffDetails({
               >
                 <Trash2 size={16} />
                 Eliminar tarifa
-              </button>
+              </Button>
             )}
           </div>
           {!canDuplicate && (

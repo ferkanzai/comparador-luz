@@ -24,6 +24,11 @@ import YearComparison from "./year-comparison";
 import { invoiceYears } from "@/lib/year-comparison";
 import { consumptionMonths, formatKwh } from "@/lib/bill-consumption";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 export default function Bills({
   workspace: w,
   run,
@@ -102,10 +107,10 @@ export default function Bills({
             Lo que pagas y consumes, mes a mes o año a año.
           </p>
         </div>
-        <button className="button primary" onClick={create}>
+        <Button onClick={create}>
           <Plus size={17} />
           Añadir factura
-        </button>
+        </Button>
       </div>
       <div className="bill-views" role="group" aria-label="Vista de facturas">
         <button
@@ -159,7 +164,10 @@ export default function Bills({
               </div>
               <label className="inline-label">
                 Año
-                <select value={year} onChange={(e) => setYear(e.target.value)}>
+                <NativeSelect
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                >
                   {Array.from(
                     new Set([
                       today().slice(0, 4),
@@ -169,9 +177,9 @@ export default function Bills({
                     .sort()
                     .reverse()
                     .map((y) => (
-                      <option key={y}>{y}</option>
+                      <NativeSelectOption key={y}>{y}</NativeSelectOption>
                     ))}
-                </select>
+                </NativeSelect>
               </label>
             </div>
             <BillsChart
@@ -201,7 +209,8 @@ export default function Bills({
                   >
                     <table>
                       <caption className="bill-table-caption">
-                        Total antes de descuentos · Pagado después de descuentos.
+                        Total antes de descuentos · Pagado después de
+                        descuentos.
                       </caption>
                       <thead>
                         <tr>
@@ -245,9 +254,9 @@ export default function Bills({
                 icon={<Receipt size={26} />}
                 title="Tu historial empieza con una factura."
                 action={
-                  <button className="button secondary" onClick={create}>
+                  <Button variant="outline" onClick={create}>
                     Registrar mi primera factura
-                  </button>
+                  </Button>
                 }
               >
                 Añade el importe real o guarda tu cálculo como factura desde el

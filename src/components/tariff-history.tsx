@@ -30,6 +30,8 @@ import TariffPriceComparison from "./tariff-price-comparison";
 
 import type { TariffRecordDraft } from "./tariff-record-form";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 
 export default function TariffHistory({
@@ -55,11 +57,11 @@ export default function TariffHistory({
           <p className="muted">Tus contratos y sus precios, en orden.</p>
         </div>
         <div className="tariff-history-actions">
-          <button className="button primary" onClick={() => setChoosing(true)}>
+          <Button onClick={() => setChoosing(true)}>
             {workspace.currentId
               ? "Cambiar tarifa actual"
               : "Registrar tarifa actual"}
-          </button>
+          </Button>
           <button
             className="ledger-add"
             onClick={() =>
@@ -76,9 +78,9 @@ export default function TariffHistory({
         </div>
       </div>
       {error && (
-        <p role="alert" className="notice error">
+        <Alert variant="destructive" role="alert">
           {error}
-        </p>
+        </Alert>
       )}
       {periods.length > 0 && <TariffPriceComparison periods={periods} />}
       <div className="history-list">
@@ -328,8 +330,9 @@ export default function TariffHistory({
               {workspace.tariffs
                 .filter((t) => t.id !== workspace.currentId)
                 .map((tariff) => (
-                  <button
-                    className="button secondary"
+                  <Button
+                    variant="outline"
+
                     key={tariff.id}
                     onClick={() => {
                       setChoosing(false);
@@ -341,11 +344,10 @@ export default function TariffHistory({
                     }}
                   >
                     {tariff.name}
-                  </button>
+                  </Button>
                 ))}
             </div>
-            <button
-              className="button primary"
+            <Button
               onClick={() => {
                 setChoosing(false);
                 setDraft({
@@ -356,7 +358,7 @@ export default function TariffHistory({
               }}
             >
               Introducir nueva tarifa
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

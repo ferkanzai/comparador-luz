@@ -2,6 +2,7 @@ import { RotateCcw, X } from "lucide-react";
 import type { ConsumptionSimulation } from "@/lib/consumption-simulation";
 import { numberOf, type Consumption } from "@/lib/domain";
 import { Field } from "./ui";
+import { Button } from "@/components/ui/button";
 
 export default function ConsumptionSimulator({
   value,
@@ -43,13 +44,15 @@ export default function ConsumptionSimulator({
           <span className="eyebrow">PRUEBA OTRA FORMA DE CONSUMIR</span>
           <h3>¿Y si cambias tu consumo?</h3>
         </div>
-        <button
-          className="icon-button"
+        <Button
+          variant="ghost"
+          size="icon"
+
           aria-label="Cerrar simulador y restablecer"
           onClick={onClose}
         >
           <X size={18} />
-        </button>
+        </Button>
       </div>
       <p className="small muted">
         Introduce los kWh de punta, llano y valle, como aparecen en tu factura.
@@ -94,17 +97,18 @@ export default function ConsumptionSimulator({
             : "Tu perfil es el punto de partida"}
         </span>
         <div>
-          <button className="text-link" onClick={onReset}>
+          <Button variant="link" size="inline" onClick={onReset}>
             <RotateCcw size={14} />
             Restablecer
-          </button>
-          <button
-            className="button primary small-button"
+          </Button>
+          <Button
+            size="sm"
+
             disabled={!active || !consumption}
             onClick={onAdopt}
           >
             Usar este consumo
-          </button>
+          </Button>
         </div>
       </div>
     </section>

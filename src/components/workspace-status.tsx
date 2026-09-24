@@ -1,4 +1,5 @@
 import { saveStatusLabel, type SaveStatus } from "@/lib/sync-status";
+import { Button } from "@/components/ui/button";
 
 export default function WorkspaceStatus({
   loaded,
@@ -18,9 +19,9 @@ export default function WorkspaceStatus({
       />
       {loaded ? saveStatusLabel(status) : "Cargando…"}
       {status === "error" && (
-        <button className="link-button" onClick={onRetry}>
+        <Button variant="link" size="inline" onClick={onRetry}>
           Reintentar
-        </button>
+        </Button>
       )}
     </span>
   );

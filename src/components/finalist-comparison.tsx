@@ -12,6 +12,7 @@ import { estimatedCharges } from "@/lib/charge-estimates";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";
 import { TaxAssumptions } from "./profile-fields";
+import { Badge } from "@/components/ui/badge";
 
 export default function FinalistComparison({
   rows,
@@ -84,7 +85,9 @@ export default function FinalistComparison({
                     </span>
                     <strong>{tariff.name}</strong>
                     {tariff.id === currentId && (
-                      <span className="comparison-tag">Tu tarifa actual</span>
+                      <Badge variant="outline" className="comparison-tag">
+                        Tu tarifa actual
+                      </Badge>
                     )}
                   </th>
                 ))}

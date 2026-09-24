@@ -6,6 +6,7 @@ import {
   updateBillConsumption,
 } from "@/lib/bill-consumption";
 import { Field } from "./ui";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function BillConsumptionFields({
   bill,
@@ -21,14 +22,13 @@ export default function BillConsumptionFields({
     >
       <h3>Consumo de esta factura</h3>
       <label className="checkbox">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={!!bill.consumption}
-          onChange={(e) =>
+          onCheckedChange={(checked) =>
             onChange(
               updateBillConsumption(
                 bill,
-                e.target.checked
+                checked === true
                   ? { peakKwh: "", flatKwh: "", valleyKwh: "" }
                   : null,
               ),

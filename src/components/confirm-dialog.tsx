@@ -2,6 +2,7 @@
 import { useRef, type ReactNode } from "react";
 import { Trash2 } from "lucide-react";
 import { Modal } from "./ui";
+import { Button } from "@/components/ui/button";
 
 export default function ConfirmDialog({
   title,
@@ -35,12 +36,12 @@ export default function ConfirmDialog({
         </div>
         {consequence}
         <div className="modal-actions">
-          <button className="button secondary" ref={cancel} onClick={onClose}>
+          <Button variant="outline" ref={cancel} onClick={onClose}>
             Cancelar
-          </button>
-          <button className="button confirm-danger" onClick={onConfirm}>
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
             <Trash2 size={16} /> {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

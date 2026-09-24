@@ -1,5 +1,6 @@
 "use client";
-import FeedbackNotice, { useFeedback } from "./feedback-notice";
+import { useFeedback } from "./feedback-notice";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
@@ -7,6 +8,9 @@ import { authClient } from "@/lib/auth-client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./input-otp";
 import { Brand } from "./ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 export default function AccountForm({
   configured,
   mode: initialMode,
@@ -35,7 +39,7 @@ export default function AccountForm({
   const [name, setName] = useState("");
   const codeInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const { message, setMessage, dismiss } = useFeedback();
+  const { setMessage } = useFeedback();
   const [error, setError] = useState(
     verificationError
       ? "El enlace ha caducado o no es válido. Solicita uno nuevo."
@@ -46,14 +50,12 @@ export default function AccountForm({
     setMode(next);
     setSent(false);
     setOtp("");
-    setMessage("");
     setError("");
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
-    setMessage("");
     const data = new FormData(event.currentTarget);
     const password = String(data.get("password") ?? "");
     const callbackURL = `${window.location.origin}/`;
@@ -180,9 +182,11 @@ export default function AccountForm({
         </span>
       </div>
       <div className="account-side">
-        <Link href="/" className="text-link">
-          <ArrowLeft size={16} /> Volver al comparador
-        </Link>
+        <Button asChild variant="link" size="inline" className="self-start">
+          <Link href="/">
+            <ArrowLeft size={16} /> Volver al comparador
+          </Link>
+        </Button>
         <div className="account-card">
           <span className="eyebrow">LUZ EN CLARO / TU CUENTA</span>
           <h1>{title}</h1>
@@ -194,43 +198,44 @@ export default function AccountForm({
                 : "Continúa donde lo dejaste."}
           </p>
           {deleted && (
-            <div className="notice success" role="status">
+            <Alert role="status">
               Hemos eliminado tu cuenta y todos sus datos.
-            </div>
+            </Alert>
           )}
           {!configured && (
-            <div className="notice">
+            <Alert role="note">
               Las cuentas todavía no están disponibles en esta instalación.
               Puedes usar el comparador sin registrarte.
-            </div>
+            </Alert>
           )}
           {(mode === "signup" || mode === "signin") && (
-            <div className="segmented auth-method" aria-label="Forma de acceso">
-              <button
-                type="button"
+            <ToggleGroup
+              type="single"
+              value={method}
+              className="segmented auth-method w-full rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+              aria-label="Forma de acceso"
+            >
+              <ToggleGroupItem
+                value="otp"
                 disabled={busy}
-                aria-pressed={method === "otp"}
-                className={method === "otp" ? "selected" : ""}
                 onClick={() => {
                   setMethod("otp");
                   switchMode(mode);
                 }}
               >
                 Código por correo
-              </button>
-              <button
-                type="button"
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="password"
                 disabled={busy}
-                aria-pressed={method === "password"}
-                className={method === "password" ? "selected" : ""}
                 onClick={() => {
                   setMethod("password");
                   switchMode(mode);
                 }}
               >
                 Contraseña
-              </button>
-            </div>
+              </ToggleGroupItem>
+            </ToggleGroup>
           )}
           {method === "otp" && (mode === "signup" || mode === "signin") && (
             <p className="small muted">
@@ -243,7 +248,7 @@ export default function AccountForm({
               {mode === "signup" && !sent && (
                 <label className="auth-label">
                   Tu nombre
-                  <input
+                  <Input
                     name="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -256,7 +261,7 @@ export default function AccountForm({
               {mode !== "reset" && (
                 <label className="auth-label">
                   Correo electrónico
-                  <input
+                  <Input
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -306,7 +311,7 @@ export default function AccountForm({
                     <label htmlFor="password">
                       {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
                     </label>
-                    <input
+                    <Input
                       id="password"
                       name="password"
                       type="password"
@@ -328,15 +333,18 @@ export default function AccountForm({
                   </div>
                 )}
               {mode === "signin" && method === "password" && (
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
+                  className="forgot"
                   type="button"
-                  className="link-button forgot"
+
                   onClick={() => switchMode("forgot")}
                 >
                   He olvidado mi contraseña
-                </button>
+                </Button>
               )}
-              <button className="button primary full" type="submit">
+              <Button className="w-full" type="submit">
                 {busy
                   ? "Un momento…"
                   : method === "otp" && (mode === "signup" || mode === "signin")
@@ -351,51 +359,46 @@ export default function AccountForm({
                           ? "Guardar contraseña"
                           : "Entrar en mi cuenta"}
                 <ArrowRight size={17} />
-              </button>
+              </Button>
               {sent && method === "otp" && (
                 <div className="otp-actions">
-                  <button
+                  <Button
+                    variant="link"
+                    size="inline"
                     type="button"
-                    className="link-button"
+
                     onClick={() => {
                       setSent(false);
                       setOtp("");
-                      setMessage("");
                       setError("");
                     }}
                   >
                     Cambiar correo o pedir otro código
-                  </button>
+                  </Button>
                 </div>
               )}
             </fieldset>
           </form>
           {error && (
-            <FeedbackNotice
-              message={{ id: 0, text: error, kind: "error" }}
-              onDismiss={() => setError("")}
-            />
-          )}
-          {message && (
-            <FeedbackNotice
-              key={message.id}
-              message={message}
-              onDismiss={dismiss}
-            />
+            <Alert variant="destructive" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <p className="auth-switch">
             {mode === "signin"
               ? "¿Primera vez por aquí?"
               : "¿Ya tienes cuenta?"}{" "}
-            <button
-              className="link-button"
+            <Button
+              variant="link"
+              size="inline"
+
               disabled={busy}
               onClick={() =>
                 switchMode(mode === "signin" ? "signup" : "signin")
               }
             >
               {mode === "signin" ? "Crear una cuenta" : "Iniciar sesión"}
-            </button>
+            </Button>
           </p>
           <div className="auth-security">
             <ShieldCheck size={16} />

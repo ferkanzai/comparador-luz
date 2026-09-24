@@ -8,6 +8,11 @@ import {
   invoiceYears,
   type YearMetric,
 } from "@/lib/year-comparison";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function YearComparison({ bills }: { bills: Bill[] }) {
   const years = invoiceYears(bills);
@@ -44,7 +49,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
           <div className="form-grid two">
             <label className="auth-label">
               Año de referencia
-              <select
+              <NativeSelect
                 value={first}
                 onChange={(event) =>
                   setSelection({
@@ -54,13 +59,13 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                 }
               >
                 {years.map((year) => (
-                  <option key={year}>{year}</option>
+                  <NativeSelectOption key={year}>{year}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="auth-label">
               Año a comparar
-              <select
+              <NativeSelect
                 value={second}
                 onChange={(event) =>
                   setSelection({
@@ -70,31 +75,29 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                 }
               >
                 {years.map((year) => (
-                  <option key={year}>{year}</option>
+                  <NativeSelectOption key={year}>{year}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           </div>
-          <div className="segmented" role="group" aria-label="Dato a comparar">
-            <button
-              type="button"
-              className={metric === "paid" ? "selected" : ""}
-              aria-pressed={metric === "paid"}
-              onClick={() => setMetric("paid")}
-            >
+          <ToggleGroup
+            type="single"
+            value={metric}
+            className="segmented rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+            aria-label="Dato a comparar"
+          >
+            <ToggleGroupItem value="paid" onClick={() => setMetric("paid")}>
               <Receipt size={16} aria-hidden="true" />
               Pagado
-            </button>
-            <button
-              type="button"
-              className={metric === "consumption" ? "selected" : ""}
-              aria-pressed={metric === "consumption"}
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="consumption"
               onClick={() => setMetric("consumption")}
             >
               <Zap size={16} aria-hidden="true" />
               Consumo
-            </button>
-          </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
         <div className="year-summary" role="status" aria-live="polite">
           <div>

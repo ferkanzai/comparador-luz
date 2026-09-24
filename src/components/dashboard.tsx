@@ -1,5 +1,4 @@
 "use client";
-import FeedbackNotice from "./feedback-notice";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Download, ShieldCheck } from "lucide-react";
@@ -20,6 +19,8 @@ import {
   type SaveTariffOptions,
 } from "@/lib/workspace-actions";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 const TariffHistory = dynamic(() => import("./tariff-history"));
@@ -47,8 +48,7 @@ export default function Dashboard({
   const workspace = useWorkspace(user?.id, initialWorkspace);
   const { data: w, loaded, loadError, status } = workspace;
   const [busy, setBusy] = useState(false);
-  const { message, setMessage, dismiss, error, setError, openMethod } =
-    usePage();
+  const { setMessage, setError, openMethod } = usePage();
   const [tab, setTab] = useState<WorkspaceTab>("compare");
   const navigation = useRef<HTMLElement>(null);
   const previousTab = useRef(tab);
@@ -79,8 +79,6 @@ export default function Dashboard({
   );
   function run(command: WorkspaceCommand) {
     workspace.run(command);
-    setMessage("");
-    setError("");
   }
   function handleTariffSave(tariff: Tariff, options: SaveTariffOptions) {
     run(commands.saveTariff(tariff, options));
@@ -115,32 +113,39 @@ export default function Dashboard({
           </span>
           {/* Signed-in users download their data from the account page. */}
           {!user && (
-            <button
-              className="button secondary small-button"
+            <Button
+              variant="outline"
+              size="sm"
+
               onClick={() => downloadWorkspace(w)}
             >
               <Download size={15} />
               Exportar
-            </button>
+            </Button>
           )}
         </div>
       )}
       {status === "outdated" ? (
-        <div className="notice" role="alert">
+        <Alert role="alert">
           Hay una versión nueva de la aplicación. Recarga la página para seguir
           guardando.{" "}
-          <button
-            className="button secondary small-button"
+          <Button
+            variant="outline"
+            size="sm"
+
             onClick={() => window.location.reload()}
           >
             Recargar
-          </button>
-        </div>
+          </Button>
+        </Alert>
       ) : (
+        // An account's failed saves arrive as toasts; a guest's browser that
+        // refuses to store the workspace stays a visible state.
+        !user &&
         workspace.error && (
-          <div className="notice error" role="alert">
+          <Alert variant="destructive" role="alert">
             {workspace.error}
-          </div>
+          </Alert>
         )
       )}
       {user && !user.emailVerified && (
@@ -152,26 +157,13 @@ export default function Dashboard({
           onError={setError}
         />
       )}
-      {message && (
-        <FeedbackNotice
-          key={message.id}
-          message={message}
-          onDismiss={dismiss}
-        />
-      )}
-      {error && (
-        <FeedbackNotice
-          message={{ id: 0, text: error, kind: "error" }}
-          onDismiss={() => setError("")}
-        />
-      )}
       {loadError && (
-        <div className="notice error" role="alert">
+        <Alert variant="destructive" role="alert">
           {loadError}{" "}
-          <button className="link-button" onClick={workspace.reload}>
+          <Button variant="link" size="inline" onClick={workspace.reload}>
             Reintentar
-          </button>
-        </div>
+          </Button>
+        </Alert>
       )}
       {!loaded && !loadError && (
         <div className="panel loading" role="status">

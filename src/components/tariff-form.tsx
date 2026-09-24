@@ -16,6 +16,9 @@ import {
   TariffPreview,
   type TariffUpdate,
 } from "./tariff-form-sections";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 
 export type TariffFormMode =
   | {
@@ -160,10 +163,9 @@ export default function TariffForm({
         )}
         {first && (
           <label className="checkbox">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={makeCurrent}
-              onChange={(e) => setMakeCurrent(e.target.checked)}
+              onCheckedChange={(checked) => setMakeCurrent(checked === true)}
             />{" "}
             Esta es mi tarifa actual
           </label>
@@ -223,18 +225,18 @@ export default function TariffForm({
           />
         )}
         {error && (
-          <p role="alert" className="notice error">
+          <Alert variant="destructive" role="alert">
             {error}
-          </p>
+          </Alert>
         )}
         <div className="modal-actions">
-          <button type="button" className="button secondary" onClick={onClose}>
+          <Button variant="outline" type="button" onClick={onClose}>
             Cancelar
-          </button>
-          <button className="button primary" type="submit">
+          </Button>
+          <Button type="submit">
             {submitLabel(mode)}
             <ArrowRight size={16} />
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

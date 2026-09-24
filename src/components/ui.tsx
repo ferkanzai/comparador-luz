@@ -3,12 +3,35 @@ import {
   useEffect,
   useId,
   useRef,
+  type ChangeEvent,
   type ReactNode,
   type RefObject,
 } from "react";
+import {
+  Field as UiField,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
+import {
+  Empty as UiEmpty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 import { X, Zap } from "lucide-react";
 import Link from "next/link";
 import { lockModalScroll } from "@/lib/modal-scroll";
+import { Button } from "@/components/ui/button";
 export function Brand() {
   return (
     <Link href="/" className="brand" aria-label="Luz en claro, inicio">
@@ -51,43 +74,50 @@ export function Field({
   const pattern = signed ? "-?[0-9]+([.,][0-9]+)?" : "[0-9]+([.,][0-9]+)?";
   const invalid =
     decimal && value !== "" && !new RegExp(`^${pattern}$`).test(value);
+  const input = {
+    id,
+    name: id,
+    type,
+    value,
+    onChange: (e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value),
+    inputMode: decimal ? ("decimal" as const) : undefined,
+    pattern: decimal ? pattern : undefined,
+    required,
+    maxLength,
+    placeholder,
+    "aria-invalid": invalid || undefined,
+    "aria-describedby":
+      [
+        unit ? `${id}-unit` : "",
+        hint ? `${id}-hint` : "",
+        invalid ? `${id}-error` : "",
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined,
+  };
+  // `field` stays as a hook for the layouts around it (spacing, period dots).
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <div className={`input-wrap ${invalid ? "invalid" : ""}`}>
-        <input
-          id={id}
-          name={id}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          inputMode={decimal ? "decimal" : undefined}
-          pattern={decimal ? pattern : undefined}
-          required={required}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          aria-invalid={invalid || undefined}
-          aria-describedby={
-            [
-              unit ? `${id}-unit` : "",
-              hint ? `${id}-hint` : "",
-              invalid ? `${id}-error` : "",
-            ]
-              .filter(Boolean)
-              .join(" ") || undefined
-          }
-        />
-        {unit && <span id={`${id}-unit`}>{unit}</span>}
-      </div>
+    <UiField className="field" data-invalid={invalid || undefined}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {unit ? (
+        <InputGroup>
+          <InputGroupInput {...input} />
+          <InputGroupAddon align="inline-end">
+            <InputGroupText id={`${id}-unit`}>{unit}</InputGroupText>
+          </InputGroupAddon>
+        </InputGroup>
+      ) : (
+        <Input {...input} />
+      )}
       {invalid && (
-        <small id={`${id}-error`} className="field-error">
+        <FieldError id={`${id}-error`}>
           {signed
             ? "Usa un número válido, con coma o punto decimal."
             : "Usa un número positivo, con coma o punto decimal."}
-        </small>
+        </FieldError>
       )}
-      {hint && <small id={`${id}-hint`}>{hint}</small>}
-    </div>
+      {hint && <FieldDescription id={`${id}-hint`}>{hint}</FieldDescription>}
+    </UiField>
   );
 }
 export function Modal({
@@ -129,9 +159,14 @@ export function Modal({
     >
       <div className="modal-head">
         <h2 id={id}>{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="Cerrar">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label="Cerrar"
+        >
           <X size={20} />
-        </button>
+        </Button>
       </div>
       {children}
     </dialog>
@@ -149,11 +184,16 @@ export function Empty({
   action?: ReactNode;
 }) {
   return (
-    <div className="empty">
-      <div className="empty-icon">{icon}</div>
-      <h3>{title}</h3>
-      <p>{children}</p>
-      {action}
-    </div>
+    <UiEmpty className="empty">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">{icon}</EmptyMedia>
+        {/* A heading, so the empty state reads as a section of the page. */}
+        <EmptyTitle>
+          <h3>{title}</h3>
+        </EmptyTitle>
+        <EmptyDescription>{children}</EmptyDescription>
+      </EmptyHeader>
+      {action && <EmptyContent>{action}</EmptyContent>}
+    </UiEmpty>
   );
 }

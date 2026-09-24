@@ -3,6 +3,8 @@ import { useState } from "react";
 import { decimalComma, type Profile } from "@/lib/domain";
 import { electricityTax, formatRate, generalVat } from "@/lib/regulated-rates";
 import { Field } from "./ui";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function ProfileFields({
   value,
@@ -44,12 +46,11 @@ export function ProfileFields({
           Potencia contratada y duración
         </div>
         <label className="checkbox">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={samePower}
-            onChange={(e) => {
-              setUnlinked(!e.target.checked);
-              if (e.target.checked)
+            onCheckedChange={(checked) => {
+              setUnlinked(!checked === true);
+              if (checked === true)
                 onChange({ ...value, valleyKw: value.peakKw });
             }}
           />{" "}
@@ -79,10 +80,11 @@ export function TaxFields({
   return (
     <div className="tax-fields">
       <label className="checkbox">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={value.taxes}
-          onChange={(e) => onChange({ ...value, taxes: e.target.checked })}
+          onCheckedChange={(checked) =>
+            onChange({ ...value, taxes: checked === true })
+          }
         />{" "}
         Incluir IVA e impuesto eléctrico
       </label>
@@ -106,9 +108,11 @@ export function TaxFields({
               unit="%"
             />
           </div>
-          <button
+          <Button
+            variant="link"
+            size="inline"
             type="button"
-            className="link-button"
+
             onClick={() =>
               onChange({
                 ...value,
@@ -119,13 +123,12 @@ export function TaxFields({
           >
             Usar tipos generales: {formatRate(generalVat.percent)} % y{" "}
             {formatRate(electricityTax.percent)} %
-          </button>
+          </Button>
           <label className="checkbox small">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={value.minimumTax}
-              onChange={(e) =>
-                onChange({ ...value, minimumTax: e.target.checked })
+              onCheckedChange={(checked) =>
+                onChange({ ...value, minimumTax: checked === true })
               }
             />{" "}
             Aplicar mínimo doméstico IEE (

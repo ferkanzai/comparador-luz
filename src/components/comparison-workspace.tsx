@@ -42,6 +42,12 @@ import { Empty, Modal } from "./ui";
 import FinalistComparison from "./finalist-comparison";
 import PvpcComparison from "./pvpc-comparison";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Alert } from "@/components/ui/alert";
 
 const quantity = (value: number) =>
   value.toLocaleString("es-ES", { maximumFractionDigits: 3 });
@@ -174,19 +180,23 @@ export default function ComparisonWorkspace({
             {profile.taxes ? "Con impuestos" : "Sin impuestos"}
           </span>
         </div>
-        <button
-          className="button secondary small-button"
+        <Button
+          variant="outline"
+          size="sm"
+
           onClick={() => setProfileOpen(true)}
         >
           Editar perfil <ArrowRight size={15} />
-        </button>
-        <button
-          className="button dark small-button"
+        </Button>
+        <Button
+          variant="inverse"
+          size="sm"
+
           aria-expanded={simulationOpen}
           onClick={() => setSimulationOpen(true)}
         >
           Simular consumo
-        </button>
+        </Button>
       </section>
       {simulationOpen && (
         <ConsumptionSimulator
@@ -221,31 +231,26 @@ export default function ComparisonWorkspace({
               <span className="tariff-count">{data.tariffs.length}</span>
             </h2>
           </div>
-          <button
-            className="button primary"
+          <Button
             disabled={!tariffRoom}
             aria-describedby={tariffRoom ? undefined : "tariff-limit"}
             onClick={onAdd}
           >
             <Plus size={17} />
             Añadir tarifa
-          </button>
+          </Button>
         </div>
         {!tariffRoom && (
-          <p id="tariff-limit" className="notice small">
+          <Alert className="small" id="tariff-limit" role="note">
             {tariffLimitMessage}
-          </p>
+          </Alert>
         )}
         {!data.tariffs.length ? (
           <div className="panel">
             <Empty
               icon={<Zap size={26} />}
               title="Empecemos por tu tarifa actual."
-              action={
-                <button className="button primary" onClick={onAdd}>
-                  Añadir mi primera tarifa
-                </button>
-              }
+              action={<Button onClick={onAdd}>Añadir mi primera tarifa</Button>}
             >
               Ten tu última factura a mano. Añade tus precios y después las
               ofertas que quieras comparar.
@@ -265,7 +270,7 @@ export default function ComparisonWorkspace({
               </p>
               <label className="inline-label">
                 Comparar potencia en{" "}
-                <select
+                <NativeSelect
                   aria-label="Comparar potencia en"
                   value={unit}
                   onChange={(event) => {
@@ -278,10 +283,12 @@ export default function ComparisonWorkspace({
                       setUnit(value);
                   }}
                 >
-                  <option value="day">€/kW/día</option>
-                  <option value="month">€/kW/mes</option>
-                  <option value="year">€/kW/año</option>
-                </select>
+                  <NativeSelectOption value="day">€/kW/día</NativeSelectOption>
+                  <NativeSelectOption value="month">
+                    €/kW/mes
+                  </NativeSelectOption>
+                  <NativeSelectOption value="year">€/kW/año</NativeSelectOption>
+                </NativeSelect>
               </label>
             </div>
             <div className="finalist-bar" aria-label="Selección de finalistas">
@@ -302,13 +309,15 @@ export default function ComparisonWorkspace({
                   </button>
                 ))}
               </div>
-              <button
-                className="text-link"
+              <Button
+                variant="link"
+                size="inline"
+
                 disabled={selectedIds.length < 2}
                 onClick={() => setFinalistsOpen(true)}
               >
                 Ver comparación ({selectedIds.length})<ArrowRight size={14} />
-              </button>
+              </Button>
               {selectedIds.length < 2 && (
                 <span className="finalist-help">
                   Marca tarifas para verlas en detalle
@@ -333,18 +342,20 @@ export default function ComparisonWorkspace({
               </p>
             </div>
             {unequalPower && (
-              <p className="notice small">
+              <Alert className="small" role="note">
                 Tus potencias P1 y P2 son distintas. La referencia de potencia
                 no representa tu coste; la estimación usa tus kW contratados.
-              </p>
+              </Alert>
             )}
           </>
         )}
       </section>
       {onBill && (
         <div className="comparison-bill-action">
-          <button
-            className="button secondary small-button"
+          <Button
+            variant="outline"
+            size="sm"
+
             disabled={!baseline?.cost || simulation !== null}
             onClick={() => {
               if (baseline?.cost && !simulation)
@@ -355,7 +366,7 @@ export default function ComparisonWorkspace({
           >
             <Receipt size={16} />
             Guardar este período como factura
-          </button>
+          </Button>
           <p className="small muted">
             {simulation
               ? "Restablece o usa el consumo simulado antes de crear una factura. Después, revisa los importes reales."
@@ -386,16 +397,13 @@ export default function ComparisonWorkspace({
             </p>
             <ProfileFields value={profile} onChange={changeProfile} />
             <TaxFields value={profile} onChange={changeProfile} />
-            <button className="text-link" onClick={onMethod}>
+            <Button variant="link" size="inline" onClick={onMethod}>
               Cómo calculamos los impuestos
-            </button>
+            </Button>
             <div className="modal-actions">
-              <button
-                className="button primary"
-                onClick={() => setProfileOpen(false)}
-              >
+              <Button onClick={() => setProfileOpen(false)}>
                 Volver a la comparativa
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

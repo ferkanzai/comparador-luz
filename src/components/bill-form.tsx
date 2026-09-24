@@ -1,5 +1,5 @@
 "use client";
-import FeedbackNotice, { useFeedback } from "./feedback-notice";
+import { useFeedback } from "./feedback-notice";
 import { useId, useRef, useState, type FormEvent } from "react";
 import {
   billSchema,
@@ -24,6 +24,13 @@ import {
 } from "@/lib/bill-consumption";
 import { newInvoiceProfile } from "@/lib/invoice-profile";
 import { tariffLimitMessage } from "@/lib/tariff-periods";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 export default function BillForm({
   initial,
   workspace: w,
@@ -45,11 +52,7 @@ export default function BillForm({
     ? [...w.tariffs, pendingTariff]
     : w.tariffs;
   const [showPastTariffs, setShowPastTariffs] = useState(false);
-  const {
-    message: pastTariffMessage,
-    setMessage: setPastTariffMessage,
-    dismiss: dismissPastTariff,
-  } = useFeedback();
+  const { setMessage: setPastTariffMessage } = useFeedback();
   const pastTariffsId = useId();
   const tariffLimitId = useId();
   const tariffsFull = availableTariffs.length >= workspaceLimits.tariffs;
@@ -175,7 +178,7 @@ export default function BillForm({
             <BillConsumptionFields bill={editing} onChange={setEditing} />
             <label className="auth-label">
               Tarifa de esta factura
-              <select
+              <NativeSelect
                 ref={tariffSelect}
                 value={editing.tariff ? "snapshot" : ""}
                 onChange={(e) => {
@@ -193,11 +196,11 @@ export default function BillForm({
                   });
                 }}
               >
-                <option value="">Sin vincular</option>
+                <NativeSelectOption value="">Sin vincular</NativeSelectOption>
                 {editing.tariff && (
-                  <option value="snapshot">
+                  <NativeSelectOption value="snapshot">
                     {editing.tariff.name} · precios de esta factura
-                  </option>
+                  </NativeSelectOption>
                 )}
                 <optgroup label="Tarifas guardadas">
                   {availableTariffs
@@ -206,15 +209,15 @@ export default function BillForm({
                         JSON.stringify(t) !== JSON.stringify(editing.tariff),
                     )
                     .map((t) => (
-                      <option key={t.id} value={`live:${t.id}`}>
+                      <NativeSelectOption key={t.id} value={`live:${t.id}`}>
                         {t.name}
                         {t.id === editing.tariff?.id
                           ? " · precios actuales"
                           : ""}
-                      </option>
+                      </NativeSelectOption>
                     ))}
                 </optgroup>
-              </select>
+              </NativeSelect>
               <small>
                 Se guarda una copia de los precios; los cambios futuros no
                 alteran esta factura. Comprueba que coincidan con los precios
@@ -223,9 +226,11 @@ export default function BillForm({
             </label>
             {w.history.length > 0 && (
               <div className="past-tariff-picker">
-                <button
+                <Button
+                  variant="link"
+                  size="inline"
                   type="button"
-                  className="link-button"
+
                   aria-expanded={showPastTariffs}
                   aria-controls={pastTariffsId}
                   onClick={() => setShowPastTariffs(!showPastTariffs)}
@@ -233,12 +238,12 @@ export default function BillForm({
                   {showPastTariffs
                     ? "Ocultar tarifas anteriores"
                     : "Elegir una tarifa anterior"}
-                </button>
+                </Button>
                 {showPastTariffs && (
                   <div id={pastTariffsId}>
                     <label className="auth-label">
                       Precios que tenías antes
-                      <select
+                      <NativeSelect
                         defaultValue=""
                         onChange={(event) => {
                           const previous = w.history.find(
@@ -256,20 +261,20 @@ export default function BillForm({
                           tariffSelect.current?.focus();
                         }}
                       >
-                        <option value="" disabled>
+                        <NativeSelectOption value="" disabled>
                           Selecciona la tarifa y el período
-                        </option>
+                        </NativeSelectOption>
                         {[...w.history]
                           .sort((a, b) => b.end.localeCompare(a.end))
                           .map((h) => (
-                            <option key={h.id} value={h.id}>
+                            <NativeSelectOption key={h.id} value={h.id}>
                               {h.tariff.name} · {shortDate(h.start)}
                               {h.start === h.end
                                 ? " · cambio de precios ese día"
                                 : ` a ${shortDate(h.end)}`}
-                            </option>
+                            </NativeSelectOption>
                           ))}
-                      </select>
+                      </NativeSelect>
                       <small>
                         Vincula una copia de esos precios; los importes de la
                         factura no cambian.
@@ -279,33 +284,26 @@ export default function BillForm({
                 )}
               </div>
             )}
-            {pastTariffMessage && (
-              <FeedbackNotice
-                key={pastTariffMessage.id}
-                message={pastTariffMessage}
-                onDismiss={dismissPastTariff}
-              />
-            )}
             <label className="checkbox">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={!!editing.breakdown}
-                onChange={(e) =>
+                onCheckedChange={(checked) =>
                   setEditing({
                     ...editing,
-                    breakdown: e.target.checked
-                      ? {
-                          energy: "0",
-                          power: "0",
-                          social: "0",
-                          snoee: "0",
-                          meter: "0",
-                          services: "0",
-                          electricityTax: "0",
-                          vat: "0",
-                          servicesVat: "0",
-                        }
-                      : null,
+                    breakdown:
+                      checked === true
+                        ? {
+                            energy: "0",
+                            power: "0",
+                            social: "0",
+                            snoee: "0",
+                            meter: "0",
+                            services: "0",
+                            electricityTax: "0",
+                            vat: "0",
+                            servicesVat: "0",
+                          }
+                        : null,
                   })
                 }
               />{" "}
@@ -337,8 +335,11 @@ export default function BillForm({
                     </div>
                   ))}
                 </div>
-                <div
-                  className={`notice bill-reconciliation ${reconciliation?.difference ? "error" : ""}`}
+                <Alert
+                  variant={
+                    reconciliation?.difference ? "destructive" : "default"
+                  }
+                  className="bill-reconciliation"
                   role="status"
                   aria-live="polite"
                 >
@@ -371,7 +372,7 @@ export default function BillForm({
                       coste.
                     </p>
                   )}
-                </div>
+                </Alert>
               </>
             )}
             <section className="form-section bill-invoice-tariff">
@@ -381,9 +382,11 @@ export default function BillForm({
                 los precios unitarios son distintos, puedes guardar una tarifa
                 con los que aparecen en tu factura.
               </p>
-              <button
+              <Button
+                variant="link"
+                size="inline"
                 type="button"
-                className="link-button"
+
                 disabled={tariffsFull}
                 aria-describedby={tariffsFull ? tariffLimitId : undefined}
                 onClick={() =>
@@ -394,7 +397,7 @@ export default function BillForm({
                 }
               >
                 Crear tarifa con estos precios
-              </button>
+              </Button>
               <p className="small muted">
                 Se guardará junto con la factura, sin cambiar tu contrato
                 actual.
@@ -412,21 +415,22 @@ export default function BillForm({
               maxLength={2000}
             />
             {error && (
-              <p role="alert" className="notice error">
+              <Alert variant="destructive" role="alert">
                 {error}
-              </p>
+              </Alert>
             )}
             <div className="modal-actions">
-              <button
+              <Button
+                variant="outline"
                 type="button"
-                className="button secondary"
+
                 onClick={onClose}
               >
                 Cancelar
-              </button>
-              <button type="submit" className="button primary">
+              </Button>
+              <Button type="submit">
                 {saving ? "Guardando factura…" : "Guardar factura"}
-              </button>
+              </Button>
             </div>
           </fieldset>
         </form>

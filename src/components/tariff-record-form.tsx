@@ -7,6 +7,7 @@ import {
 } from "@/lib/tariff-periods";
 import TariffForm from "./tariff-form";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Alert } from "@/components/ui/alert";
 
 export type TariffRecordDraft = { tariff: Tariff; title: string } & (
   | { kind: "historical" | "current"; periodId?: never }
@@ -37,7 +38,7 @@ export default function TariffRecordForm({
         return before && (before.start !== p.start || before.end !== p.end);
       });
       return (
-        <section className="notice" aria-label="Vista previa de fechas">
+        <Alert aria-label="Vista previa de fechas" role="region">
           <strong>Así quedarán los períodos</strong>
           {changed.map((p) => (
             <p key={p.id}>
@@ -45,13 +46,13 @@ export default function TariffRecordForm({
               {p.current ? "actual" : shortDate(p.end)}
             </p>
           ))}
-        </section>
+        </Alert>
       );
     } catch (error) {
       return (
-        <p role="status" className="notice error">
+        <Alert variant="destructive" role="status">
           {error instanceof Error ? error.message : "Revisa las fechas."}
-        </p>
+        </Alert>
       );
     }
   }

@@ -112,7 +112,7 @@ test("adds historical terms directly and persists them without changing the curr
     .fill("Contrato 2025");
   await form.getByLabel("Fecha de inicio", { exact: true }).fill("2025-01-01");
   await form.getByLabel("Fecha de fin", { exact: true }).fill("2026-01-01");
-  await form.getByRole("button", { name: "Precio único", exact: true }).click();
+  await form.getByRole("radio", { name: "Precio único", exact: true }).click();
   await form.getByLabel("Precio las 24 horas", { exact: true }).fill("0.25");
   await form.getByLabel("P1 · Punta", { exact: true }).fill("0.08");
   await form.getByLabel("P2 · Valle", { exact: true }).fill("0.02");

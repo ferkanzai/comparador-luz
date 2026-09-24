@@ -26,6 +26,13 @@ import {
   type PvpcMonth,
 } from "@/lib/pvpc";
 import { Field } from "./ui";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 const monthYearFormat = new Intl.DateTimeFormat("es-ES", {
   month: "long",
@@ -106,7 +113,7 @@ export default function PvpcComparison({
         <span className="eyebrow">
           <History size={15} aria-hidden="true" /> REFERENCIA HISTÓRICA
         </span>
-        <span className="pill">Aproximado</span>
+        <Badge variant="secondary">Aproximado</Badge>
       </div>
       <h2>¿Y con la tarifa regulada?</h2>
       <p className="muted">
@@ -114,14 +121,15 @@ export default function PvpcComparison({
         referencia para orientarte: el próximo mes puede ser distinto.
       </p>
       {ineligible ? (
-        <p className="notice">
+        <Alert role="note">
           PVPC requiere un máximo de 10 kW en cada período. Tus potencias
           superan ese límite.
-        </p>
+        </Alert>
       ) : !data ? (
-        <button
+        <Button
+          variant="outline"
           type="button"
-          className="button secondary"
+
           onClick={load}
           disabled={loading}
         >
@@ -131,7 +139,7 @@ export default function PvpcComparison({
               ? "Reintentar PVPC"
               : "Comparar con PVPC"}
           <ArrowRight size={16} aria-hidden="true" />
-        </button>
+        </Button>
       ) : (
         <>
           <p className="pvpc-month">
@@ -158,22 +166,29 @@ export default function PvpcComparison({
           </p>
           <label className="auth-label">
             Alquiler para esta estimación
-            <select value={meter} onChange={(e) => setMeter(e.target.value)}>
-              <option value="single">
+            <NativeSelect
+              value={meter}
+              onChange={(e) => setMeter(e.target.value)}
+            >
+              <NativeSelectOption value="single">
                 {meterRentalLabel("single-2013")} (estimado)
-              </option>
-              <option value="three">
+              </NativeSelectOption>
+              <NativeSelectOption value="three">
                 {meterRentalLabel("three-2013")} (estimado)
-              </option>
-              <option value="owned">Contador en propiedad · 0 €</option>
-              <option
+              </NativeSelectOption>
+              <NativeSelectOption value="owned">
+                Contador en propiedad · 0 €
+              </NativeSelectOption>
+              <NativeSelectOption
                 value="current"
                 disabled={!current || current.meterDay === ""}
               >
                 Usar alquiler de mi tarifa actual
-              </option>
-              <option value="custom">Introducir otro importe diario</option>
-            </select>
+              </NativeSelectOption>
+              <NativeSelectOption value="custom">
+                Introducir otro importe diario
+              </NativeSelectOption>
+            </NativeSelect>
           </label>
           {meter === "custom" && (
             <Field
@@ -238,11 +253,11 @@ export default function PvpcComparison({
               </details>
             </>
           ) : (
-            <p className="notice">
+            <Alert role="note">
               Completa arriba el consumo por períodos, los kW y los días. Si
               activas impuestos, indica sus porcentajes. Revisa también el
               alquiler elegido.
-            </p>
+            </Alert>
           )}
           <p className="small muted pvpc-sources">
             <a
@@ -271,11 +286,7 @@ export default function PvpcComparison({
           Comprobando que no falte ningún día ni hora.
         </p>
       )}
-      {error && (
-        <p role="alert" className="notice">
-          {error}
-        </p>
-      )}
+      {error && <Alert role="alert">{error}</Alert>}
     </section>
   );
 }

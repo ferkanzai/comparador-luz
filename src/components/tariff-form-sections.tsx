@@ -17,6 +17,15 @@ import {
 import type { PeriodCorrection } from "@/lib/tariff-periods";
 import { Field } from "./ui";
 import EstimateNotice from "./estimate-notice";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Alert } from "@/components/ui/alert";
 
 export type TariffUpdate = (key: keyof Tariff, value: string | boolean) => void;
 type SectionProps = { tariff: Tariff; update: TariffUpdate };
@@ -80,11 +89,10 @@ export function PeriodDatesSection({
       {preview && (
         <>
           <label className="checkbox">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={dates.moveBoundary ?? false}
-              onChange={(e) =>
-                onChange({ ...dates, moveBoundary: e.target.checked })
+              onCheckedChange={(checked) =>
+                onChange({ ...dates, moveBoundary: checked === true })
               }
             />
             Ajustar también los períodos contiguos
@@ -111,24 +119,24 @@ export function EnergySection({ tariff, update }: SectionProps) {
     <div className="form-section">
       <div className="section-inline">
         <h3>01 / Energía</h3>
-        <div className="segmented">
-          <button
-            type="button"
-            aria-pressed={tariff.kind === "periods"}
-            className={tariff.kind === "periods" ? "selected" : ""}
+        <ToggleGroup
+          type="single"
+          value={tariff.kind}
+          className="segmented rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+        >
+          <ToggleGroupItem
+            value="periods"
             onClick={() => update("kind", "periods")}
           >
             3 períodos
-          </button>
-          <button
-            type="button"
-            aria-pressed={tariff.kind === "fixed"}
-            className={tariff.kind === "fixed" ? "selected" : ""}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="fixed"
             onClick={() => update("kind", "fixed")}
           >
             Precio único
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
       <div className="form-grid three">
         <PriceField
@@ -172,30 +180,32 @@ export function PowerSection({ tariff, update }: SectionProps) {
         <h3>02 / Potencia</h3>
         <label className="inline-label">
           Unidad
-          <select
+          <NativeSelect
             value={tariff.powerUnit}
             onChange={(e) => update("powerUnit", e.target.value)}
           >
-            <option value="day">€/kW/día</option>
-            <option value="month">€/kW/mes</option>
-            <option value="year">€/kW/año</option>
-          </select>
+            <NativeSelectOption value="day">€/kW/día</NativeSelectOption>
+            <NativeSelectOption value="month">€/kW/mes</NativeSelectOption>
+            <NativeSelectOption value="year">€/kW/año</NativeSelectOption>
+          </NativeSelect>
         </label>
       </div>
       <label className="auth-label">
         Cómo aparece el precio de potencia
-        <select
+        <NativeSelect
           value={tariff.powerKind}
           onChange={(e) => update("powerKind", e.target.value)}
         >
-          <option value="periods">Dos precios: punta y valle</option>
-          <option value="combined">
+          <NativeSelectOption value="periods">
+            Dos precios: punta y valle
+          </NativeSelectOption>
+          <NativeSelectOption value="combined">
             Un precio total de potencia: se cobra una vez
-          </option>
-          <option value="same">
+          </NativeSelectOption>
+          <NativeSelectOption value="same">
             El mismo precio por período: se cobra en punta y en valle
-          </option>
-        </select>
+          </NativeSelectOption>
+        </NativeSelect>
       </label>
       <div className="form-grid two">
         <PriceField
@@ -231,11 +241,11 @@ export function PowerSection({ tariff, update }: SectionProps) {
             : "La tarifa 2.0TD tiene dos períodos de potencia, aunque tengas los mismos kW contratados."}
       </p>
       {tariff.powerUnit === "month" && (
-        <p className="notice small">
+        <Alert className="small" role="note">
           Potencia mensual: precio × kW × días ÷ 30. Si tu compañía prorratea de
           otra forma, puedes calcular el precio desde los importes de tu factura
           más abajo.
-        </p>
+        </Alert>
       )}
     </div>
   );
@@ -266,17 +276,20 @@ export function ChargesSection({
             label="Alquiler de contador"
             unit="€/día"
           />
-          <button
+          <Button
+            variant="link"
+            size="inline"
+            className="estimate-action"
             type="button"
-            className="link-button estimate-action"
+
             onClick={() => onEstimate((t) => estimateMeter(t, "single-2013"))}
           >
             No lo sé · Usar estimación
-          </button>
+          </Button>
           {tariff.meterEstimate !== "none" && tariff.meterEstimate && (
             <label className="auth-label small">
               Estimación aplicada · tipo de contador
-              <select
+              <NativeSelect
                 value={tariff.meterEstimate}
                 onChange={(e) => {
                   const kind = e.target.value;
@@ -285,11 +298,11 @@ export function ChargesSection({
                 }}
               >
                 {(["single-2013", "three-2013"] as const).map((kind) => (
-                  <option key={kind} value={kind}>
+                  <NativeSelectOption key={kind} value={kind}>
                     {meterRentalLabel(kind)}
-                  </option>
+                  </NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           )}
           <p className="small muted">
@@ -315,13 +328,16 @@ export function ChargesSection({
             label="Financiación bono social"
             unit="€/día"
           />
-          <button
+          <Button
+            variant="link"
+            size="inline"
+            className="estimate-action"
             type="button"
-            className="link-button estimate-action"
+
             onClick={() => onEstimate(estimateSocial)}
           >
             No lo sé · Usar estimación
-          </button>
+          </Button>
           {tariff.socialEstimate === "ted634-2026" && (
             <p role="status" className="estimate-note small">
               Estimación aplicada · referencia de junio de 2026.
@@ -385,10 +401,11 @@ export function ChargesSection({
         />
       </div>
       <label className="checkbox small">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={tariff.socialInElectricityTax}
-          onChange={(e) => update("socialInElectricityTax", e.target.checked)}
+          onCheckedChange={(checked) =>
+            update("socialInElectricityTax", checked === true)
+          }
         />{" "}
         Incluir financiación del bono social en la base del IEE
       </label>
@@ -424,7 +441,7 @@ export function OfferValiditySection({ tariff, update }: SectionProps) {
       />
       <label className="auth-label">
         Condiciones y notas
-        <textarea
+        <Textarea
           maxLength={2000}
           value={tariff.notes}
           onChange={(e) => update("notes", e.target.value)}
@@ -471,11 +488,11 @@ export function TariffPreview({
           </p>
         </>
       ) : (
-        <p className="notice">
+        <Alert role="note">
           Completa los precios, el consumo, los kW y los días. Si incluyes
           impuestos, indica también sus porcentajes. El precio de potencia
           combinado requiere los mismos kW en ambos períodos.
-        </p>
+        </Alert>
       )}
     </section>
   );

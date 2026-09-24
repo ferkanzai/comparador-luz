@@ -9,6 +9,7 @@ import {
   billGroups as groups,
   billMonthLabel as fullMonth,
 } from "@/lib/bill-data";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Month = {
   month: string;
@@ -72,32 +73,25 @@ export default function BillsChart({
   return (
     <>
       <div className="chart-toolbar">
-        <div className="segmented" role="group" aria-label="Tipo de gráfico">
-          <button
-            type="button"
-            aria-pressed={view === "bars"}
-            className={view === "bars" ? "selected" : ""}
-            onClick={() => onViewChange("bars")}
-          >
+        <ToggleGroup
+          type="single"
+          value={view}
+          className="segmented rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+          aria-label="Tipo de gráfico"
+        >
+          <ToggleGroupItem value="bars" onClick={() => onViewChange("bars")}>
             <BarChart3 size={16} /> Barras
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === "line"}
-            className={view === "line" ? "selected" : ""}
-            onClick={() => onViewChange("line")}
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="line" onClick={() => onViewChange("line")}>
             <ChartLine size={16} /> Evolución
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === "consumption"}
-            className={view === "consumption" ? "selected" : ""}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="consumption"
             onClick={() => onViewChange("consumption")}
           >
             <Zap size={16} /> Consumo
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
         <span className="small muted">
           Pasa el cursor, toca o selecciona un mes para ver el detalle.
         </span>
@@ -154,8 +148,8 @@ export default function BillsChart({
               </ul>
               <p className="small muted chart-line-note">
                 Cada línea muestra un concepto; «Pagado» es el importe después
-                de descuentos. Pulsa la leyenda para mostrar u ocultar líneas. Los
-                meses sin facturas interrumpen las líneas.
+                de descuentos. Pulsa la leyenda para mostrar u ocultar líneas.
+                Los meses sin facturas interrumpen las líneas.
               </p>
             </>
           )}

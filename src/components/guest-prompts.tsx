@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, History, Receipt } from "lucide-react";
 import { Empty } from "./ui";
+import { Button } from "@/components/ui/button";
 
 export function SignupBanner() {
   return (
@@ -15,10 +16,12 @@ export function SignupBanner() {
           a mes. Sin cuenta, tu comparación se conserva en este navegador.
         </p>
       </div>
-      <Link href="/cuenta?mode=signup" className="button dark">
-        Crear mi cuenta
-        <ArrowRight size={17} />
-      </Link>
+      <Button asChild variant="inverse">
+        <Link href="/cuenta?mode=signup">
+          Crear mi cuenta
+          <ArrowRight size={17} />
+        </Link>
+      </Button>
     </section>
   );
 }
@@ -36,10 +39,12 @@ export function AccountRequired({ section }: { section: "history" | "bills" }) {
             : "Pon tus facturas en perspectiva."
         }
         action={
-          <Link className="button primary" href="/cuenta?mode=signup">
-            Crear una cuenta
-            <ArrowRight size={16} />
-          </Link>
+          <Button asChild>
+            <Link href="/cuenta?mode=signup">
+              Crear una cuenta
+              <ArrowRight size={16} />
+            </Link>
+          </Button>
         }
       >
         Inicia sesión para guardar tus tarifas y registrar lo que pagas cada
