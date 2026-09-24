@@ -899,7 +899,7 @@ test("starts with no sample tariffs and lets the first tariff be the current ref
 }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Añadir mi primera tarifa", exact: true })
+    .getByRole("button", { name: "Añadir mi tarifa actual", exact: true })
     .click();
   await page
     .getByLabel("Nombre de la tarifa", { exact: true })

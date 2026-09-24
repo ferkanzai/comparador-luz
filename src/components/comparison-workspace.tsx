@@ -280,7 +280,7 @@ export default function ComparisonWorkspace({
               title="Empecemos por tu tarifa actual."
               action={
                 <div className="grid justify-items-center gap-1">
-                  <Button onClick={onAdd}>Añadir mi primera tarifa</Button>
+                  <Button onClick={onAdd}>Añadir mi tarifa actual</Button>
                   <CnmcLink />
                 </div>
               }

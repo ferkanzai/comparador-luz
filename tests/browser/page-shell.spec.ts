@@ -91,7 +91,7 @@ test("a first visit offers one way to start and nothing that needs data", async 
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "Añadir mi primera tarifa", exact: true }),
+    page.getByRole("button", { name: "Añadir mi tarifa actual", exact: true }),
   ).toBeVisible();
   for (const name of [
     "Añadir tarifa",
