@@ -1,5 +1,6 @@
 "use client";
 import { useId, useState } from "react";
+import dynamic from "next/dynamic";
 import { BarChart3, ChartLine, Zap } from "lucide-react";
 import ConsumptionChart from "./consumption-chart";
 import ChartScroll from "./chart-scroll";
@@ -25,11 +26,14 @@ import {
   interactiveChart,
   monthAmount,
   monthControl,
-  monthlyCredit,
-  monthlyStack,
   monthName,
   swatch,
 } from "./bill-styles";
+
+// Recharts downloads only when the bars are on screen.
+const BillsBars = dynamic(() => import("./bills-bars"), { ssr: false });
+/** The bars' Y axis; the month buttons start after it. */
+const axisWidth = 44;
 
 type Month = {
   month: string;
@@ -200,101 +204,92 @@ export default function BillsChart({
             </>
           )}
           <ChartScroll label={`Gráfico mensual de ${year}`}>
-            <div className={interactiveChart}>
-              <svg
-                viewBox="0 0 1200 260"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-                className={chartDrawing}
-              >
-                <line
-                  x1="0"
-                  x2="1200"
-                  y1={zero}
-                  y2={zero}
-                  className={chartZero}
-                />
-                {view === "line" &&
-                  visibleSeries.map(([key]) => (
-                    <g key={key} data-series={key} className={seriesColor[key]}>
-                      {months.map((m, i) =>
-                        m.count ? (
-                          <g key={m.month}>
-                            {i > 0 && months[i - 1].count > 0 && (
-                              <line
-                                x1={(i - 1) * 100 + 50}
-                                y1={y(seriesAmount(months[i - 1], key))}
-                                x2={i * 100 + 50}
-                                y2={y(seriesAmount(m, key))}
-                                className={seriesLine[key]}
-                              />
-                            )}
-                            <circle
-                              cx={i * 100 + 50}
-                              cy={y(seriesAmount(m, key))}
-                              r={m.month === active.month ? 6 : 4}
-                              className={point}
-                            />
-                          </g>
-                        ) : null,
-                      )}
-                    </g>
-                  ))}
-              </svg>
-              {months.map((m) => (
-                <button
-                  key={m.month}
-                  type="button"
-                  className={monthControl}
-                  aria-pressed={active.month === m.month}
-                  aria-label={`${fullMonth(m.month)}: ${m.count ? money(m.amount) : "sin facturas"}`}
-                  aria-describedby={
-                    active.month === m.month ? detailId : undefined
-                  }
-                  onMouseEnter={() => setSelected(m.month)}
-                  onFocus={() => setSelected(m.month)}
-                  onClick={() => setSelected(m.month)}
+            <div
+              className={cn(
+                interactiveChart,
+                view === "bars" && "grid-cols-none",
+              )}
+            >
+              {view === "bars" && (
+                <div className="absolute inset-0">
+                  <BillsBars months={months} axisWidth={axisWidth} />
+                </div>
+              )}
+              {view === "line" && (
+                <svg
+                  viewBox="0 0 1200 260"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  className={chartDrawing}
                 >
-                  <span className={monthAmount}>
-                    {m.count ? money(m.amount) : "—"}
-                  </span>
-                  {view === "bars" && (
-                    <>
-                      <span
-                        className={monthlyStack}
-                        style={{ bottom: `${260 - zero}px` }}
-                        aria-hidden="true"
+                  <line
+                    x1="0"
+                    x2="1200"
+                    y1={zero}
+                    y2={zero}
+                    className={chartZero}
+                  />
+                  {view === "line" &&
+                    visibleSeries.map(([key]) => (
+                      <g
+                        key={key}
+                        data-series={key}
+                        className={seriesColor[key]}
                       >
-                        {groups
-                          .filter(([key]) => key !== "credit")
-                          .map(
-                            ([key]) =>
-                              m.totals[key] > 0 && (
-                                <span
-                                  key={key}
-                                  className={conceptColor[key]}
-                                  style={{
-                                    height: `${m.totals[key] * scale}px`,
-                                  }}
+                        {months.map((m, i) =>
+                          m.count ? (
+                            <g key={m.month}>
+                              {i > 0 && months[i - 1].count > 0 && (
+                                <line
+                                  x1={(i - 1) * 100 + 50}
+                                  y1={y(seriesAmount(months[i - 1], key))}
+                                  x2={i * 100 + 50}
+                                  y2={y(seriesAmount(m, key))}
+                                  className={seriesLine[key]}
                                 />
-                              ),
-                          )}
-                      </span>
-                      {m.totals.credit < 0 && (
-                        <span
-                          className={monthlyCredit}
-                          aria-hidden="true"
-                          style={{
-                            top: `${zero}px`,
-                            height: `${-m.totals.credit * scale}px`,
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
-                  <span className={monthName}>{m.label}</span>
-                </button>
-              ))}
+                              )}
+                              <circle
+                                cx={i * 100 + 50}
+                                cy={y(seriesAmount(m, key))}
+                                r={m.month === active.month ? 6 : 4}
+                                className={point}
+                              />
+                            </g>
+                          ) : null,
+                        )}
+                      </g>
+                    ))}
+                </svg>
+              )}
+              <div
+                className={cn(
+                  "contents",
+                  view === "bars" &&
+                    "absolute inset-y-0 right-0 grid grid-cols-12",
+                )}
+                style={view === "bars" ? { left: axisWidth } : undefined}
+              >
+                {months.map((m) => (
+                  <button
+                    key={m.month}
+                    type="button"
+                    className={monthControl}
+                    aria-pressed={active.month === m.month}
+                    aria-label={`${fullMonth(m.month)}: ${m.count ? money(m.amount) : "sin facturas"}`}
+                    aria-describedby={
+                      active.month === m.month ? detailId : undefined
+                    }
+                    onMouseEnter={() => setSelected(m.month)}
+                    onFocus={() => setSelected(m.month)}
+                    onClick={() => setSelected(m.month)}
+                  >
+                    <span className={monthAmount}>
+                      {m.count ? money(m.amount) : "—"}
+                    </span>
+                    <span className={monthName}>{m.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </ChartScroll>
           <div

@@ -22,11 +22,17 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 1000 },
+        // Charts drawn by script only animate without this.
+        reducedMotion: "reduce",
       },
     },
     {
       name: "phone",
-      use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 390, height: 844 },
+        reducedMotion: "reduce",
+      },
     },
   ],
 });

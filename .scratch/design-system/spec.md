@@ -37,4 +37,4 @@ Replace the hand-written stylesheet with shadcn/ui (Tailwind v4, the `radix-nova
 | 05  | [Primitives and toasts](issues/05-primitives.md)                                    | M–L    | completed       | 04         |
 | 06  | [Responsive dialogs and drawers, without stacking](issues/06-dialogs.md)            | M–L    | completed       | 05         |
 | 07  | [Screens one by one, starting with the comparison](issues/07-screens.md)            | L      | completed       | 06         |
-| 08  | [Charts on shadcn Chart](issues/08-charts.md)                                       | M      | needs-triage    | 07         |
+| 08  | [Charts on shadcn Chart](issues/08-charts.md)                                       | M      | needs-info      | 07         |
