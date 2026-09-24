@@ -77,6 +77,8 @@ function ToggleGroupItem({
           variant: context.variant || variant,
           size: context.size || size,
         }),
+        // Concentric with the group: its rounded-lg (12px) minus its p-1 (4px).
+        "rounded-md",
         className
       )}
       {...props}
