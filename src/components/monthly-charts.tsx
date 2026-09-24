@@ -135,9 +135,8 @@ export function BillsBars({
             fill={`var(--color-${key})`}
             maxBarSize={48}
             isAnimationActive={!still}
-            radius={
-              key === "credit" ? [0, 0, 4, 4] : key === top ? [4, 4, 0, 0] : 0
-            }
+            // Recharts flips negative bars, so the credit's outer end is its "top".
+            radius={key === "credit" || key === top ? [4, 4, 0, 0] : 0}
           />
         ))}
       </BarChart>
