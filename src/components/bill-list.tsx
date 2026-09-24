@@ -2,6 +2,16 @@ import { Pencil, Trash2 } from "lucide-react";
 import { money, numberOf, shortDate, type Bill } from "@/lib/domain";
 import { billLines, billMonthLabel, billTotal } from "@/lib/bill-data";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  bodyCell,
+  headCell,
+  panel,
+  subLine,
+  table,
+  tableCaption,
+  tableScroll,
+} from "./bill-styles";
 
 type BillProps = {
   bill: Bill;
@@ -14,7 +24,7 @@ function BillPeriod({ bill }: BillProps) {
     <>
       {billMonthLabel(bill.month)}
       {bill.periodStart && bill.periodEnd && (
-        <small className="block muted">
+        <small className={cn(subLine, "font-normal")}>
           {shortDate(bill.periodStart)} – {shortDate(bill.periodEnd)}
         </small>
       )}
@@ -26,16 +36,18 @@ function BillSource({ bill }: BillProps) {
   return (
     <>
       <strong>{bill.provider}</strong>
-      {bill.tariff && <small className="block muted">{bill.tariff.name}</small>}
-      {bill.notes && <small className="block muted">{bill.notes}</small>}
+      {bill.tariff && <small className={subLine}>{bill.tariff.name}</small>}
+      {bill.notes && <small className={subLine}>{bill.notes}</small>}
       {bill.breakdown && (
         <details>
           <summary>Ver conceptos</summary>
-          <dl className="bill-breakdown">
+          <dl className="my-4">
             {billLines.map(([key, label]) => (
-              <div key={key}>
+              <div key={key} className="my-2 flex justify-between gap-4">
                 <dt>{label}</dt>
-                <dd>{money(numberOf(bill.breakdown![key]))}</dd>
+                <dd className="m-0 whitespace-nowrap tabular-nums">
+                  {money(numberOf(bill.breakdown![key]))}
+                </dd>
               </div>
             ))}
           </dl>
@@ -47,7 +59,7 @@ function BillSource({ bill }: BillProps) {
 
 function BillActions({ bill, onEdit, onRemove }: BillProps) {
   return (
-    <div className="row-actions">
+    <div className="flex justify-end gap-1">
       <Button
         variant="ghost"
         size="icon"
@@ -71,6 +83,7 @@ function BillActions({ bill, onEdit, onRemove }: BillProps) {
   );
 }
 
+const amount = "font-semibold tabular-nums";
 const consumption = (bill: Bill) => (bill.kwh ? `${bill.kwh} kWh` : "—");
 const credit = (bill: Bill) =>
   numberOf(bill.credit) ? money(-numberOf(bill.credit)) : "—";
@@ -87,24 +100,36 @@ export default function BillList({
   return (
     <>
       <div
-        className="panel table-scroll bill-table"
+        className={cn(panel, tableScroll, "max-[760px]:hidden")}
         tabIndex={0}
         role="region"
         aria-label="Facturas registradas"
       >
-        <table>
-          <caption className="bill-table-caption">
+        <table className={table}>
+          <caption className={tableCaption}>
             Total antes de descuentos · Pagado después de descuentos.
           </caption>
           <thead>
             <tr>
-              <th scope="col">Período</th>
-              <th scope="col">Comercializadora</th>
-              <th scope="col">Consumo</th>
-              <th scope="col">Total</th>
-              <th scope="col">Descuentos</th>
-              <th scope="col">Pagado</th>
-              <th scope="col">
+              <th className={headCell} scope="col">
+                Período
+              </th>
+              <th className={headCell} scope="col">
+                Comercializadora
+              </th>
+              <th className={headCell} scope="col">
+                Consumo
+              </th>
+              <th className={headCell} scope="col">
+                Total
+              </th>
+              <th className={headCell} scope="col">
+                Descuentos
+              </th>
+              <th className={headCell} scope="col">
+                Pagado
+              </th>
+              <th className={headCell} scope="col">
                 <span className="sr-only">Acciones</span>
               </th>
             </tr>
@@ -114,17 +139,21 @@ export default function BillList({
               const props = { bill, onEdit, onRemove };
               return (
                 <tr key={bill.id}>
-                  <td>
+                  <td className={bodyCell}>
                     <BillPeriod {...props} />
                   </td>
-                  <td>
+                  <td className={bodyCell}>
                     <BillSource {...props} />
                   </td>
-                  <td>{consumption(bill)}</td>
-                  <td className="amount">{money(billTotal(bill))}</td>
-                  <td className="amount">{credit(bill)}</td>
-                  <td className="amount">{money(numberOf(bill.paid))}</td>
-                  <td>
+                  <td className={bodyCell}>{consumption(bill)}</td>
+                  <td className={cn(bodyCell, amount)}>
+                    {money(billTotal(bill))}
+                  </td>
+                  <td className={cn(bodyCell, amount)}>{credit(bill)}</td>
+                  <td className={cn(bodyCell, amount)}>
+                    {money(numberOf(bill.paid))}
+                  </td>
+                  <td className={bodyCell}>
                     <BillActions {...props} />
                   </td>
                 </tr>
@@ -133,17 +162,20 @@ export default function BillList({
           </tbody>
         </table>
       </div>
-      <ol className="bill-cards" aria-label="Facturas registradas">
+      <ol
+        className="m-0 hidden list-none gap-3 p-0 max-[760px]:grid"
+        aria-label="Facturas registradas"
+      >
         {bills.map((bill) => {
           const props = { bill, onEdit, onRemove };
           return (
             <li key={bill.id}>
               <article
-                className="bill-card"
+                className="grid gap-2.5 rounded-lg border border-border bg-card p-4"
                 aria-label={`Factura de ${billMonthLabel(bill.month)}`}
               >
-                <div className="bill-card-head">
-                  <div className="bill-card-period">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-[650]">
                     <BillPeriod {...props} />
                   </div>
                   <BillActions {...props} />
@@ -151,7 +183,7 @@ export default function BillList({
                 <div>
                   <BillSource {...props} />
                 </div>
-                <dl className="bill-card-amounts">
+                <dl className="m-0 grid gap-1.5 border-t border-border pt-2.5 text-sm/[1.6] *:flex *:justify-between *:gap-3 [&_dd]:m-0 [&_dd]:tabular-nums">
                   <div>
                     <dt>Consumo</dt>
                     <dd>{consumption(bill)}</dd>
@@ -164,7 +196,7 @@ export default function BillList({
                     <dt>Descuentos</dt>
                     <dd>{credit(bill)}</dd>
                   </div>
-                  <div className="bill-card-paid">
+                  <div className="font-bold">
                     <dt>Pagado</dt>
                     <dd>{money(numberOf(bill.paid))}</dd>
                   </div>

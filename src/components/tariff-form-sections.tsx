@@ -32,7 +32,7 @@ import { textLink } from "./comparison-table";
 /* Layouts shared by the tariff form and its sections. */
 const formGrid = "grid gap-3.5 max-[1000px]:gap-2.5 max-[520px]:gap-3";
 export const two = cn(formGrid, "grid-cols-2 max-[520px]:grid-cols-1");
-const three = cn(
+export const three = cn(
   formGrid,
   "grid-cols-3 max-[800px]:grid-cols-2 max-[520px]:grid-cols-1",
 );
@@ -43,9 +43,9 @@ export const sectionTitle =
 export const sectionNote = "m-0 mt-2.5 mb-5 text-sm-plus text-muted-foreground";
 export const checkboxLabel =
   "my-2 flex min-h-11 items-center gap-2 min-[801px]:text-sm-plus";
-const selectLabel = "my-4 block text-sm-plus font-medium";
+export const selectLabel = "my-4 block text-sm-plus font-medium";
 /* 44px selects, as the other controls. */
-const tallSelect = "*:[select]:min-h-11";
+export const tallSelect = "*:[select]:min-h-11";
 const sectionHeading =
   "mb-3.5 flex items-center justify-between gap-3 max-[520px]:flex-wrap max-[520px]:gap-2.5";
 /* A section folded under its summary. */

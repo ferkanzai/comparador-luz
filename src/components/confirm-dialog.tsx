@@ -49,11 +49,14 @@ export default function ConfirmDialog({
     cancel.current?.focus();
   };
   const body = (
-    <div className="confirm-summary">
-      <span className="confirm-icon" aria-hidden="true">
+    <div className="mb-5 flex items-center gap-3.5 [&_h3]:wrap-anywhere [&_p]:text-xs-plus">
+      <span
+        className="grid h-[46px] flex-[0_0_46px] place-items-center rounded-full bg-destructive-muted text-destructive"
+        aria-hidden="true"
+      >
         <Trash2 size={22} />
       </span>
-      <div>{summary}</div>
+      <div className="min-w-0">{summary}</div>
     </div>
   );
   const actions = (

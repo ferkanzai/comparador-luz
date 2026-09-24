@@ -34,6 +34,20 @@ import {
 } from "@/components/ui/native-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+import {
+  checkboxLabel,
+  formSection,
+  sectionNote,
+  sectionTitle,
+  selectLabel,
+  tallSelect,
+  two,
+} from "./tariff-form-sections";
+
+/* Notes directly in the form, between its fields. */
+const formNote = "m-0 mb-5 text-sm-plus text-muted-foreground [p+&]:mt-3";
+const selectHint = "mt-1.5 block text-sm font-normal text-muted-foreground";
 export default function BillForm({
   initial,
   workspace: w,
@@ -137,10 +151,13 @@ export default function BillForm({
             mode={invoiceMode}
           />
         ) : (
-          <form className="modal-body" onSubmit={save}>
-            <fieldset disabled={saving}>
+          <form className="p-6 max-[520px]:p-5" onSubmit={save}>
+            <fieldset
+              disabled={saving}
+              className="m-0 min-w-0 border-0 p-0 disabled:opacity-70"
+            >
               {editing.tariff && <EstimateNotice tariff={editing.tariff} />}
-              <div className="form-grid two">
+              <div className={cn(two, "mb-4")}>
                 <Field
                   label="Inicio del período"
                   type="date"
@@ -165,7 +182,7 @@ export default function BillForm({
               {editing.periodStart &&
                 editing.periodEnd &&
                 editing.periodEnd > editing.periodStart && (
-                  <p className="small muted">
+                  <p className={formNote}>
                     {Math.round(
                       (Date.parse(editing.periodEnd) -
                         Date.parse(editing.periodStart)) /
@@ -176,12 +193,12 @@ export default function BillForm({
                   </p>
                 )}
 
-              <p className="muted">
+              <p className={formNote}>
                 Revisa el importe real de tu factura. Si vienes del comparador,
                 ya hemos copiado el consumo y el desglose: puedes corregirlos
                 antes de guardar.
               </p>
-              <div className="form-grid two">
+              <div className={cn(two, "mb-4")}>
                 <Field
                   label="Mes para el gráfico"
                   hint="Por defecto, el mes en que termina el período. Puedes cambiarlo."
@@ -204,20 +221,23 @@ export default function BillForm({
                 label="Descuento sobre el total (opcional)"
                 decimal
                 unit="€"
+                className="mb-4"
                 hint="Importe positivo que se resta después de impuestos. Si el descuento reduce una base imponible, copia los conceptos e impuestos ya descontados de tu factura y no lo restes aquí otra vez."
                 value={editing.credit}
                 onChange={(credit) => setEditing({ ...editing, credit })}
               />
               <Field
                 label="Comercializadora"
+                className="mb-4"
                 required
                 value={editing.provider}
                 onChange={(v) => setEditing({ ...editing, provider: v })}
               />
               <BillConsumptionFields bill={editing} onChange={setEditing} />
-              <label className="auth-label">
+              <label className={selectLabel}>
                 Tarifa de esta factura
                 <NativeSelect
+                  className={tallSelect}
                   ref={tariffSelect}
                   value={editing.tariff ? "snapshot" : ""}
                   onChange={(e) => {
@@ -257,14 +277,14 @@ export default function BillForm({
                       ))}
                   </optgroup>
                 </NativeSelect>
-                <small>
+                <small className={selectHint}>
                   Se guarda una copia de los precios; los cambios futuros no
                   alteran esta factura. Comprueba que coincidan con los precios
                   unitarios impresos en ella.
                 </small>
               </label>
               {w.history.length > 0 && (
-                <div className="past-tariff-picker">
+                <div>
                   <Button
                     variant="link"
                     size="inline"
@@ -280,9 +300,10 @@ export default function BillForm({
                   </Button>
                   {showPastTariffs && (
                     <div id={pastTariffsId}>
-                      <label className="auth-label">
+                      <label className={selectLabel}>
                         Precios que tenías antes
                         <NativeSelect
+                          className={tallSelect}
                           defaultValue=""
                           onChange={(event) => {
                             const previous = w.history.find(
@@ -314,7 +335,7 @@ export default function BillForm({
                               </NativeSelectOption>
                             ))}
                         </NativeSelect>
-                        <small>
+                        <small className={selectHint}>
                           Vincula una copia de esos precios; los importes de la
                           factura no cambian.
                         </small>
@@ -323,7 +344,7 @@ export default function BillForm({
                   )}
                 </div>
               )}
-              <label className="checkbox">
+              <label className={checkboxLabel}>
                 <Checkbox
                   checked={!!editing.breakdown}
                   onCheckedChange={(checked) =>
@@ -350,14 +371,14 @@ export default function BillForm({
               </label>
               {editing.breakdown && (
                 <>
-                  <p className="small muted">
+                  <p className={formNote}>
                     Copia los importes facturados. Conservamos el total pagado
                     que has indicado y comprobamos que la suma menos el
                     descuento coincida, incluidos los impuestos.
                   </p>
-                  <div className="bill-concepts">
+                  <div className="my-5 grid grid-cols-2 gap-5 max-[480px]:grid-cols-1">
                     {billLines.map(([key, label]) => (
-                      <div key={key} className="bill-concept">
+                      <div key={key} className="min-w-0">
                         <Field
                           label={label}
                           value={editing.breakdown![key]}
@@ -381,7 +402,7 @@ export default function BillForm({
                     variant={
                       reconciliation?.difference ? "destructive" : "default"
                     }
-                    className="bill-reconciliation"
+                    className="[&_p]:m-0 [&_p]:mb-2"
                     role="status"
                     aria-live="polite"
                   >
@@ -419,9 +440,11 @@ export default function BillForm({
                   </Alert>
                 </>
               )}
-              <section className="form-section bill-invoice-tariff">
-                <h3>Precios de esta factura</h3>
-                <p className="small muted">
+              <section className={formSection}>
+                <h3 className={cn(sectionTitle, "mb-3")}>
+                  Precios de esta factura
+                </h3>
+                <p className={sectionNote}>
                   Un importe parecido no confirma que la tarifa sea la misma. Si
                   los precios unitarios son distintos, puedes guardar una tarifa
                   con los que aparecen en tu factura.
@@ -443,18 +466,19 @@ export default function BillForm({
                 >
                   Crear tarifa con estos precios
                 </Button>
-                <p className="small muted">
+                <p className={sectionNote}>
                   Se guardará junto con la factura, sin cambiar tu contrato
                   actual.
                 </p>
                 {tariffsFull && (
-                  <p id={tariffLimitId} className="small muted">
+                  <p id={tariffLimitId} className={sectionNote}>
                     {tariffLimitMessage}
                   </p>
                 )}
               </section>
               <Field
                 label="Notas (opcional)"
+                className="mb-4"
                 value={editing.notes}
                 onChange={(v) => setEditing({ ...editing, notes: v })}
                 maxLength={2000}
@@ -464,7 +488,7 @@ export default function BillForm({
                   {error}
                 </Alert>
               )}
-              <div className="modal-actions">
+              <div className="mt-6 flex flex-wrap justify-end gap-2.5 border-t border-border pt-5">
                 <Button
                   variant="outline"
                   type="button"

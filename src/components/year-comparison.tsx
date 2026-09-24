@@ -13,6 +13,28 @@ import {
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
+import { chartScroll } from "./chart-scroll";
+import { formDisclosure, tallSelect } from "./tariff-form-sections";
+import {
+  bodyCell,
+  chartDrawing,
+  chartLegend,
+  chartZero,
+  headCell,
+  monthName,
+  note,
+  panel,
+  swatch,
+  table,
+  tableCaption,
+  tableScroll,
+} from "./bill-styles";
+
+const firstYear = "bg-period-2";
+const secondYear = "bg-primary";
+const yearCell = cn(bodyCell, "whitespace-nowrap");
+const yearSelect = "m-0 block text-sm-plus font-medium";
 
 export default function YearComparison({ bills }: { bills: Bill[] }) {
   const years = invoiceYears(bills);
@@ -44,12 +66,13 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
       : "Consumo registrado en kWh";
   return (
     <section aria-label="Comparación de facturas por años">
-      <div className="panel year-comparison">
-        <div className="year-controls">
-          <div className="form-grid two">
-            <label className="auth-label">
+      <div className={cn(panel, "p-7 max-[640px]:px-3.5 max-[640px]:py-5")}>
+        <div className="flex flex-wrap items-end justify-between gap-6 max-[640px]:items-stretch max-[640px]:gap-4">
+          <div className="grid max-w-[500px] flex-1 grid-cols-2 gap-3.5 max-[1000px]:gap-2.5 max-[640px]:min-w-full max-[640px]:gap-3">
+            <label className={yearSelect}>
               Año de referencia
               <NativeSelect
+                className={tallSelect}
                 value={first}
                 onChange={(event) =>
                   setSelection({
@@ -63,9 +86,10 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                 ))}
               </NativeSelect>
             </label>
-            <label className="auth-label">
+            <label className={yearSelect}>
               Año a comparar
               <NativeSelect
+                className={tallSelect}
                 value={second}
                 onChange={(event) =>
                   setSelection({
@@ -83,7 +107,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
           <ToggleGroup
             type="single"
             value={metric}
-            className="segmented rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+            className="rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm max-[640px]:*:flex-1"
             aria-label="Dato a comparar"
           >
             <ToggleGroupItem value="paid" onClick={() => setMetric("paid")}>
@@ -99,15 +123,19 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <div className="year-summary" role="status" aria-live="polite">
-          <div>
-            <span className="eyebrow">
+        <div
+          className="mt-7 flex flex-wrap justify-between gap-6 rounded-lg border border-border bg-background p-6 max-[640px]:p-5"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="grid gap-2">
+            <span className="text-sm/[1.6] font-semibold tracking-[1.65px]">
               {comparison.commonMonths}{" "}
               {comparison.commonMonths === 1
                 ? "MES COMPARABLE"
                 : "MESES COMPARABLES"}
             </span>
-            <strong className="big-amount">
+            <strong className="my-px font-heading text-4xl/[1.2] font-semibold tracking-[-1.5px] max-[640px]:text-3xl/[1.2] max-[640px]:wrap-anywhere">
               {comparison.commonMonths ? signed(comparison.difference) : "—"}
             </strong>
             <span>
@@ -116,10 +144,10 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                 : "Aún no hay meses con datos comparables en ambos años."}
             </span>
           </div>
-          <dl>
+          <dl className="m-0 flex items-center gap-9 [&_dd]:m-0 [&_dd]:mt-2 [&_dd]:font-bold [&_dd]:tabular-nums [&_dt]:flex [&_dt]:items-center [&_dt]:gap-2 [&_dt]:text-muted-foreground">
             <div>
               <dt>
-                <span className="swatch year-first" />
+                <span className={cn(swatch, firstYear)} />
                 {first}
               </dt>
               <dd>
@@ -128,7 +156,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
             </div>
             <div>
               <dt>
-                <span className="swatch year-second" />
+                <span className={cn(swatch, secondYear)} />
                 {second}
               </dt>
               <dd>
@@ -137,29 +165,29 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
             </div>
           </dl>
         </div>
-        <p className="small muted">
+        <p className={note}>
           La diferencia usa solo los mismos meses con registros en ambos años
           {metric === "consumption" ? " y kWh en todas sus facturas" : ""}. No
           extrapolamos el año completo ni interpretamos la diferencia como
           ahorro de tarifa.
         </p>
-        <div className="year-chart-heading">
-          <h3>
+        <div className="mt-7 flex items-center justify-between gap-4">
+          <h3 className="m-0 flex items-center gap-2 font-heading text-lg/[1.6] font-bold tracking-[-0.25px]">
             <BarChart3 size={18} aria-hidden="true" />
             Mes a mes
           </h3>
-          <ul className="chart-legend" aria-label="Años del gráfico">
+          <ul className={cn(chartLegend, "m-0")} aria-label="Años del gráfico">
             <li>
-              <span className="swatch year-first" />
+              <span className={cn(swatch, firstYear)} />
               {first}
             </li>
             <li>
-              <span className="swatch year-second" />
+              <span className={cn(swatch, secondYear)} />
               {second}
             </li>
           </ul>
         </div>
-        <p className="small muted">
+        <p className={note}>
           {description}. «—» indica datos desconocidos
           {metric === "consumption"
             ? "; * marca un consumo parcial, excluido de la diferencia"
@@ -167,18 +195,18 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
           . Desliza el gráfico para ver todos los meses.
         </p>
         <div
-          className="chart-scroll"
+          className={chartScroll}
           tabIndex={0}
           role="region"
           aria-label={`${description}: ${first} y ${second}`}
         >
           <div
-            className="year-chart"
+            className="relative grid h-[260px] min-w-[1200px] grid-cols-12"
             role="img"
             aria-label={`Comparación mensual de ${first} y ${second}. Valores disponibles en la tabla de debajo.`}
           >
             <svg
-              className="chart-drawing"
+              className={chartDrawing}
               viewBox="0 0 1200 260"
               preserveAspectRatio="none"
               aria-hidden="true"
@@ -188,16 +216,23 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                 x2="1200"
                 y1={zero}
                 y2={zero}
-                className="chart-zero"
+                className={chartZero}
               />
             </svg>
             {comparison.rows.map((row) => (
-              <div key={row.label} className="year-month">
-                <div className="year-month-values">
+              <div
+                key={row.label}
+                className="relative text-center text-xs-plus"
+              >
+                <div className="absolute inset-x-0 top-0 grid gap-1">
                   {[row.first, row.second].map((entry, i) => (
                     <span
                       key={i}
-                      className={i ? "year-second-text" : "year-first-text"}
+                      className={
+                        i
+                          ? "font-semibold text-primary-hover"
+                          : "text-brand-leaf"
+                      }
                     >
                       {entry.value === null ? "—" : format(entry.value)}
                       {entry.value !== null && entry.missing > 0 ? " *" : ""}
@@ -209,7 +244,10 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                     entry.value !== null && (
                       <span
                         key={i}
-                        className={`year-bar ${i ? "year-second" : "year-first"}`}
+                        className={cn(
+                          "absolute w-[26%] max-w-7 rounded-t-sm",
+                          i ? secondYear : firstYear,
+                        )}
                         style={{
                           left: i ? "52%" : "22%",
                           top:
@@ -221,40 +259,50 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                       />
                     ),
                 )}
-                <span className="month-name">{row.label}</span>
+                <span className={monthName}>{row.label}</span>
               </div>
             ))}
           </div>
         </div>
-        <details className="form-section">
+        <details className={formDisclosure}>
           <summary>Ver comparación mensual en tabla</summary>
           <div
-            className="table-scroll"
+            className={tableScroll}
             tabIndex={0}
             role="region"
             aria-label="Tabla de comparación anual"
           >
-            <table>
-              <caption className="bill-table-caption">
+            <table className={cn(table, "min-w-[640px]")}>
+              <caption className={tableCaption}>
                 {description} · Diferencia = {second} − {first}. Solo comparamos
                 meses con datos suficientes.
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Mes</th>
-                  <th scope="col">{first}</th>
-                  <th scope="col">{second}</th>
-                  <th scope="col">Diferencia</th>
+                  <th className={headCell} scope="col">
+                    Mes
+                  </th>
+                  <th className={headCell} scope="col">
+                    {first}
+                  </th>
+                  <th className={headCell} scope="col">
+                    {second}
+                  </th>
+                  <th className={headCell} scope="col">
+                    Diferencia
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {comparison.rows.map((row) => (
                   <tr key={row.label}>
-                    <th scope="row">{row.label}</th>
+                    <th className={headCell} scope="row">
+                      {row.label}
+                    </th>
                     {[row.first, row.second].map((entry, i) => (
-                      <td key={i}>
+                      <td key={i} className={yearCell}>
                         {entry.value === null ? "—" : format(entry.value)}
-                        <small className="block muted">
+                        <small className="block max-w-[250px] min-w-[130px] text-sm/[1.6] whitespace-normal wrap-normal text-muted-foreground">
                           {entry.count}{" "}
                           {entry.count === 1 ? "factura" : "facturas"}
                           {entry.missing
@@ -263,28 +311,28 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
                         </small>
                       </td>
                     ))}
-                    <td>
+                    <td className={yearCell}>
                       {row.difference === null ? "—" : signed(row.difference)}
                     </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
+              <tfoot className="bg-background font-bold">
                 <tr>
-                  <th scope="row">
+                  <th className={headCell} scope="row">
                     Meses comparables ({comparison.commonMonths})
                   </th>
-                  <td>
+                  <td className={yearCell}>
                     {comparison.commonMonths
                       ? format(comparison.firstTotal)
                       : "—"}
                   </td>
-                  <td>
+                  <td className={yearCell}>
                     {comparison.commonMonths
                       ? format(comparison.secondTotal)
                       : "—"}
                   </td>
-                  <td>
+                  <td className={yearCell}>
                     {comparison.commonMonths
                       ? signed(comparison.difference)
                       : "—"}
@@ -294,7 +342,7 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
             </table>
           </div>
         </details>
-        <p className="small muted">
+        <p className={note}>
           Cada factura cuenta en su mes de registro, aunque abarque otras
           fechas. Un mes con facturas no garantiza que estén registradas todas
           las del período.

@@ -10,6 +10,26 @@ import {
   billMonthLabel as fullMonth,
 } from "@/lib/bill-data";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
+import {
+  chartDetail,
+  chartDetailHead,
+  chartDetailList,
+  chartDetailTotal,
+  chartDrawing,
+  chartLegend,
+  chartNote,
+  chartZero,
+  conceptColor,
+  detailSwatch,
+  interactiveChart,
+  monthAmount,
+  monthControl,
+  monthlyCredit,
+  monthlyStack,
+  monthName,
+  swatch,
+} from "./bill-styles";
 
 type Month = {
   month: string;
@@ -22,6 +42,28 @@ const lineSeries = [...groups, ["paid", "Pagado"]] as const;
 type SeriesKey = (typeof lineSeries)[number][0];
 const seriesAmount = (month: Month, key: SeriesKey) =>
   key === "paid" ? month.amount : month.totals[key];
+/* Each line's colour, and a dash pattern so lines differ without colour. */
+const seriesColor: Record<SeriesKey, string> = {
+  energy: "text-chart-1",
+  power: "text-chart-2",
+  other: "text-chart-3",
+  taxes: "text-chart-4",
+  unknown: "text-chart-5",
+  credit: "text-destructive",
+  paid: "text-foreground",
+};
+const line = "stroke-current stroke-3 [vector-effect:non-scaling-stroke]";
+const seriesLine: Record<SeriesKey, string> = {
+  energy: line,
+  power: cn(line, "[stroke-dasharray:7_3]"),
+  other: cn(line, "[stroke-dasharray:2_3]"),
+  taxes: cn(line, "[stroke-dasharray:9_3_2_3]"),
+  unknown: cn(line, "[stroke-dasharray:2_5]"),
+  credit: cn(line, "[stroke-dasharray:6_3]"),
+  paid: cn(line, "stroke-4"),
+};
+const point =
+  "fill-current stroke-card stroke-2 [vector-effect:non-scaling-stroke]";
 
 export default function BillsChart({
   months,
@@ -72,11 +114,11 @@ export default function BillsChart({
   const zero = y(0);
   return (
     <>
-      <div className="chart-toolbar">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <ToggleGroup
           type="single"
           value={view}
-          className="segmented rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+          className="rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm max-[520px]:*:flex-1 max-[380px]:[&_svg]:hidden"
           aria-label="Tipo de gráfico"
         >
           <ToggleGroupItem value="bars" onClick={() => onViewChange("bars")}>
@@ -92,7 +134,7 @@ export default function BillsChart({
             <Zap size={16} /> Consumo
           </ToggleGroupItem>
         </ToggleGroup>
-        <span className="small muted">
+        <span className={chartNote}>
           Pasa el cursor, toca o selecciona un mes para ver el detalle.
         </span>
       </div>
@@ -101,10 +143,10 @@ export default function BillsChart({
       ) : (
         <>
           {view === "bars" ? (
-            <ul className="chart-legend" aria-label="Conceptos del gráfico">
+            <ul className={chartLegend} aria-label="Conceptos del gráfico">
               {groups.map(([key, label]) => (
                 <li key={key}>
-                  <span className={`swatch stack-${key}`} />
+                  <span className={cn(swatch, conceptColor[key])} />
                   {label}
                 </li>
               ))}
@@ -112,13 +154,14 @@ export default function BillsChart({
           ) : (
             <>
               <ul
-                className="chart-legend line-legend"
+                className={cn(chartLegend, "gap-x-3 gap-y-1.5")}
                 aria-label="Conceptos del gráfico. Activa o desactiva cada línea."
               >
                 {availableSeries.map(([key, label]) => (
                   <li key={key}>
                     <button
                       type="button"
+                      className="group inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-foreground aria-[pressed=false]:bg-background aria-[pressed=false]:line-through"
                       aria-pressed={!hiddenSeries.includes(key)}
                       onClick={() =>
                         setHiddenSeries((hidden) =>
@@ -131,14 +174,17 @@ export default function BillsChart({
                       <svg
                         viewBox="0 0 28 12"
                         aria-hidden="true"
-                        className={`series-key series-${key}`}
+                        className={cn(
+                          "h-3 w-7 group-aria-[pressed=false]:opacity-40",
+                          seriesColor[key],
+                        )}
                       >
                         <line
                           x1="0"
                           x2="28"
                           y1="6"
                           y2="6"
-                          className="spending-line"
+                          className={seriesLine[key]}
                         />
                       </svg>
                       {label}
@@ -146,7 +192,7 @@ export default function BillsChart({
                   </li>
                 ))}
               </ul>
-              <p className="small muted chart-line-note">
+              <p className={cn(chartNote, "mt-6")}>
                 Cada línea muestra un concepto; «Pagado» es el importe después
                 de descuentos. Pulsa la leyenda para mostrar u ocultar líneas.
                 Los meses sin facturas interrumpen las líneas.
@@ -154,23 +200,23 @@ export default function BillsChart({
             </>
           )}
           <ChartScroll label={`Gráfico mensual de ${year}`}>
-            <div className="interactive-chart">
+            <div className={interactiveChart}>
               <svg
                 viewBox="0 0 1200 260"
                 preserveAspectRatio="none"
                 aria-hidden="true"
-                className="chart-drawing"
+                className={chartDrawing}
               >
                 <line
                   x1="0"
                   x2="1200"
                   y1={zero}
                   y2={zero}
-                  className="chart-zero"
+                  className={chartZero}
                 />
                 {view === "line" &&
                   visibleSeries.map(([key]) => (
-                    <g key={key} data-series={key} className={`series-${key}`}>
+                    <g key={key} data-series={key} className={seriesColor[key]}>
                       {months.map((m, i) =>
                         m.count ? (
                           <g key={m.month}>
@@ -180,14 +226,14 @@ export default function BillsChart({
                                 y1={y(seriesAmount(months[i - 1], key))}
                                 x2={i * 100 + 50}
                                 y2={y(seriesAmount(m, key))}
-                                className="spending-line"
+                                className={seriesLine[key]}
                               />
                             )}
                             <circle
                               cx={i * 100 + 50}
                               cy={y(seriesAmount(m, key))}
                               r={m.month === active.month ? 6 : 4}
-                              className="spending-point"
+                              className={point}
                             />
                           </g>
                         ) : null,
@@ -199,7 +245,7 @@ export default function BillsChart({
                 <button
                   key={m.month}
                   type="button"
-                  className="month-control"
+                  className={monthControl}
                   aria-pressed={active.month === m.month}
                   aria-label={`${fullMonth(m.month)}: ${m.count ? money(m.amount) : "sin facturas"}`}
                   aria-describedby={
@@ -209,13 +255,13 @@ export default function BillsChart({
                   onFocus={() => setSelected(m.month)}
                   onClick={() => setSelected(m.month)}
                 >
-                  <span className="month-amount">
+                  <span className={monthAmount}>
                     {m.count ? money(m.amount) : "—"}
                   </span>
                   {view === "bars" && (
                     <>
                       <span
-                        className="monthly-stack"
+                        className={monthlyStack}
                         style={{ bottom: `${260 - zero}px` }}
                         aria-hidden="true"
                       >
@@ -226,7 +272,7 @@ export default function BillsChart({
                               m.totals[key] > 0 && (
                                 <span
                                   key={key}
-                                  className={`stack-${key}`}
+                                  className={conceptColor[key]}
                                   style={{
                                     height: `${m.totals[key] * scale}px`,
                                   }}
@@ -236,7 +282,7 @@ export default function BillsChart({
                       </span>
                       {m.totals.credit < 0 && (
                         <span
-                          className="monthly-credit stack-credit"
+                          className={monthlyCredit}
                           aria-hidden="true"
                           style={{
                             top: `${zero}px`,
@@ -246,28 +292,28 @@ export default function BillsChart({
                       )}
                     </>
                   )}
-                  <span className="month-name">{m.label}</span>
+                  <span className={monthName}>{m.label}</span>
                 </button>
               ))}
             </div>
           </ChartScroll>
           <div
-            className="chart-detail"
+            className={chartDetail}
             id={detailId}
             role="status"
             aria-live="polite"
             aria-atomic="true"
           >
-            <div>
+            <div className={chartDetailHead}>
               <strong>{fullMonth(active.month)}</strong>
-              <span className="small muted">
+              <span className={chartNote}>
                 {active.count
                   ? `${active.count} ${active.count === 1 ? "factura" : "facturas"}`
                   : "Sin facturas registradas"}
               </span>
             </div>
             {active.count > 0 && (
-              <dl>
+              <dl className={chartDetailList}>
                 {groups
                   .filter(
                     ([key]) =>
@@ -277,17 +323,17 @@ export default function BillsChart({
                   .map(([key, label]) => (
                     <div key={key}>
                       <dt>
-                        <span className={`swatch stack-${key}`} />
+                        <span className={cn(detailSwatch, conceptColor[key])} />
                         {label}
                       </dt>
                       <dd>{money(active.totals[key])}</dd>
                     </div>
                   ))}
-                <div className="chart-detail-total">
+                <div className={chartDetailTotal}>
                   <dt>Total antes de descuentos</dt>
                   <dd>{money(active.amount - active.totals.credit)}</dd>
                 </div>
-                <div className="chart-detail-total">
+                <div className={chartDetailTotal}>
                   <dt>Pagado</dt>
                   <dd>{money(active.amount)}</dd>
                 </div>
