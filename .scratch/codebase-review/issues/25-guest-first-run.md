@@ -37,3 +37,10 @@ Signed-in pass:
 - The email-verification banner can be hidden for the browser session.
 - Leading with the comparison profile: not done. The empty state already asks for the last bill, and reordering the flow is a larger change than this ticket.
 - The conflict notice no longer exists since ADR-0003 (last save wins).
+
+Follow-ups from the preview review (2026-09-24):
+
+- The empty state's button reads "Añadir mi tarifa actual": the first tariff opens marked as current, with its start date required.
+- With no tariffs, the CNMC link sits in the empty state, under that button, instead of alone above the account banner.
+
+Approved by the user on the preview.
