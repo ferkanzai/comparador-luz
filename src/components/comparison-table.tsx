@@ -163,7 +163,7 @@ function DetailsLink({
       onClick={() => onDetails(tariff.id)}
       aria-label={`Ver desglose de ${tariff.name}`}
     >
-      Ver desglose <ArrowUpRight size={13} />
+      Ver desglose <ArrowUpRight size={13} className="shrink-0" />
     </button>
   );
 }

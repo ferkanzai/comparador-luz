@@ -267,7 +267,7 @@ export default function TariffForm({
   );
   if (inline) return form;
   return (
-    <Modal title={tariffFormTitle(mode, initial)} onClose={onClose} wide>
+    <Modal title={tariffFormTitle(mode, initial)} onClose={onClose} size="wide">
       {form}
     </Modal>
   );

@@ -21,7 +21,7 @@ import {
 
 const section = "mb-5 rounded-xl border border-border bg-card px-7 py-6";
 const sectionTitle =
-  "m-0 mb-3 flex items-center gap-2.5 font-heading text-xl/[1.6] font-bold tracking-[-0.55px]";
+  "m-0 mb-3 flex items-center gap-2.5 font-heading text-xl/[1.6] font-bold tracking-[-0.55px] [&>svg]:shrink-0";
 const sectionText = "m-0 mb-4 text-muted-foreground";
 const settingsField = cn(authField, "m-0 w-full max-w-[420px]");
 

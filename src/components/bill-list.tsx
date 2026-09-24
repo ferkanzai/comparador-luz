@@ -40,7 +40,7 @@ function BillSource({ bill }: BillProps) {
       {bill.notes && <small className={subLine}>{bill.notes}</small>}
       {bill.breakdown && (
         <details>
-          <summary>Ver conceptos</summary>
+          <summary className="min-h-11 content-center">Ver conceptos</summary>
           <dl className="my-4">
             {billLines.map(([key, label]) => (
               <div key={key} className="my-2 flex justify-between gap-4">

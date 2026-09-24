@@ -191,7 +191,7 @@ export default function TariffHistory({
                   <summary className="flex min-h-9 w-fit cursor-pointer list-none flex-wrap items-center gap-1.5 text-xs-plus text-muted-foreground [&::-webkit-details-marker]:hidden">
                     <ChevronDown
                       size={14}
-                      className="group-open/prices:rotate-180"
+                      className="shrink-0 group-open/prices:rotate-180"
                     />{" "}
                     Potencia y otros cargos
                     {hasEstimates && (

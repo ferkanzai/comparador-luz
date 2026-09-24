@@ -778,9 +778,7 @@ test("stops adding and duplicating tariffs at the 100-tariff limit and explains 
   await expect(table.getByRole("row")).toHaveCount(100);
   await expect(add).toBeEnabled();
   await expect(page.getByText(/hasta 100 tarifas/)).toHaveCount(0);
-  await expect(page.locator(".workspace-status")).not.toContainText(
-    "no se puede",
-  );
+  await expect(page.getByText(/no se puede/)).toHaveCount(0);
 });
 
 test("retains the expired current tariff as baseline and excludes incompatible combined power", async ({

@@ -115,7 +115,8 @@ export default function PvpcComparison({
     >
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[1.65px]">
-          <History size={15} aria-hidden="true" /> REFERENCIA HISTÓRICA
+          <History size={15} aria-hidden="true" className="shrink-0" />{" "}
+          REFERENCIA HISTÓRICA
         </span>
         <Badge variant="secondary">Aproximado</Badge>
       </div>

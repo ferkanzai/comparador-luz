@@ -320,7 +320,7 @@ export default function ComparisonWorkspace({
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="mr-1 flex items-center gap-2 text-2xs text-muted-foreground">
-                  <Columns3 size={16} />
+                  <Columns3 size={16} className="shrink-0" />
                   {selectedIds.length}/3 finalistas
                 </span>
                 {selectedIds.map((id) => (
@@ -331,7 +331,7 @@ export default function ComparisonWorkspace({
                     aria-label={`Quitar ${data.tariffs.find((tariff) => tariff.id === id)?.name} de finalistas`}
                   >
                     {data.tariffs.find((tariff) => tariff.id === id)?.name}
-                    <X size={12} />
+                    <X size={12} className="shrink-0" />
                   </button>
                 ))}
               </div>
@@ -406,7 +406,8 @@ export default function ComparisonWorkspace({
           target="_blank"
           rel="noreferrer"
         >
-          Buscar otras ofertas en la CNMC <ExternalLink size={15} />
+          Buscar otras ofertas en la CNMC{" "}
+          <ExternalLink size={15} className="shrink-0" />
         </a>
       </div>
       {profileOpen && (

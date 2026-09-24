@@ -40,15 +40,34 @@ import {
 import { X, Zap } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-export function Brand() {
+/** The logo. `inverse` turns it lime, for dark panels. */
+export function Brand({
+  inverse = false,
+  className,
+}: {
+  inverse?: boolean;
+  className?: string;
+}) {
   return (
-    <Link href="/" className="brand" aria-label="Luz en claro, inicio">
-      <span className="brand-icon">
+    <Link
+      href="/"
+      className={cn(
+        "inline-flex min-h-11 items-center gap-2.5 font-heading text-2xl/[1.6] font-bold tracking-[-1px] whitespace-nowrap max-[520px]:gap-2 max-[520px]:text-xl/[1.6]",
+        className,
+      )}
+      aria-label="Luz en claro, inicio"
+    >
+      <span
+        className={cn(
+          "grid h-[38px] w-[34px] place-items-center rounded-lg max-[520px]:h-8 max-[520px]:w-7 max-[520px]:rounded-md max-[520px]:[&_svg]:w-[18px]",
+          inverse ? "bg-lime text-inverse" : "bg-foreground text-lime",
+        )}
+      >
         <Zap size={22} fill="currentColor" />
       </span>
       <span>
-        luz<span className="brand-light">enclaro</span>
-        <span className="brand-dot">.</span>
+        luz<span className="font-normal">enclaro</span>
+        <span className={inverse ? "text-lime" : "text-brand-leaf"}>.</span>
       </span>
     </Link>
   );
@@ -105,13 +124,14 @@ export function Field({
         .filter(Boolean)
         .join(" ") || undefined,
   };
-  // `field` stays as a hook for the layouts around it (spacing, period dots).
   return (
     <UiField
-      className={cn("field", className)}
+      className={cn("min-w-0", className)}
       data-invalid={invalid || undefined}
     >
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className="mb-1.5 text-muted-foreground">
+        {label}
+      </FieldLabel>
       {unit ? (
         <InputGroup>
           <InputGroupInput {...input} />
@@ -141,14 +161,15 @@ export function Modal({
   title,
   children,
   onClose,
-  wide = false,
-  className = "",
+  size = "default",
+  className,
   initialFocusRef,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
-  wide?: boolean;
+  /** The dialog's width from the `md` breakpoint up. */
+  size?: "default" | "wide" | "full";
   className?: string;
   initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
@@ -166,11 +187,9 @@ export function Modal({
       <X />
     </Button>
   );
-  // `modal` remains a hook for the form layouts inside dialogs.
-  const content = cn("modal", className);
-  const head =
-    "modal-head flex-row items-center justify-between gap-4 border-b";
-  const title_ = "font-heading text-xl font-bold";
+  const content = cn("overscroll-contain", className);
+  const head = "flex-row items-center justify-between gap-4 border-b";
+  const title_ = "font-heading text-xl font-bold tracking-[-0.55px]";
   if (desktop)
     return (
       <Dialog open onOpenChange={onOpenChange}>
@@ -179,9 +198,8 @@ export function Modal({
           onOpenAutoFocus={onOpenAutoFocus}
           className={cn(
             "flex max-h-[90dvh] flex-col gap-0 overflow-hidden bg-background p-0 sm:max-w-[510px]",
-            wide && "sm:max-w-[800px]",
-            className.includes("finalist-modal") &&
-              "sm:max-w-[min(1440px,calc(100vw-2rem))]",
+            size === "wide" && "sm:max-w-[800px]",
+            size === "full" && "sm:max-w-[min(1440px,calc(100vw-2rem))]",
             content,
           )}
         >
@@ -223,12 +241,15 @@ export function Empty({
   action?: ReactNode;
 }) {
   return (
-    <UiEmpty className="empty">
+    <UiEmpty>
       <EmptyHeader>
         <EmptyMedia variant="icon">{icon}</EmptyMedia>
-        {/* A heading, so the empty state reads as a section of the page. */}
+        {/* A heading, so the empty state reads as a section of the page. Its
+            size alone changes; the line height stays the title's. */}
         <EmptyTitle>
-          <h3>{title}</h3>
+          <h3 className="text-[length:var(--text-xl)] font-bold tracking-[-0.25px] max-[520px]:text-[length:var(--text-lg)]">
+            {title}
+          </h3>
         </EmptyTitle>
         <EmptyDescription>{children}</EmptyDescription>
       </EmptyHeader>

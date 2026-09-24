@@ -159,9 +159,8 @@ export default function AccountForm({
           : "Tu luz, en su sitio.";
   return (
     <main className="grid min-h-dvh grid-cols-2 max-[800px]:grid-cols-1 min-[801px]:h-dvh min-[801px]:grid-rows-[minmax(0,1fr)]">
-      {/* The brand turns lime on the dark panel. */}
-      <div className="relative flex flex-col justify-between gap-16 overflow-hidden bg-inverse px-[clamp(25px,6vw,90px)] py-12 text-inverse-foreground after:pointer-events-none after:absolute after:-right-[290px] after:-bottom-[150px] after:size-[450px] after:rounded-full after:border after:border-period-3/[13.3%] after:shadow-[0_0_0_60px_color-mix(in_oklab,var(--period-3)_2.4%,transparent),0_0_0_120px_color-mix(in_oklab,var(--period-3)_1.6%,transparent)] after:content-[''] max-[1000px]:p-9 max-[800px]:p-6 min-[801px]:min-h-0 min-[801px]:gap-[clamp(16px,3dvh,60px)] [&_.brand-dot]:text-lime [&_.brand-icon]:bg-lime [&_.brand-icon]:text-inverse [&_:focus-visible]:shadow-none [&_:focus-visible]:outline-lime">
-        <Brand />
+      <div className="relative flex flex-col justify-between gap-16 overflow-hidden bg-inverse px-[clamp(25px,6vw,90px)] py-12 text-inverse-foreground after:pointer-events-none after:absolute after:-right-[290px] after:-bottom-[150px] after:box-content after:size-[450px] after:rounded-full after:border after:border-period-3/[13.3%] after:shadow-[0_0_0_60px_color-mix(in_oklab,var(--period-3)_2.4%,transparent),0_0_0_120px_color-mix(in_oklab,var(--period-3)_1.6%,transparent)] after:content-[''] max-[1000px]:p-9 max-[800px]:p-6 min-[801px]:min-h-0 min-[801px]:gap-[clamp(16px,3dvh,60px)] [&_:focus-visible]:shadow-none [&_:focus-visible]:outline-lime">
+        <Brand inverse />
         <div className="max-[800px]:hidden">
           <span className={cn(eyebrow, "text-inverse-muted")}>
             TU CUADERNO DE ELECTRICIDAD
@@ -182,7 +181,7 @@ export default function AccountForm({
               "Sigue tus facturas mes a mes",
             ].map((s) => (
               <li key={s} className="flex items-center gap-3">
-                <Check size={17} />
+                <Check size={17} className="shrink-0" />
                 {s}
               </li>
             ))}
@@ -415,7 +414,7 @@ export default function AccountForm({
             </Button>
           </p>
           <div className="mt-9 flex items-center justify-center gap-2 border-t border-border pt-6 text-sm/[1.6] text-muted-foreground">
-            <ShieldCheck size={16} />
+            <ShieldCheck size={16} className="shrink-0" />
             <span>
               Tus datos solo están disponibles en tu cuenta.{" "}
               <Link href="/privacidad" className={textLink}>

@@ -9,7 +9,11 @@ export default async function HeaderActions() {
   if (user)
     return (
       <>
-        <Link className="user-name" href="/mi-cuenta" title="Mi cuenta">
+        <Link
+          className="text-base/[1.6] hover:underline hover:underline-offset-3 max-[520px]:truncate min-[801px]:text-sm-plus/[1.6]"
+          href="/mi-cuenta"
+          title="Mi cuenta"
+        >
           Hola{user.name ? `, ${user.name.split(" ")[0]}` : ""}
         </Link>
         <SignOutButton />
@@ -17,10 +21,15 @@ export default async function HeaderActions() {
     );
   return (
     <>
-      <Button asChild variant="link" size="inline" className="login-link">
+      <Button
+        asChild
+        variant="link"
+        size="inline"
+        className="max-[520px]:min-h-11 max-[520px]:min-w-11"
+      >
         <Link href="/cuenta" aria-label="Iniciar sesión">
-          <span className="login-label-desktop">Iniciar sesión</span>
-          <span className="login-label-mobile">Entrar</span>
+          <span className="max-[520px]:hidden">Iniciar sesión</span>
+          <span className="hidden max-[520px]:inline">Entrar</span>
         </Link>
       </Button>
       <Button asChild variant="inverse" size="sm">

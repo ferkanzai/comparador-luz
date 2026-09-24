@@ -21,6 +21,10 @@ import {
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { panel } from "./bill-styles";
+import { cn } from "@/lib/utils";
+
+const loadingPanel = cn(panel, "p-16 text-center");
 
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 const TariffHistory = dynamic(() => import("./tariff-history"));
@@ -28,7 +32,7 @@ const TariffForm = dynamic(() => import("./tariff-form"));
 const BillForm = dynamic(() => import("./bill-form"));
 const Bills = dynamic(() => import("./bills"), {
   loading: () => (
-    <div className="panel loading" role="status">
+    <div className={loadingPanel} role="status">
       Cargando tus facturas…
     </div>
   ),
@@ -77,6 +81,8 @@ export default function Dashboard({
   const removingTariff = w.tariffs.find(
     (tariff) => tariff.id === removingTariffId && tariff.id !== w.currentId,
   );
+  // Returning households skip the hero for their working comparison.
+  const titled = Boolean(user || w.tariffs.length);
   function run(command: WorkspaceCommand) {
     workspace.run(command);
   }
@@ -122,12 +128,13 @@ export default function Dashboard({
   }
   return (
     <>
-      {user || w.tariffs.length ? (
-        <h1 className="workspace-title">Tu espacio de electricidad</h1>
-      ) : (
-        hero
-      )}
-      <div className="workspace-bar">
+      {titled ? <h1 className="sr-only">Tu espacio de electricidad</h1> : hero}
+      <div
+        className={cn(
+          "mb-7 flex justify-between gap-3 border-b border-border max-[520px]:mb-5",
+          titled && "mt-4",
+        )}
+      >
         <WorkspaceTabs ref={navigation} tab={tab} onChange={setTab} />
         <WorkspaceStatus
           loaded={loaded}
@@ -137,9 +144,19 @@ export default function Dashboard({
         />
       </div>
       {loaded && (
-        <div className="save-strip">
-          <span>
-            <ShieldCheck size={16} />
+        <div
+          className={cn(
+            "-mt-3 mb-6 flex items-center justify-between gap-4 max-[520px]:mt-0 max-[520px]:flex-wrap",
+            titled && "mb-4 py-2.5 max-[600px]:flex-row max-[600px]:gap-2.5",
+          )}
+        >
+          <span
+            className={cn(
+              "flex items-center gap-2 text-sm/[1.6] text-muted-foreground",
+              titled && "max-[600px]:text-2xs/[1.6]",
+            )}
+          >
+            <ShieldCheck size={16} className="shrink-0" />
             {!user
               ? "Tus datos se guardan automáticamente en este dispositivo."
               : "Los cambios se guardan automáticamente."}
@@ -199,12 +216,15 @@ export default function Dashboard({
         </Alert>
       )}
       {!loaded && !loadError && (
-        <div className="panel loading" role="status">
+        <div className={loadingPanel} role="status">
           Cargando tus tarifas y facturas…
         </div>
       )}
       {loaded && (
-        <fieldset className="workspace-content" disabled={busy}>
+        <fieldset
+          className="min-h-[calc(100dvh-160px)] min-w-0 disabled:opacity-70"
+          disabled={busy}
+        >
           {tab === "compare" ? (
             <>
               <ComparisonWorkspace
@@ -265,7 +285,9 @@ export default function Dashboard({
           summary={
             <>
               {removingTariff.provider && (
-                <p className="muted">{removingTariff.provider}</p>
+                <p className="text-muted-foreground">
+                  {removingTariff.provider}
+                </p>
               )}
               <h3>{removingTariff.name}</h3>
             </>
@@ -273,7 +295,7 @@ export default function Dashboard({
           consequence={
             <>
               <p>Esta oferta se eliminará de la comparativa.</p>
-              <p className="muted">
+              <p className="text-muted-foreground">
                 Tus tarifas registradas y tus facturas se conservan.
               </p>
             </>

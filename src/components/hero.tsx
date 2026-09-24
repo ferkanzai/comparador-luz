@@ -3,7 +3,7 @@ import { ArrowDownRight, Zap } from "lucide-react";
 export default function Hero() {
   return (
     <section className="grid grid-cols-[minmax(0,1fr)_clamp(280px,30vw,410px)] items-center gap-[clamp(32px,4vw,56px)] pt-10 pb-9 max-[800px]:grid-cols-1 max-[800px]:gap-6 max-[800px]:py-10 max-[520px]:pt-9 max-[520px]:pb-7">
-      <div className="animate-[arrive_0.45s_ease_both]">
+      <div className="animate-arrive">
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-[1.65px]">
           <span className="inline-block size-1.5 shrink-0 rounded-full bg-ring shadow-[0_0_0_3px_var(--accent)]" />{" "}
           TU ENERGÍA. TUS NÚMEROS.
@@ -32,7 +32,8 @@ export default function Hero() {
           <strong className="font-semibold">Una decisión mejor.</strong>
         </p>
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-3.5 text-sm text-muted-foreground">
-          Tu revisión semanal de la luz <ArrowDownRight size={16} />
+          Tu revisión semanal de la luz{" "}
+          <ArrowDownRight size={16} className="shrink-0" />
         </div>
       </div>
     </section>

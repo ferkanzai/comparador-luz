@@ -49,7 +49,7 @@ export default function ConfirmDialog({
     cancel.current?.focus();
   };
   const body = (
-    <div className="mb-5 flex items-center gap-3.5 [&_h3]:wrap-anywhere [&_p]:text-xs-plus">
+    <div className="mb-5 flex items-center gap-3.5 [&_h3]:font-heading [&_h3]:text-[length:var(--text-lg)] [&_h3]:font-bold [&_h3]:tracking-[-0.25px] [&_h3]:wrap-anywhere [&_p]:text-xs-plus">
       <span
         className="grid h-[46px] flex-[0_0_46px] place-items-center rounded-full bg-destructive-muted text-destructive"
         aria-hidden="true"
@@ -74,11 +74,13 @@ export default function ConfirmDialog({
       <AlertDialog open onOpenChange={onOpenChange}>
         <AlertDialogContent onOpenAutoFocus={onOpenAutoFocus}>
           <AlertDialogHeader>
-            <AlertDialogTitle>{title}</AlertDialogTitle>
+            <AlertDialogTitle className="tracking-[-0.55px]">
+              {title}
+            </AlertDialogTitle>
           </AlertDialogHeader>
           {body}
           <AlertDialogDescription asChild>
-            <div>{consequence}</div>
+            <div className="[&>p+p]:mt-3">{consequence}</div>
           </AlertDialogDescription>
           <AlertDialogFooter>{actions}</AlertDialogFooter>
         </AlertDialogContent>
@@ -88,11 +90,11 @@ export default function ConfirmDialog({
     <Drawer open onOpenChange={onOpenChange} handleOnly>
       <DrawerContent onOpenAutoFocus={onOpenAutoFocus}>
         <DrawerHeader className="text-left">
-          <DrawerTitle className="font-heading text-xl font-bold">
+          <DrawerTitle className="font-heading text-xl font-bold tracking-[-0.55px]">
             {title}
           </DrawerTitle>
         </DrawerHeader>
-        <div className="px-4">
+        <div className="px-4 [&>p+p]:mt-3">
           {body}
           {consequence}
         </div>

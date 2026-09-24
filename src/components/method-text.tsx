@@ -76,7 +76,7 @@ export default function MethodText() {
         social, IGIC, IPSI, penalizaciones ni promociones temporales. Introduce
         precios netos de descuentos y comprueba permanencias antes de cambiar.
       </p>
-      <div className="grid gap-2.5 border-t border-border pt-5 text-sm-plus [&>a]:flex [&>a]:items-center [&>a]:gap-2 [&>a]:underline">
+      <div className="grid gap-2.5 border-t border-border pt-5 text-sm-plus [&>a]:flex [&>a]:items-center [&>a]:gap-2 [&>a]:underline [&_svg]:shrink-0">
         <a
           href="https://www.miteco.gob.es/es/energia/eficiencia/sistema-nacional-obligaciones-efe.html"
           target="_blank"

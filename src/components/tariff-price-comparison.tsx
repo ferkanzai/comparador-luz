@@ -93,7 +93,7 @@ export default function TariffPriceComparison({
         aria-controls={id}
         onClick={() => setOpen(!open)}
       >
-        <ArrowLeftRight size={16} />
+        <ArrowLeftRight size={16} className="shrink-0" />
         {open ? "Ocultar comparación" : "Comparar precios"}
         <span
           aria-hidden="true"

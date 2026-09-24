@@ -80,8 +80,7 @@ export default function FinalistComparison({
     <Modal
       title="Tus finalistas, frente a frente"
       onClose={onClose}
-      wide
-      className="finalist-modal"
+      size="full"
     >
       <div className="p-6 max-[520px]:p-5">
         <p className="m-0 mb-5 text-sm-plus text-muted-foreground">

@@ -7,6 +7,7 @@ import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
 import { eyebrow, narrowPage, textLink } from "@/components/account-styles";
 import { cn } from "@/lib/utils";
+import { shell, skipLink } from "@/components/shell-styles";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Privacidad · Luz en claro" };
@@ -15,11 +16,11 @@ const contact = "contact@fercarmona.dev";
 export default function Privacy() {
   return (
     <PageProvider method={<MethodText />}>
-      <a href="#main" className="skip-link">
+      <a href="#main" className={skipLink}>
         Saltar al contenido
       </a>
       <SiteHeader actions={<HeaderActions />} />
-      <main id="main" className="shell">
+      <main id="main" className={shell}>
         <article
           className={cn(
             narrowPage,
