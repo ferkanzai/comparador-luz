@@ -3,19 +3,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function WorkspaceStatus({
-  loaded,
   status,
   error,
   onRetry,
 }: {
-  loaded: boolean;
   status: SaveStatus;
   error: string;
   onRetry: () => void;
 }) {
   return (
     <span
-      className="flex items-center gap-2 text-sm/[1.6] text-muted-foreground max-[800px]:hidden"
+      className="flex items-center gap-2 text-sm/[1.6] text-muted-foreground"
       title={error || undefined}
     >
       <span
@@ -24,7 +22,7 @@ export default function WorkspaceStatus({
           status !== "local" && status !== "saved" && "bg-warning-strong",
         )}
       />
-      {loaded ? saveStatusLabel(status) : "Cargando…"}
+      {saveStatusLabel(status)}
       {status === "error" && (
         <Button variant="link" size="inline" onClick={onRetry}>
           Reintentar

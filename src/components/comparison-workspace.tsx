@@ -206,15 +206,18 @@ export default function ComparisonWorkspace({
         >
           Editar perfil <ArrowRight size={15} />
         </Button>
-        <Button
-          variant="inverse"
-          size="sm"
-          className={cn(profileButton, "-ml-5 max-[1000px]:ml-0")}
-          aria-expanded={simulationOpen}
-          onClick={() => setSimulationOpen(true)}
-        >
-          Simular consumo
-        </Button>
+        {/* Simulating only means something once there are tariffs to compare. */}
+        {data.tariffs.length > 0 && (
+          <Button
+            variant="inverse"
+            size="sm"
+            className={cn(profileButton, "-ml-5 max-[1000px]:ml-0")}
+            aria-expanded={simulationOpen}
+            onClick={() => setSimulationOpen(true)}
+          >
+            Simular consumo
+          </Button>
+        )}
       </section>
       {simulationOpen && (
         <ConsumptionSimulator
@@ -253,14 +256,17 @@ export default function ComparisonWorkspace({
               </span>
             </h2>
           </div>
-          <Button
-            disabled={!tariffRoom}
-            aria-describedby={tariffRoom ? undefined : "tariff-limit"}
-            onClick={onAdd}
-          >
-            <Plus size={17} />
-            Añadir tarifa
-          </Button>
+          {/* With no tariffs, the empty state's button is the one call to action. */}
+          {data.tariffs.length > 0 && (
+            <Button
+              disabled={!tariffRoom}
+              aria-describedby={tariffRoom ? undefined : "tariff-limit"}
+              onClick={onAdd}
+            >
+              <Plus size={17} />
+              Añadir tarifa
+            </Button>
+          )}
         </div>
         {!tariffRoom && (
           <Alert id="tariff-limit" role="note">
@@ -376,7 +382,7 @@ export default function ComparisonWorkspace({
           </>
         )}
       </section>
-      {onBill && (
+      {onBill && baseline?.cost && (
         <div className="my-5 flex items-center gap-3.5 max-[600px]:flex-col max-[600px]:items-start">
           <Button
             variant="outline"
@@ -400,7 +406,9 @@ export default function ComparisonWorkspace({
         </div>
       )}
       <div className="mt-6 border-t border-border pt-6">
-        <PvpcComparison profile={effectiveProfile} current={current} />
+        {data.tariffs.length > 0 && (
+          <PvpcComparison profile={effectiveProfile} current={current} />
+        )}
         <a
           className="mt-3.5 inline-flex min-h-11 items-center gap-2 text-xs-plus font-semibold text-inherit no-underline underline-offset-4 hover:text-primary hover:underline"
           href="https://comparador.cnmc.gob.es/"

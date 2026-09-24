@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { Download, ShieldCheck } from "lucide-react";
+import { Download } from "lucide-react";
 import { newTariff, type Bill, type Tariff } from "@/lib/domain";
 import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
@@ -51,6 +51,7 @@ export default function Dashboard({
 }) {
   const workspace = useWorkspace(user?.id, initialWorkspace);
   const { data: w, loaded, loadError, status } = workspace;
+  const empty = !w.tariffs.length && !w.bills.length && !w.history.length;
   const [busy, setBusy] = useState(false);
   const { setMessage, setError, openMethod } = usePage();
   const [tab, setTab] = useState<WorkspaceTab>("compare");
@@ -136,31 +137,20 @@ export default function Dashboard({
         )}
       >
         <WorkspaceTabs ref={navigation} tab={tab} onChange={setTab} />
-        <WorkspaceStatus
-          loaded={loaded}
-          status={status}
-          error={workspace.error}
-          onRetry={workspace.reload}
-        />
       </div>
-      {loaded && (
+      {/* One line for the save status, once there is something saved. */}
+      {loaded && (!empty || (status !== "local" && status !== "saved")) && (
         <div
           className={cn(
             "-mt-3 mb-6 flex items-center justify-between gap-4 max-[520px]:mt-0 max-[520px]:flex-wrap",
             titled && "mb-4 py-2.5 max-[600px]:flex-row max-[600px]:gap-2.5",
           )}
         >
-          <span
-            className={cn(
-              "flex items-center gap-2 text-sm/[1.6] text-muted-foreground",
-              titled && "max-[600px]:text-2xs/[1.6]",
-            )}
-          >
-            <ShieldCheck size={16} className="shrink-0" />
-            {!user
-              ? "Tus datos se guardan automáticamente en este dispositivo."
-              : "Los cambios se guardan automáticamente."}
-          </span>
+          <WorkspaceStatus
+            status={status}
+            error={workspace.error}
+            onRetry={workspace.reload}
+          />
           {/* Signed-in users download their data from the account page. */}
           {!user && (
             <Button
