@@ -17,23 +17,29 @@ import {
   chartDetailHead,
   chartDetailList,
   chartDetailTotal,
-  chartDrawing,
   chartLegend,
   chartNote,
-  chartZero,
   conceptColor,
   detailSwatch,
+  chartAxisWidth,
   interactiveChart,
+  lineStyle,
+  monthButtons,
   monthAmount,
   monthControl,
   monthName,
   swatch,
 } from "./bill-styles";
 
-// Recharts downloads only when the bars are on screen.
-const BillsBars = dynamic(() => import("./bills-bars"), { ssr: false });
-/** The bars' Y axis; the month buttons start after it. */
-const axisWidth = 44;
+// Recharts downloads only when a chart is on screen.
+const BillsBars = dynamic(
+  () => import("./monthly-charts").then((m) => m.BillsBars),
+  { ssr: false },
+);
+const BillsLines = dynamic(
+  () => import("./monthly-charts").then((m) => m.BillsLines),
+  { ssr: false },
+);
 
 type Month = {
   month: string;
@@ -43,32 +49,6 @@ type Month = {
   totals: Record<(typeof groups)[number][0], number>;
 };
 const lineSeries = [...groups, ["paid", "Pagado"]] as const;
-type SeriesKey = (typeof lineSeries)[number][0];
-const seriesAmount = (month: Month, key: SeriesKey) =>
-  key === "paid" ? month.amount : month.totals[key];
-/* Each line's colour, and a dash pattern so lines differ without colour. */
-const seriesColor: Record<SeriesKey, string> = {
-  energy: "text-chart-1",
-  power: "text-chart-2",
-  other: "text-chart-3",
-  taxes: "text-chart-4",
-  unknown: "text-chart-5",
-  credit: "text-destructive",
-  paid: "text-foreground",
-};
-const line = "stroke-current stroke-3 [vector-effect:non-scaling-stroke]";
-const seriesLine: Record<SeriesKey, string> = {
-  energy: line,
-  power: cn(line, "[stroke-dasharray:7_3]"),
-  other: cn(line, "[stroke-dasharray:2_3]"),
-  taxes: cn(line, "[stroke-dasharray:9_3_2_3]"),
-  unknown: cn(line, "[stroke-dasharray:2_5]"),
-  credit: cn(line, "[stroke-dasharray:6_3]"),
-  paid: cn(line, "stroke-4"),
-};
-const point =
-  "fill-current stroke-card stroke-2 [vector-effect:non-scaling-stroke]";
-
 export default function BillsChart({
   months,
   year,
@@ -84,7 +64,7 @@ export default function BillsChart({
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const detailId = useId();
-  const [hiddenSeries, setHiddenSeries] = useState<SeriesKey[]>([]);
+  const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
   const availableSeries = lineSeries.filter(
     ([key]) =>
       (key !== "credit" && key !== "unknown") ||
@@ -97,25 +77,6 @@ export default function BillsChart({
     months.find((m) => m.month === selected) ??
     months.findLast((m) => m.count) ??
     months[0];
-  const top = Math.max(
-    1,
-    ...months.flatMap((m) =>
-      view === "bars"
-        ? [m.amount - m.totals.credit]
-        : visibleSeries.map(([key]) => seriesAmount(m, key)),
-    ),
-  );
-  const bottom = Math.min(
-    0,
-    ...months.flatMap((m) =>
-      view === "bars"
-        ? [m.totals.credit]
-        : visibleSeries.map(([key]) => seriesAmount(m, key)),
-    ),
-  );
-  const scale = 190 / (top - bottom);
-  const y = (amount: number) => 38 + (top - amount) * scale;
-  const zero = y(0);
   return (
     <>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
@@ -178,17 +139,16 @@ export default function BillsChart({
                       <svg
                         viewBox="0 0 28 12"
                         aria-hidden="true"
-                        className={cn(
-                          "h-3 w-7 group-aria-[pressed=false]:opacity-40",
-                          seriesColor[key],
-                        )}
+                        className="h-3 w-7 group-aria-[pressed=false]:opacity-40"
                       >
                         <line
                           x1="0"
                           x2="28"
                           y1="6"
                           y2="6"
-                          className={seriesLine[key]}
+                          stroke={lineStyle[key].color}
+                          strokeWidth={lineStyle[key].width}
+                          strokeDasharray={lineStyle[key].dash}
                         />
                       </svg>
                       {label}
@@ -204,71 +164,19 @@ export default function BillsChart({
             </>
           )}
           <ChartScroll label={`Gráfico mensual de ${year}`}>
-            <div
-              className={cn(
-                interactiveChart,
-                view === "bars" && "grid-cols-none",
-              )}
-            >
-              {view === "bars" && (
-                <div className="absolute inset-0">
-                  <BillsBars months={months} axisWidth={axisWidth} />
-                </div>
-              )}
-              {view === "line" && (
-                <svg
-                  viewBox="0 0 1200 260"
-                  preserveAspectRatio="none"
-                  aria-hidden="true"
-                  className={chartDrawing}
-                >
-                  <line
-                    x1="0"
-                    x2="1200"
-                    y1={zero}
-                    y2={zero}
-                    className={chartZero}
+            <div className={interactiveChart}>
+              <div className="absolute inset-0">
+                {view === "bars" ? (
+                  <BillsBars months={months} />
+                ) : (
+                  <BillsLines
+                    months={months}
+                    series={visibleSeries.map(([key]) => key)}
+                    active={months.indexOf(active)}
                   />
-                  {view === "line" &&
-                    visibleSeries.map(([key]) => (
-                      <g
-                        key={key}
-                        data-series={key}
-                        className={seriesColor[key]}
-                      >
-                        {months.map((m, i) =>
-                          m.count ? (
-                            <g key={m.month}>
-                              {i > 0 && months[i - 1].count > 0 && (
-                                <line
-                                  x1={(i - 1) * 100 + 50}
-                                  y1={y(seriesAmount(months[i - 1], key))}
-                                  x2={i * 100 + 50}
-                                  y2={y(seriesAmount(m, key))}
-                                  className={seriesLine[key]}
-                                />
-                              )}
-                              <circle
-                                cx={i * 100 + 50}
-                                cy={y(seriesAmount(m, key))}
-                                r={m.month === active.month ? 6 : 4}
-                                className={point}
-                              />
-                            </g>
-                          ) : null,
-                        )}
-                      </g>
-                    ))}
-                </svg>
-              )}
-              <div
-                className={cn(
-                  "contents",
-                  view === "bars" &&
-                    "absolute inset-y-0 right-0 grid grid-cols-12",
                 )}
-                style={view === "bars" ? { left: axisWidth } : undefined}
-              >
+              </div>
+              <div className={monthButtons} style={{ left: chartAxisWidth }}>
                 {months.map((m) => (
                   <button
                     key={m.month}

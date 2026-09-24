@@ -30,6 +30,9 @@ const shot = async (page: Page, name: string, fullPage = true) => {
     });
 };
 const dialog = (page: Page, name: string) => shot(page, name, false);
+/** Charts load on demand and draw once measured. */
+const drawn = (page: Page) =>
+  expect(page.locator(".recharts-cartesian-grid").first()).toBeVisible();
 
 /** The comparison fixture with a past contract and three bills, all dated. */
 function accountFixture(): Workspace {
@@ -55,6 +58,8 @@ function accountFixture(): Workspace {
     calculate(contract, data.profile)!,
   );
   data.bills = [
+    ["2025-06", "2025-06-01", "2025-07-01"],
+    ["2025-07", "2025-07-01", "2025-08-01"],
     ["2026-06", "2026-06-01", "2026-07-01"],
     ["2026-07", "2026-07-01", "2026-08-01"],
     ["2026-08", "2026-08-01", "2026-09-01"],
@@ -65,6 +70,9 @@ function accountFixture(): Workspace {
     periodStart,
     periodEnd,
   }));
+  // A credit, drawn below zero.
+  data.bills[3].credit = "8";
+  data.bills[3].paid = (Number(bill.paid) - 8).toFixed(2);
   return data;
 }
 
@@ -148,7 +156,19 @@ test("account screens", async ({ page }) => {
   await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
   await expect(page.getByText("Cargando tus facturas…")).toHaveCount(0);
   await expect(page.getByRole("main")).toContainText("ago 2026");
+  await drawn(page);
   await shot(page, "account-bills");
+  const chart = page.getByRole("radiogroup", { name: "Tipo de gráfico" });
+  await chart.getByRole("radio", { name: "Evolución" }).click();
+  await drawn(page);
+  await shot(page, "account-bills-lines");
+  await chart.getByRole("radio", { name: "Consumo" }).click();
+  await drawn(page);
+  await shot(page, "account-bills-consumption");
+  await page.getByRole("button", { name: "Por años", exact: true }).click();
+  await drawn(page);
+  await shot(page, "account-bills-years");
+  await page.getByRole("button", { name: "Mes a mes", exact: true }).click();
   await page.getByRole("button", { name: "Comparador", exact: true }).click();
   await page
     .getByRole("button", {

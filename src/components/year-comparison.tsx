@@ -14,13 +14,14 @@ import {
 } from "@/components/ui/native-select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 import { chartScroll } from "./chart-scroll";
 import { formDisclosure, tallSelect } from "./tariff-form-sections";
 import {
   bodyCell,
-  chartDrawing,
+  chartAxisWidth,
   chartLegend,
-  chartZero,
+  monthButtons,
   headCell,
   monthName,
   note,
@@ -30,6 +31,12 @@ import {
   tableCaption,
   tableScroll,
 } from "./bill-styles";
+
+// Recharts downloads only when the chart is on screen.
+const YearBars = dynamic(
+  () => import("./monthly-charts").then((m) => m.YearBars),
+  { ssr: false },
+);
 
 const firstYear = "bg-period-2";
 const secondYear = "bg-primary";
@@ -52,14 +59,6 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
   const comparison = compareYears(bills, first, second, metric);
   const format = metric === "paid" ? money : formatKwh;
   const signed = (value: number) => `${value > 0 ? "+" : ""}${format(value)}`;
-  const values = comparison.rows.flatMap((row) => [
-    row.first.value ?? 0,
-    row.second.value ?? 0,
-  ]);
-  const top = Math.max(1, ...values);
-  const bottom = Math.min(0, ...values);
-  const scale = 170 / (top - bottom);
-  const zero = 58 + top * scale;
   const description =
     metric === "paid"
       ? "Importe pagado después de descuentos"
@@ -201,67 +200,45 @@ export default function YearComparison({ bills }: { bills: Bill[] }) {
           aria-label={`${description}: ${first} y ${second}`}
         >
           <div
-            className="relative grid h-[260px] min-w-[1200px] grid-cols-12"
+            className="relative h-[260px] min-w-[1200px]"
             role="img"
             aria-label={`Comparación mensual de ${first} y ${second}. Valores disponibles en la tabla de debajo.`}
           >
-            <svg
-              className={chartDrawing}
-              viewBox="0 0 1200 260"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <line
-                x1="0"
-                x2="1200"
-                y1={zero}
-                y2={zero}
-                className={chartZero}
+            <div className="absolute inset-0">
+              <YearBars
+                rows={comparison.rows.map((row) => ({
+                  label: row.label,
+                  first: row.first.value,
+                  second: row.second.value,
+                }))}
+                metric={metric}
               />
-            </svg>
-            {comparison.rows.map((row) => (
-              <div
-                key={row.label}
-                className="relative text-center text-xs-plus"
-              >
-                <div className="absolute inset-x-0 top-0 grid gap-1">
-                  {[row.first, row.second].map((entry, i) => (
-                    <span
-                      key={i}
-                      className={
-                        i
-                          ? "font-semibold text-primary-hover"
-                          : "text-brand-leaf"
-                      }
-                    >
-                      {entry.value === null ? "—" : format(entry.value)}
-                      {entry.value !== null && entry.missing > 0 ? " *" : ""}
-                    </span>
-                  ))}
-                </div>
-                {[row.first, row.second].map(
-                  (entry, i) =>
-                    entry.value !== null && (
+            </div>
+            <div className={monthButtons} style={{ left: chartAxisWidth }}>
+              {comparison.rows.map((row) => (
+                <div
+                  key={row.label}
+                  className="relative text-center text-xs-plus"
+                >
+                  <div className="absolute inset-x-0 top-0 grid gap-1">
+                    {[row.first, row.second].map((entry, i) => (
                       <span
                         key={i}
-                        className={cn(
-                          "absolute w-[26%] max-w-7 rounded-t-sm",
-                          i ? secondYear : firstYear,
-                        )}
-                        style={{
-                          left: i ? "52%" : "22%",
-                          top:
-                            entry.value >= 0
-                              ? zero - entry.value * scale
-                              : zero,
-                          height: Math.abs(entry.value) * scale,
-                        }}
-                      />
-                    ),
-                )}
-                <span className={monthName}>{row.label}</span>
-              </div>
-            ))}
+                        className={
+                          i
+                            ? "font-semibold text-primary-hover"
+                            : "text-brand-leaf"
+                        }
+                      >
+                        {entry.value === null ? "—" : format(entry.value)}
+                        {entry.value !== null && entry.missing > 0 ? " *" : ""}
+                      </span>
+                    ))}
+                  </div>
+                  <span className={monthName}>{row.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <details className={formDisclosure}>

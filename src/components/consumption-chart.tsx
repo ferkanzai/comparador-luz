@@ -6,6 +6,7 @@ import {
   type ConsumptionMonth,
 } from "@/lib/bill-consumption";
 import { billMonthLabel } from "@/lib/bill-data";
+import dynamic from "next/dynamic";
 import ChartScroll from "./chart-scroll";
 import { formDisclosure } from "./tariff-form-sections";
 import { cn } from "@/lib/utils";
@@ -15,22 +16,27 @@ import {
   chartDetailHead,
   chartDetailList,
   chartDetailTotal,
-  chartDrawing,
   chartLegend,
   chartNote,
-  chartZero,
   detailSwatch,
+  chartAxisWidth,
   headCell,
   interactiveChart,
   monthAmount,
+  monthButtons,
   monthControl,
-  monthlyStack,
   monthName,
   swatch,
   table,
   tableCaption,
   tableScroll,
 } from "./bill-styles";
+
+// Recharts downloads only when the chart is on screen.
+const ConsumptionBars = dynamic(
+  () => import("./monthly-charts").then((m) => m.ConsumptionBars),
+  { ssr: false },
+);
 
 /* Energy periods, and the bills with a total but no periods. */
 const periodColor = {
@@ -66,7 +72,6 @@ export default function ConsumptionChart({
     months.find((m) => m.month === selected) ??
     months.findLast((m) => m.recorded) ??
     months[0];
-  const max = Math.max(1, ...months.map((m) => m.total ?? 0));
   return (
     <div>
       <ul className={chartLegend} aria-label="Períodos de consumo">
@@ -84,51 +89,34 @@ export default function ConsumptionChart({
       </p>
       <ChartScroll ref={scrollRef} label={`Consumo mensual de ${year}`}>
         <div className={cn(interactiveChart, "min-w-[1080px]")}>
-          <svg
-            viewBox="0 0 1200 260"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            className={chartDrawing}
-          >
-            <line x1="0" x2="1200" y1="228" y2="228" className={chartZero} />
-          </svg>
-          {months.map((m) => (
-            <button
-              key={m.month}
-              type="button"
-              className={monthControl}
-              aria-pressed={active.month === m.month}
-              aria-label={`${billMonthLabel(m.month)}: ${m.total === null ? "sin consumo registrado" : formatKwh(m.total)}${m.missing ? `, faltan kWh de ${m.missing} facturas` : ""}`}
-              aria-describedby={active.month === m.month ? detailId : undefined}
-              onMouseEnter={() => setSelected(m.month)}
-              onFocus={() => setSelected(m.month)}
-              onClick={() => setSelected(m.month)}
-            >
-              <span className={cn(monthAmount, "text-xs-plus")}>
-                {m.total === null ? "—" : formatKwh(m.total)}
-                {m.recorded > 0 && m.missing > 0 && (
-                  <small className="block text-sm-plus">Parcial</small>
-                )}
-              </span>
-              <span
-                className={monthlyStack}
-                style={{ bottom: 32 }}
-                aria-hidden="true"
+          <div className="absolute inset-0">
+            <ConsumptionBars months={months} />
+          </div>
+          <div className={monthButtons} style={{ left: chartAxisWidth }}>
+            {months.map((m) => (
+              <button
+                key={m.month}
+                type="button"
+                className={monthControl}
+                aria-pressed={active.month === m.month}
+                aria-label={`${billMonthLabel(m.month)}: ${m.total === null ? "sin consumo registrado" : formatKwh(m.total)}${m.missing ? `, faltan kWh de ${m.missing} facturas` : ""}`}
+                aria-describedby={
+                  active.month === m.month ? detailId : undefined
+                }
+                onMouseEnter={() => setSelected(m.month)}
+                onFocus={() => setSelected(m.month)}
+                onClick={() => setSelected(m.month)}
               >
-                {consumptionGroups.map(
-                  ([key]) =>
-                    m.totals[key] > 0 && (
-                      <span
-                        key={key}
-                        className={periodColor[key]}
-                        style={{ height: (m.totals[key] / max) * 180 }}
-                      />
-                    ),
-                )}
-              </span>
-              <span className={monthName}>{m.label}</span>
-            </button>
-          ))}
+                <span className={cn(monthAmount, "text-xs-plus")}>
+                  {m.total === null ? "—" : formatKwh(m.total)}
+                  {m.recorded > 0 && m.missing > 0 && (
+                    <small className="block text-sm-plus">Parcial</small>
+                  )}
+                </span>
+                <span className={monthName}>{m.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </ChartScroll>
       <div

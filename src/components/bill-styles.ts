@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import type { billGroups } from "@/lib/bill-data";
 
 /* Mis facturas: tables, panels and the parts its charts share. */
 
@@ -42,22 +43,30 @@ export const conceptColor = {
   credit,
 } as const;
 
-export const interactiveChart =
-  "relative grid h-[260px] min-w-[900px] grid-cols-12";
-export const chartDrawing =
-  "pointer-events-none absolute inset-0 h-[260px] w-full";
-export const chartZero =
-  "stroke-input stroke-1 [vector-effect:non-scaling-stroke]";
+/* The monthly charts: a drawing, with a button per month laid over it. */
+export const interactiveChart = "relative h-[260px] min-w-[900px]";
+/** The drawings' Y axis; the month buttons start after it. */
+export const chartAxisWidth = 44;
+export const monthButtons = "absolute inset-y-0 right-0 grid grid-cols-12";
 export const monthControl =
   "relative block h-[260px] rounded-md border-0 bg-transparent p-0 text-sm/[1.6] text-muted-foreground hover:bg-primary/[4.3%] focus-visible:-outline-offset-3 focus-visible:shadow-none aria-pressed:bg-primary/[4.3%] aria-pressed:text-foreground";
 export const monthAmount = "absolute inset-x-0 top-1 whitespace-nowrap";
 export const monthName = "absolute inset-x-0 bottom-0";
-const bar = "absolute left-[20%] w-[60%] max-w-12";
-export const monthlyStack = cn(
-  bar,
-  "flex flex-col-reverse overflow-hidden rounded-t-sm *:block *:w-full *:border-t *:border-card",
-);
-export const monthlyCredit = cn(bar, "rounded-b-sm", credit);
+
+export type SeriesKey = (typeof billGroups)[number][0] | "paid";
+/* Each line's colour, and a dash pattern so lines differ without colour. */
+export const lineStyle: Record<
+  SeriesKey,
+  { color: string; width: number; dash?: string }
+> = {
+  energy: { color: "var(--chart-1)", width: 3 },
+  power: { color: "var(--chart-2)", width: 3, dash: "7 3" },
+  other: { color: "var(--chart-3)", width: 3, dash: "2 3" },
+  taxes: { color: "var(--chart-4)", width: 3, dash: "9 3 2 3" },
+  unknown: { color: "var(--chart-5)", width: 3, dash: "2 5" },
+  credit: { color: "var(--destructive)", width: 3, dash: "6 3" },
+  paid: { color: "var(--foreground)", width: 4 },
+};
 
 export const chartDetail =
   "mb-5 min-h-[155px] rounded-lg border border-border bg-background p-5";
