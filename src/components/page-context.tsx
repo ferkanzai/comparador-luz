@@ -46,10 +46,15 @@ export function usePage() {
   return value;
 }
 
-export function MethodButton() {
+export function MethodButton({ className }: { className?: string }) {
   const { openMethod } = usePage();
   return (
-    <Button variant="link" size="inline" onClick={openMethod}>
+    <Button
+      variant="link"
+      size="inline"
+      className={className}
+      onClick={openMethod}
+    >
       Método y fuentes
     </Button>
   );

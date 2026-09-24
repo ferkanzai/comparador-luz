@@ -11,8 +11,13 @@ export default function SiteFooter() {
         ahorrar.
       </span>
       <div className="flex items-center gap-6 max-[520px]:w-full max-[520px]:justify-between max-[520px]:gap-2.5">
-        <MethodButton />
-        <Link href="/privacidad">Privacidad</Link>
+        <MethodButton className="text-sm font-normal" />
+        <Link
+          href="/privacidad"
+          className="hover:text-primary hover:underline hover:underline-offset-4"
+        >
+          Privacidad
+        </Link>
         <span>Hecho para hogares en España</span>
       </div>
     </footer>

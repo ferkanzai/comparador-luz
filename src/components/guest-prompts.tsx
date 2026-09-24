@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 
 export function SignupBanner() {
   return (
-    <section className="mt-8 flex items-center gap-5 rounded-lg border border-muted-strong bg-accent px-7 py-6 max-[1000px]:p-6 max-[520px]:flex-col max-[520px]:items-start">
+    <section className="mt-8 flex items-center gap-5 rounded-lg border border-tint-border bg-tint px-7 py-6 max-[1000px]:p-6 max-[520px]:flex-col max-[520px]:items-start">
       <div className="grid size-[43px] shrink-0 place-items-center rounded-lg bg-success-border text-brand-leaf max-[1000px]:hidden">
         <History size={25} />
       </div>
@@ -14,12 +14,16 @@ export function SignupBanner() {
         <h3 className="m-0 font-heading text-lg font-bold tracking-[-0.25px] max-[800px]:text-base">
           Tus datos, también en otros dispositivos.
         </h3>
-        <p className="m-0 mt-1 text-sm-plus text-muted-foreground max-[1000px]:max-w-[400px] max-[520px]:text-sm">
+        <p className="m-0 mt-1 text-sm-plus text-tint-foreground max-[1000px]:max-w-[400px] max-[520px]:text-sm">
           Crea una cuenta para sincronizar tus tarifas y seguir tus facturas mes
           a mes. Sin cuenta, tu comparación se conserva en este navegador.
         </p>
       </div>
-      <Button asChild variant="inverse">
+      <Button
+        asChild
+        variant="inverse"
+        className="ml-auto text-sm-plus max-[520px]:ml-0"
+      >
         <Link href="/cuenta?mode=signup">
           Crear mi cuenta
           <ArrowRight size={17} />

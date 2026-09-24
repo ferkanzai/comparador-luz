@@ -17,7 +17,7 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive text-white hover:bg-destructive-hover focus-visible:ring-destructive/20",
-        link: "text-foreground underline-offset-4 hover:text-primary hover:underline",
+        link: "text-sm-plus text-inherit underline-offset-4 hover:text-primary hover:underline",
         // Dark buttons for the header and highlighted panels.
         inverse:
           "bg-inverse text-inverse-foreground hover:bg-inverse-hover",

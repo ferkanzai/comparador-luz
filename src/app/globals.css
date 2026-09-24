@@ -58,6 +58,8 @@
   --note: #edf1e1;
   --note-border: #e1e8d2;
   --tint: #eaf0df;
+  --tint-border: #dfe7d4;
+  --tint-foreground: #51623f;
   --lime: #d7ee87;
   --brand-leaf: #65823a;
   --success: #42713b;
@@ -143,6 +145,8 @@
   --color-note: var(--note);
   --color-note-border: var(--note-border);
   --color-tint: var(--tint);
+  --color-tint-border: var(--tint-border);
+  --color-tint-foreground: var(--tint-foreground);
   --color-brand-leaf: var(--brand-leaf);
   --color-success: var(--success);
   --color-success-muted: var(--success-muted);
