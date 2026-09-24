@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export type ComparisonRow = {
   tariff: Tariff;
@@ -25,6 +26,31 @@ export type TariffActions = {
   onHistorical?: (tariff: Tariff) => void;
   onRemove: (tariff: Tariff) => void;
 };
+
+export const provider = "mb-1 block text-2xs font-normal text-muted-foreground";
+export const amount =
+  "block font-heading text-2xl font-[750] tracking-[-0.8px] whitespace-nowrap tabular-nums max-[600px]:text-xl";
+export const exclusion = "mt-1.5 block max-w-[180px] text-2xs text-caution";
+const componentCost = "mb-2.5 block text-sm-plus font-[650] tabular-nums";
+const cardLine = "flex justify-between gap-3";
+const cardAmount = "m-0 font-[650] tabular-nums";
+const cell = "border-b border-border-soft px-5 py-3 text-left align-top";
+const stickyColumn =
+  "sticky left-0 w-[205px] max-w-[240px] min-w-[205px] border-r border-r-border";
+const headCell = cn(
+  cell,
+  "sticky top-0 z-2 bg-muted py-3.5 text-xs font-semibold tracking-[0.8px] text-muted-foreground uppercase",
+);
+const headNote = "mt-1 block text-3xs font-normal text-muted-foreground";
+
+const detailHeading =
+  "mt-6 mb-3 font-heading text-base font-bold tracking-[-0.25px]";
+const breakdownLine =
+  "my-1.5 flex justify-between gap-2.5 text-sm text-foreground";
+const breakdownAmount = "m-0 tabular-nums";
+export const textLink =
+  "inline-flex min-h-11 items-center gap-2 text-sm-plus font-semibold text-inherit no-underline underline-offset-4 hover:text-primary hover:underline";
+const detailActionRow = "grid auto-cols-[minmax(0,1fr)] grid-flow-col gap-2";
 
 type RowProps = {
   row: ComparisonRow;
@@ -64,43 +90,37 @@ function TariffIdentity({
   return (
     <>
       <Checkbox
-        className="finalist-checkbox"
+        className="float-left mt-0.5 mr-2.5 max-[600px]:mr-2"
         aria-label={`Comparar ${tariff.name}`}
         checked={selected}
         disabled={!selectable}
         onCheckedChange={() => onToggle(tariff.id)}
       />
-      <span className="comparison-provider">
+      <span className={provider}>
         {tariff.provider || "Sin comercializadora"}
       </span>
       <button
-        className="tariff-name-button"
+        className="block cursor-pointer border-0 bg-transparent p-0 text-left font-heading text-sm-plus leading-[1.35] font-bold tracking-normal wrap-anywhere text-inherit normal-case underline-offset-3 hover:underline max-[600px]:text-xs-plus"
         onClick={() => onDetails(tariff.id)}
       >
         {tariff.name}
       </button>
-      <div className="comparison-tags">
-        {current && (
-          <Badge variant="outline" className="comparison-tag">
-            Tu tarifa actual
-          </Badge>
-        )}
+      <div className="clear-both mt-2.5 flex flex-wrap gap-1.5">
+        {current && <Badge variant="outline">Tu tarifa actual</Badge>}
         {cheapest && (
-          <Badge className="comparison-tag bg-lime text-foreground">
-            Menor coste
-          </Badge>
+          <Badge className="bg-lime text-foreground">Menor coste</Badge>
         )}
         {estimatedCharges(tariff) && (
           <Badge
             variant="outline"
-            className="comparison-tag border-warning-border bg-warning-muted text-warning"
+            className="border-warning-border bg-warning-muted text-warning"
           >
             Cargos estimados
           </Badge>
         )}
       </div>
       {tariff.validUntil && (
-        <span className="comparison-provider">
+        <span className={provider}>
           {!current && tariff.validUntil < today()
             ? "Caducada"
             : "Oferta válida hasta"}{" "}
@@ -114,7 +134,7 @@ function TariffIdentity({
 function TariffTotal({ row: { cost, reason }, baseline, current }: RowProps) {
   return cost ? (
     <>
-      <strong className="comparison-amount">{money(cost.total)}</strong>
+      <strong className={amount}>{money(cost.total)}</strong>
       <CostDifference
         total={cost.total}
         baseline={baseline}
@@ -123,16 +143,23 @@ function TariffTotal({ row: { cost, reason }, baseline, current }: RowProps) {
     </>
   ) : (
     <>
-      <strong className="comparison-amount">—</strong>
-      <span className="comparison-exclusion">{reason}</span>
+      <strong className={amount}>—</strong>
+      <span className={exclusion}>{reason}</span>
     </>
   );
 }
 
-function DetailsLink({ row: { tariff }, onDetails }: RowProps) {
+function DetailsLink({
+  row: { tariff },
+  onDetails,
+  className,
+}: RowProps & { className?: string }) {
   return (
     <button
-      className="comparison-detail-link"
+      className={cn(
+        "flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 font-sans text-3xs tracking-normal text-muted-foreground normal-case underline underline-offset-3",
+        className,
+      )}
       onClick={() => onDetails(tariff.id)}
       aria-label={`Ver desglose de ${tariff.name}`}
     >
@@ -141,13 +168,18 @@ function DetailsLink({ row: { tariff }, onDetails }: RowProps) {
   );
 }
 
-function RowActions({ row: { tariff }, current, onEdit, onRemove }: RowProps) {
+function RowActions({
+  row: { tariff },
+  current,
+  onEdit,
+  onRemove,
+  className,
+}: RowProps & { className?: string }) {
   return (
-    <div className="comparison-row-actions">
+    <div className={cn("flex flex-col items-center gap-1", className)}>
       <Button
         variant="ghost"
         size="icon"
-
         onClick={() => onEdit(tariff)}
         aria-label={`Editar ${tariff.name}`}
         title="Editar tarifa"
@@ -159,7 +191,6 @@ function RowActions({ row: { tariff }, current, onEdit, onRemove }: RowProps) {
           variant="ghost"
           size="icon"
           className="hover:bg-destructive/10 hover:text-destructive"
-
           onClick={() => onRemove(tariff)}
           aria-label={`Eliminar ${tariff.name}`}
           title="Eliminar tarifa"
@@ -173,31 +204,42 @@ function RowActions({ row: { tariff }, current, onEdit, onRemove }: RowProps) {
 
 function TableRow(props: RowProps) {
   const { tariff, cost } = props.row;
+  const body = cn(
+    cell,
+    "group-last/row:border-b-0 group-hover/row:bg-inverse-foreground",
+    props.current && "bg-background",
+  );
   return (
-    <tr className={props.current ? "comparison-current" : ""}>
-      <th scope="row">
+    <tr className="group/row">
+      <th
+        scope="row"
+        className={cn(
+          body,
+          stickyColumn,
+          "z-1 text-sm font-medium tracking-[0.8px] text-muted-foreground uppercase",
+          !props.current && "bg-card",
+        )}
+      >
         <TariffIdentity {...props} />
       </th>
-      <td>
+      <td className={cn(body, "min-w-[192px]")}>
         <TariffTotal {...props} />
       </td>
-      <td>
-        <span className="component-cost">
-          {cost ? money(cost.energy) : "—"}
-        </span>
+      <td className={cn(body, "min-w-[212px]")}>
+        <span className={componentCost}>{cost ? money(cost.energy) : "—"}</span>
         <EnergyRates tariff={tariff} />
       </td>
-      <td>
-        <span className="component-cost">{cost ? money(cost.power) : "—"}</span>
+      <td className={cn(body, "max-w-[265px] min-w-[238px]")}>
+        <span className={componentCost}>{cost ? money(cost.power) : "—"}</span>
         <PowerRates tariff={tariff} unit={props.unit} />
       </td>
-      <td>
-        <span className="component-cost">
+      <td className={cn(body, "min-w-[135px]")}>
+        <span className={componentCost}>
           {cost ? money(otherCharges(cost)) : "—"}
         </span>
         <DetailsLink {...props} />
       </td>
-      <td>
+      <td className={cn(body, "pr-2.5 pl-1")}>
         <RowActions {...props} />
       </td>
     </tr>
@@ -209,43 +251,46 @@ function TariffCard(props: RowProps) {
   return (
     <li>
       <article
-        className={`comparison-card${props.current ? " comparison-current" : ""}`}
+        className={cn(
+          "flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-4",
+          props.current && "bg-background",
+        )}
         aria-label={tariff.name}
       >
-        <div className="comparison-card-head">
+        <div className="flex justify-between gap-3">
           <div>
             <TariffIdentity {...props} />
           </div>
-          <RowActions {...props} />
+          <RowActions {...props} className="flex-row items-start" />
         </div>
-        <div className="comparison-card-total">
+        <div>
           <TariffTotal {...props} />
         </div>
         {cost && (
-          <dl className="comparison-card-lines">
-            <div>
+          <dl className="m-0 grid gap-1.5 border-t border-border-soft pt-3 text-xs-plus">
+            <div className={cardLine}>
               <dt>
                 <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
               </dt>
-              <dd>{money(cost.energy)}</dd>
+              <dd className={cardAmount}>{money(cost.energy)}</dd>
             </div>
-            <div>
+            <div className={cardLine}>
               <dt>
                 <CostCategoryLabel category="power">Potencia</CostCategoryLabel>
               </dt>
-              <dd>{money(cost.power)}</dd>
+              <dd className={cardAmount}>{money(cost.power)}</dd>
             </div>
-            <div>
+            <div className={cardLine}>
               <dt>
                 <CostCategoryLabel category="other">
                   Otros cargos e impuestos
                 </CostCategoryLabel>
               </dt>
-              <dd>{money(otherCharges(cost))}</dd>
+              <dd className={cardAmount}>{money(otherCharges(cost))}</dd>
             </div>
           </dl>
         )}
-        <DetailsLink {...props} />
+        <DetailsLink {...props} className="mt-auto" />
       </article>
     </li>
   );
@@ -290,34 +335,45 @@ export default function ComparisonTable({
   };
   return (
     <>
-      <div className="comparison-frame">
-        <table className="comparison-table" aria-label="Comparativa de tarifas">
+      <div className="overflow-clip rounded-lg border border-border bg-card max-[1199px]:hidden">
+        <table
+          className="w-full border-separate border-spacing-0 text-left text-base leading-[1.4]"
+          aria-label="Comparativa de tarifas"
+        >
           <thead>
             <tr>
-              <th scope="col">Tarifa</th>
-              <th scope="col">
+              <th scope="col" className={cn(headCell, stickyColumn, "z-3")}>
+                Tarifa
+              </th>
+              <th scope="col" className={headCell}>
                 Total del período{" "}
-                <small>y diferencia con tu tarifa actual</small>
+                <small className={headNote}>
+                  y diferencia con tu tarifa actual
+                </small>
               </th>
-              <th scope="col">
+              <th scope="col" className={headCell}>
                 <CostCategoryLabel category="energy">Energía</CostCategoryLabel>
-                <small>coste y precios sin impuestos</small>
+                <small className={headNote}>
+                  coste y precios sin impuestos
+                </small>
               </th>
-              <th scope="col">
+              <th scope="col" className={headCell}>
                 <CostCategoryLabel category="power">Potencia</CostCategoryLabel>
-                <small>coste y precios sin impuestos</small>
+                <small className={headNote}>
+                  coste y precios sin impuestos
+                </small>
               </th>
-              <th scope="col">
+              <th scope="col" className={headCell}>
                 <CostCategoryLabel category="other">
                   Otros cargos
                 </CostCategoryLabel>
-                <small>
+                <small className={headNote}>
                   <CostCategoryLabel category="taxes">
                     e impuestos elegidos
                   </CostCategoryLabel>
                 </small>
               </th>
-              <th scope="col">
+              <th scope="col" className={headCell}>
                 <span className="sr-only">Acciones</span>
               </th>
             </tr>
@@ -329,7 +385,10 @@ export default function ComparisonTable({
           </tbody>
         </table>
       </div>
-      <ol className="comparison-cards" aria-label="Comparativa de tarifas">
+      <ol
+        className="m-0 hidden list-none grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3 p-0 max-[1199px]:grid"
+        aria-label="Comparativa de tarifas"
+      >
         {rows.map((row) => (
           <TariffCard key={row.tariff.id} {...rowProps(row)} />
         ))}
@@ -355,60 +414,69 @@ export function TariffDetails({
 }) {
   return (
     <Modal title={tariff.name} onClose={onClose}>
-      <div className="modal-body tariff-detail-body">
-        <p className="muted">
+      <div className="p-6 max-[520px]:p-5">
+        <p className="m-0 mb-5 text-sm-plus text-muted-foreground">
           {tariff.provider || "Comercializadora sin indicar"} ·{" "}
           {current ? "Tu tarifa actual" : "Oferta para comparar"}
         </p>
         {reason && <Alert role="note">{reason}</Alert>}
-        <h3>Precios sin impuestos</h3>
-        <EnergyRates tariff={tariff} />
-        <PowerRates tariff={tariff} unit={unit} />
-        <p className="small muted">
+        <h3 className={detailHeading}>Precios sin impuestos</h3>
+        <EnergyRates tariff={tariff} className="mb-3.5 max-w-[280px] text-sm" />
+        <PowerRates tariff={tariff} unit={unit} size="detail" />
+        <p className="m-0 mb-5 text-sm-plus text-muted-foreground">
           Referencia de potencia: 1 kW en cada período. El coste usa tus kW
           contratados.
         </p>
         {cost && (
           <>
-            <h3>Desglose del período</h3>
-            <dl className="breakdown">
+            <h3 className={detailHeading}>Desglose del período</h3>
+            <dl className="m-0 mt-4 border-t border-dashed border-chart-5 py-2.5">
               {estimateLines([cost]).map(([key, label]) => (
-                <div key={key}>
+                <div key={key} className={breakdownLine}>
                   <dt>
                     <CostCategoryLabel category={billLineCategories[key]}>
                       {label}
                     </CostCategoryLabel>
                   </dt>
-                  <dd>{money(cost[key])}</dd>
+                  <dd className={breakdownAmount}>{money(cost[key])}</dd>
                 </div>
               ))}
-              <div className="total">
+              <div
+                className={cn(
+                  breakdownLine,
+                  "border-t border-muted-foreground pt-2 font-semibold text-primary",
+                )}
+              >
                 <dt>Total del período</dt>
-                <dd>{money(cost.total)}</dd>
+                <dd className={breakdownAmount}>{money(cost.total)}</dd>
               </div>
             </dl>
           </>
         )}
         <EstimateNotice tariff={tariff} />
-        <details className="form-section">
-          <summary>Validez y condiciones</summary>
-          <p className="small">
+        <details className="mt-5 border-t border-border pt-5">
+          <summary className="min-h-11 cursor-pointer content-center text-sm-plus font-semibold">
+            Validez y condiciones
+          </summary>
+          <p className="my-3.5 text-sm-plus">
             Oferta válida hasta:{" "}
             {tariff.validUntil
               ? shortDate(tariff.validUntil)
               : "Sin fecha indicada"}
           </p>
-          <p className="small muted">
+          <p className="my-3.5 text-sm-plus text-muted-foreground">
             Es la fecha límite para contratar la oferta, no la fecha de fin de
             tu contrato.
           </p>
           {tariff.notes && (
-            <p className="tariff-detail-notes">{tariff.notes}</p>
+            <p className="my-3.5 wrap-anywhere whitespace-pre-wrap">
+              {tariff.notes}
+            </p>
           )}
           {tariff.url && (
             <a
               href={tariff.url}
-              className="text-link"
+              className={textLink}
               target="_blank"
               rel="noreferrer"
             >
@@ -416,9 +484,9 @@ export function TariffDetails({
             </a>
           )}
         </details>
-        <div className="tariff-detail-actions">
+        <div className="mt-7 grid gap-2.5 border-t border-border pt-6">
           {!current && (
-            <div className="tariff-detail-register">
+            <div className={detailActionRow}>
               <Button
                 onClick={() => {
                   onClose();
@@ -430,7 +498,6 @@ export function TariffDetails({
               {actions.onHistorical && (
                 <Button
                   variant="outline"
-
                   onClick={() => {
                     onClose();
                     actions.onHistorical?.(tariff);
@@ -441,10 +508,9 @@ export function TariffDetails({
               )}
             </div>
           )}
-          <div className="tariff-detail-manage">
+          <div className={detailActionRow}>
             <Button
               variant="outline"
-
               onClick={() => {
                 onClose();
                 actions.onEdit(tariff);
@@ -455,7 +521,6 @@ export function TariffDetails({
             </Button>
             <Button
               variant="outline"
-
               disabled={!canDuplicate}
               aria-describedby={
                 canDuplicate ? undefined : "tariff-detail-limit"
@@ -471,7 +536,6 @@ export function TariffDetails({
             {!current && (
               <Button
                 variant="destructive"
-
                 onClick={() => {
                   actions.onRemove(tariff);
                   onClose();
@@ -483,7 +547,10 @@ export function TariffDetails({
             )}
           </div>
           {!canDuplicate && (
-            <p id="tariff-detail-limit" className="small muted">
+            <p
+              id="tariff-detail-limit"
+              className="m-0 text-sm-plus text-muted-foreground"
+            >
               {tariffLimitMessage}
             </p>
           )}

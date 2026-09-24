@@ -6,13 +6,31 @@ import CostCategoryLabel, {
   billLineCategories,
   type CostCategory,
 } from "./cost-category-label";
-import type { ComparisonRow } from "./comparison-table";
+import {
+  amount,
+  exclusion,
+  provider,
+  textLink,
+  type ComparisonRow,
+} from "./comparison-table";
 import { CostDifference, EnergyRates, PowerRates } from "./tariff-rates";
 import { estimatedCharges } from "@/lib/charge-estimates";
 import EstimateNotice from "./estimate-notice";
 import { Modal } from "./ui";
 import { TaxAssumptions } from "./profile-fields";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+const cell =
+  "min-w-[220px] border-b border-border px-5 py-3.5 text-left align-top text-sm max-[600px]:min-w-[195px] max-[600px]:p-3";
+/* The first column stays put while the table scrolls sideways. */
+const firstCell =
+  "sticky left-0 z-1 w-[160px] max-w-[180px] min-w-[160px] border-r border-r-border bg-inverse-foreground text-xs max-[600px]:max-w-[105px] max-[600px]:min-w-[105px] max-[600px]:px-2 max-[600px]:py-3 max-[600px]:text-3xs";
+const headCell = cn(
+  cell,
+  "sticky top-0 z-2 bg-inverse-foreground font-medium tracking-[0.8px] text-muted-foreground uppercase",
+);
+const bodyCell = cn(cell, "group-last/row:border-b-0");
 
 export default function FinalistComparison({
   rows,
@@ -36,8 +54,15 @@ export default function FinalistComparison({
     value: (row: ComparisonRow) => ReactNode,
     category?: CostCategory,
   ) => (
-    <tr key={label}>
-      <th scope="row">
+    <tr key={label} className="group/row">
+      <th
+        scope="row"
+        className={cn(
+          bodyCell,
+          firstCell,
+          "font-medium tracking-[0.8px] text-muted-foreground uppercase",
+        )}
+      >
         {category ? (
           <CostCategoryLabel category={category}>{label}</CostCategoryLabel>
         ) : (
@@ -45,7 +70,9 @@ export default function FinalistComparison({
         )}
       </th>
       {rows.map((row) => (
-        <td key={row.tariff.id}>{value(row)}</td>
+        <td key={row.tariff.id} className={bodyCell}>
+          {value(row)}
+        </td>
       ))}
     </tr>
   );
@@ -56,36 +83,36 @@ export default function FinalistComparison({
       wide
       className="finalist-modal"
     >
-      <div className="modal-body finalist-body">
-        <p className="muted">
+      <div className="p-6 max-[520px]:p-5">
+        <p className="m-0 mb-5 text-sm-plus text-muted-foreground">
           {profile.days || "—"} días · <TaxAssumptions profile={profile} />
           {simulation ? " · Simulación activa" : " · Tu perfil de consumo"}
         </p>
         <div
-          className="comparison-scroll finalist-scroll"
+          className="max-h-[60vh] max-w-full isolate overflow-auto overscroll-auto rounded-lg border border-border bg-card focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary"
           role="region"
           aria-label="Finalistas, desplazamiento horizontal"
           tabIndex={0}
         >
           <table
-            className="finalist-table"
+            className="w-full border-separate border-spacing-0 text-left text-base leading-[1.45] [&_.estimate-note]:m-0"
             aria-label="Comparación de finalistas"
           >
             <thead>
               <tr>
-                <th scope="col">
+                <th scope="col" className={cn(headCell, firstCell, "z-3")}>
                   Mismo consumo.
                   <br />
                   Todos los detalles.
                 </th>
                 {rows.map(({ tariff }) => (
-                  <th key={tariff.id} scope="col">
-                    <span className="comparison-provider">
+                  <th key={tariff.id} scope="col" className={headCell}>
+                    <span className={provider}>
                       {tariff.provider || "Sin comercializadora"}
                     </span>
-                    <strong>{tariff.name}</strong>
+                    <strong className="font-bold">{tariff.name}</strong>
                     {tariff.id === currentId && (
-                      <Badge variant="outline" className="comparison-tag">
+                      <Badge variant="outline" className="mt-2">
                         Tu tarifa actual
                       </Badge>
                     )}
@@ -97,9 +124,7 @@ export default function FinalistComparison({
               {detailRow("Total del período", ({ tariff, cost, reason }) =>
                 cost ? (
                   <>
-                    <strong className="comparison-amount">
-                      {money(cost.total)}
-                    </strong>
+                    <strong className={amount}>{money(cost.total)}</strong>
                     <CostDifference
                       total={cost.total}
                       baseline={baseline}
@@ -107,7 +132,7 @@ export default function FinalistComparison({
                     />
                   </>
                 ) : (
-                  <span className="comparison-exclusion">{reason}</span>
+                  <span className={exclusion}>{reason}</span>
                 ),
               )}
               {estimateLines(rows.map((row) => row.cost)).map(([key, label]) =>
@@ -120,21 +145,21 @@ export default function FinalistComparison({
               {detailRow(
                 "Energía · precios sin impuestos",
                 ({ tariff }) => (
-                  <EnergyRates tariff={tariff} />
+                  <EnergyRates tariff={tariff} className="text-xs" />
                 ),
                 "energy",
               )}
               {detailRow(
                 "Potencia · precios sin impuestos",
                 ({ tariff }) => (
-                  <PowerRates tariff={tariff} unit={unit} />
+                  <PowerRates tariff={tariff} unit={unit} size="finalist" />
                 ),
                 "power",
               )}
               {detailRow(
                 "Referencia de potencia",
                 () => (
-                  <span className="small muted">
+                  <span className="text-sm wrap-anywhere text-muted-foreground">
                     1 kW en cada período. El coste del período usa tus kW
                     contratados.
                   </span>
@@ -157,14 +182,14 @@ export default function FinalistComparison({
                   : "Sin fecha indicada",
               )}
               {detailRow("Notas y condiciones", ({ tariff }) => (
-                <span className="tariff-detail-notes">
+                <span className="wrap-anywhere whitespace-pre-wrap">
                   {tariff.notes || "Sin información añadida"}
                 </span>
               ))}
               {detailRow("Oferta original", ({ tariff }) =>
                 tariff.url ? (
                   <a
-                    className="text-link"
+                    className={textLink}
                     href={tariff.url}
                     target="_blank"
                     rel="noreferrer"
@@ -178,7 +203,7 @@ export default function FinalistComparison({
             </tbody>
           </table>
         </div>
-        <p className="small muted">
+        <p className="m-0 mt-4 text-sm-plus text-muted-foreground">
           Los precios unitarios no incluyen impuestos. La selección no cambia tu
           contrato ni tu tarifa de referencia.
         </p>

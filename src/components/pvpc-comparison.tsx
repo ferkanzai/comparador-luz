@@ -33,6 +33,10 @@ import {
 } from "@/components/ui/native-select";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { textLink } from "./comparison-table";
+
+const note = "my-3 text-sm-plus text-muted-foreground";
 
 const monthYearFormat = new Intl.DateTimeFormat("es-ES", {
   month: "long",
@@ -106,17 +110,19 @@ export default function PvpcComparison({
     : "";
   return (
     <section
-      className="panel pvpc-panel"
+      className="mt-7 rounded-xl border border-border bg-card p-6"
       aria-label="Comparación histórica PVPC"
     >
-      <div className="pvpc-heading">
-        <span className="eyebrow">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[1.65px]">
           <History size={15} aria-hidden="true" /> REFERENCIA HISTÓRICA
         </span>
         <Badge variant="secondary">Aproximado</Badge>
       </div>
-      <h2>¿Y con la tarifa regulada?</h2>
-      <p className="muted">
+      <h2 className="mt-4 mb-2 font-heading text-2xl font-bold tracking-[-0.55px]">
+        ¿Y con la tarifa regulada?
+      </h2>
+      <p className="my-3 text-muted-foreground">
         Compara tu consumo con los precios PVPC del último mes completo. Una
         referencia para orientarte: el próximo mes puede ser distinto.
       </p>
@@ -129,7 +135,6 @@ export default function PvpcComparison({
         <Button
           variant="outline"
           type="button"
-
           onClick={load}
           disabled={loading}
         >
@@ -142,31 +147,39 @@ export default function PvpcComparison({
         </Button>
       ) : (
         <>
-          <p className="pvpc-month">
+          <p className="my-3 font-semibold">
             Precios de {monthLabel}{" "}
-            <span>· {data.hours} horas verificadas</span>
+            <span className="text-sm font-normal text-muted-foreground">
+              · {data.hours} horas verificadas
+            </span>
           </p>
-          <dl className="pvpc-prices">
+          <dl className="mt-5 mb-2 grid grid-cols-3 gap-3">
             {pvpcPeriods.map((period) => (
               <div key={period}>
-                <dt>{pvpcPeriodLabels[period]}</dt>
-                <dd>
+                <dt className="text-xs-plus text-muted-foreground">
+                  {pvpcPeriodLabels[period]}
+                </dt>
+                <dd className="m-0 mt-1 font-semibold tabular-nums">
                   {data.mean[period].toLocaleString("es-ES", {
                     minimumFractionDigits: 5,
                     maximumFractionDigits: 5,
                   })}
-                  <small> €/kWh</small>
+                  <small className="block text-sm-plus font-normal">
+                    {" "}
+                    €/kWh
+                  </small>
                 </dd>
               </div>
             ))}
           </dl>
-          <p className="small muted">
+          <p className={note}>
             Medias sin impuestos. Suponemos el mismo consumo en cada hora dentro
             de cada período.
           </p>
-          <label className="auth-label">
+          <label className="my-4 block text-sm-plus font-medium">
             Alquiler para esta estimación
             <NativeSelect
+              className="*:[select]:min-h-11"
               value={meter}
               onChange={(e) => setMeter(e.target.value)}
             >
@@ -201,18 +214,20 @@ export default function PvpcComparison({
           )}
           {cost ? (
             <>
-              <div className="pvpc-total">
-                <div>
+              <div className="my-5 border-y border-border py-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span>Total orientativo</span>
-                  <strong>{money(cost.total)}</strong>
+                  <strong className="font-heading text-3xl font-bold">
+                    {money(cost.total)}
+                  </strong>
                 </div>
-                <p className="small">
+                <p className="m-0 mt-1 text-sm-plus text-muted-foreground">
                   Tu consumo de {profile.days} días ·{" "}
                   {profile.taxes ? "con tus impuestos" : "sin impuestos"}
                 </p>
               </div>
               {baseline && current && (
-                <p className="small">
+                <p className="my-3 text-sm-plus">
                   Con estos supuestos:{" "}
                   <strong>
                     {money(Math.abs(baseline.total - cost.total))}{" "}
@@ -222,17 +237,21 @@ export default function PvpcComparison({
                   diferencia histórica, no un ahorro garantizado.
                 </p>
               )}
-              <details className="pvpc-details">
-                <summary>Desglose y supuestos</summary>
-                <dl className="bill-breakdown">
+              <details>
+                <summary className="min-h-11 cursor-pointer content-center py-2 text-sm-plus font-semibold">
+                  Desglose y supuestos
+                </summary>
+                <dl className="my-4">
                   {estimateLines([cost]).map(([key, label]) => (
-                    <div key={key}>
+                    <div key={key} className="my-2 flex justify-between gap-4">
                       <dt>{label}</dt>
-                      <dd>{money(cost[key])}</dd>
+                      <dd className="m-0 whitespace-nowrap tabular-nums">
+                        {money(cost[key])}
+                      </dd>
                     </div>
                   ))}
                 </dl>
-                <p className="small muted">
+                <p className="m-0 text-sm-plus text-muted-foreground">
                   Potencia regulada de 2026, incluido el margen fijo de
                   comercialización. Bono social:{" "}
                   {formatRate(socialFinancing2026.annual)} €/año, sin descuento
@@ -244,7 +263,7 @@ export default function PvpcComparison({
                   elegido en el comparador; revisa que correspondan a tu
                   factura.
                 </p>
-                <p className="small muted">
+                <p className="m-0 mt-3 text-sm-plus text-muted-foreground">
                   Aplicamos las medias de {monthLabel} a tu consumo y días,
                   aunque tu factura corresponda a otro período. Sin tu curva
                   horaria no podemos reconstruir la factura PVPC real. Hogares
@@ -259,9 +278,9 @@ export default function PvpcComparison({
               alquiler elegido.
             </Alert>
           )}
-          <p className="small muted pvpc-sources">
+          <p className={cn(note, "pt-3")}>
             <a
-              className="text-link"
+              className={textLink}
               href={pvpcSource}
               target="_blank"
               rel="noreferrer"
@@ -270,7 +289,7 @@ export default function PvpcComparison({
             </a>
             {" · "}
             <a
-              className="text-link"
+              className={textLink}
               href={pvpcPowerSource}
               target="_blank"
               rel="noreferrer"
@@ -282,7 +301,7 @@ export default function PvpcComparison({
         </>
       )}
       {loading && (
-        <p role="status" className="small muted">
+        <p role="status" className={note}>
           Comprobando que no falte ningún día ni hora.
         </p>
       )}

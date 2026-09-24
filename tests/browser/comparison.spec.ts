@@ -1022,7 +1022,10 @@ test("hides zero charges in estimates and keeps a finalist row when any finalist
   await page
     .getByRole("button", { name: "Ver desglose de Casa 24h", exact: true })
     .click();
-  const breakdown = page.getByRole("dialog").locator(".breakdown");
+  const breakdown = page
+    .getByRole("dialog")
+    .locator("dl")
+    .filter({ hasText: "Total del período" });
   await expect(breakdown).toContainText("Energía");
   await expect(breakdown).toContainText("Potencia");
   await expect(breakdown).not.toContainText("Alquiler de contador");
@@ -1096,7 +1099,10 @@ test("fits three finalists on desktop and audits the tariff breakdown contrast",
     ).violations.map((v) => v.id);
   });
   expect(violations).toEqual([]);
-  const total = page.getByRole("dialog").locator(".breakdown .total");
+  const total = page
+    .getByRole("dialog")
+    .locator("dl > div")
+    .filter({ hasText: "Total del período" });
   const selection = await total.evaluate((el) => ({
     color: getComputedStyle(el, "::selection").color,
     background: getComputedStyle(el, "::selection").backgroundColor,

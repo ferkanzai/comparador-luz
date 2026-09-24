@@ -36,30 +36,33 @@ export default function ConsumptionSimulator({
     : null;
   return (
     <section
-      className="consumption-simulator"
+      className="-mt-3.5 mb-7 rounded-lg border border-t-[3px] border-border-accent border-t-primary bg-card px-6 py-5 max-[600px]:p-4"
       aria-label="Simulación de consumo"
     >
-      <div className="simulator-heading">
+      <div className="mb-2 flex items-start justify-between">
         <div>
-          <span className="eyebrow">PRUEBA OTRA FORMA DE CONSUMIR</span>
-          <h3>¿Y si cambias tu consumo?</h3>
+          <span className="text-3xs font-semibold tracking-[1.65px] text-primary">
+            PRUEBA OTRA FORMA DE CONSUMIR
+          </span>
+          <h3 className="m-0 mt-1 font-heading text-xl font-bold tracking-[-0.25px]">
+            ¿Y si cambias tu consumo?
+          </h3>
         </div>
         <Button
           variant="ghost"
           size="icon"
-
           aria-label="Cerrar simulador y restablecer"
           onClick={onClose}
         >
           <X size={18} />
         </Button>
       </div>
-      <p className="small muted">
+      <p className="m-0 text-sm-plus text-muted-foreground">
         Introduce los kWh de punta, llano y valle, como aparecen en tu factura.
         El total se suma automáticamente y todas las tarifas se recalculan.
       </p>
-      <div className="simulator-inputs">
-        <div className="simulator-distribution">
+      <div className="my-5 grid grid-cols-[minmax(0,3fr)_minmax(180px,1fr)] gap-10 max-[600px]:grid-cols-1 max-[600px]:gap-4 [&_input]:tabular-nums">
+        <div className="grid grid-cols-3 gap-5 max-[600px]:gap-2.5">
           {periods.map(([key, period]) => (
             <Field
               key={key}
@@ -72,9 +75,14 @@ export default function ConsumptionSimulator({
             />
           ))}
         </div>
-        <div className="simulator-total">
-          <span>Total simulado</span>
-          <output aria-label="Consumo total simulado">
+        <div className="self-stretch border-l border-border pl-6 max-[600px]:border-t max-[600px]:border-l-0 max-[600px]:pt-3 max-[600px]:pl-0">
+          <span className="mb-1 block text-xs text-muted-foreground">
+            Total simulado
+          </span>
+          <output
+            aria-label="Consumo total simulado"
+            className="block font-heading text-2xl font-[650] wrap-anywhere tabular-nums"
+          >
             {total === null
               ? "—"
               : total.toLocaleString("es-ES", {
@@ -82,28 +90,29 @@ export default function ConsumptionSimulator({
                 })}{" "}
             kWh
           </output>
-          <small>Para los mismos días del perfil</small>
+          <small className="block text-3xs text-muted-foreground">
+            Para los mismos días del perfil
+          </small>
         </div>
       </div>
       {error && (
-        <p className="simulation-error" role="status">
+        <p className="m-0 mb-3 text-xs-plus text-caution" role="status">
           {error}
         </p>
       )}
-      <div className="simulator-footer">
-        <span>
+      <div className="flex items-center justify-between gap-4 border-t border-border pt-3.5 max-[600px]:flex-col max-[600px]:items-start">
+        <span className="text-2xs text-primary">
           {active
             ? "Simulación activa · Tu perfil guardado no cambia"
             : "Tu perfil es el punto de partida"}
         </span>
-        <div>
+        <div className="flex items-center gap-6 max-[600px]:w-full max-[600px]:justify-between max-[600px]:gap-2.5">
           <Button variant="link" size="inline" onClick={onReset}>
             <RotateCcw size={14} />
             Restablecer
           </Button>
           <Button
             size="sm"
-
             disabled={!active || !consumption}
             onClick={onAdopt}
           >

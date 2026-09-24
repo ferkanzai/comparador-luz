@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { billLines } from "@/lib/bill-data";
+import { cn } from "@/lib/utils";
 
 export type CostCategory = "energy" | "power" | "other" | "taxes";
 
@@ -18,6 +19,13 @@ export const billLineCategories: Record<
   servicesVat: "taxes",
 };
 
+const dotColours: Record<CostCategory, string> = {
+  energy: "bg-chart-1",
+  power: "bg-chart-2",
+  other: "bg-chart-3",
+  taxes: "bg-chart-4",
+};
+
 export default function CostCategoryLabel({
   category,
   children,
@@ -26,10 +34,9 @@ export default function CostCategoryLabel({
   children: ReactNode;
 }) {
   return (
-    <span className="cost-category-label">
+    <span className="inline-flex items-center gap-2.5 [.history-comparison-table_th>&]:gap-1.5">
       <span
-        className="cost-category-dot"
-        data-category={category}
+        className={cn("size-2 shrink-0 rounded-full", dotColours[category])}
         aria-hidden="true"
       />
       <span>{children}</span>
