@@ -1,5 +1,11 @@
 "use client";
-import { useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { ArrowRight, Copy } from "lucide-react";
 import { tariffSchema, type Profile, type Tariff } from "@/lib/domain";
 import type { PeriodCorrection } from "@/lib/tariff-periods";
@@ -14,8 +20,17 @@ import {
   PeriodDatesSection,
   PowerSection,
   TariffPreview,
+  checkboxLabel,
+  formSection,
+  sectionNote,
+  sectionTitle,
+  two,
   type TariffUpdate,
 } from "./tariff-form-sections";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 
 export type TariffFormMode =
   | {
@@ -46,7 +61,7 @@ function unhandled(mode: never): never {
   throw new Error(`Unhandled tariff form mode: ${JSON.stringify(mode)}`);
 }
 
-function title(mode: TariffFormMode, initial: Tariff) {
+export function tariffFormTitle(mode: TariffFormMode, initial: Tariff) {
   switch (mode.kind) {
     case "offer":
       if (mode.duplicatedFrom) return "Duplicar tarifa";
@@ -78,12 +93,20 @@ export default function TariffForm({
   initial,
   initialProfile,
   onClose,
+  inline = false,
 }: {
   mode: TariffFormMode;
   initial: Tariff;
   initialProfile: Profile;
   onClose: () => void;
+  /** Rendered inside another dialog as a step, instead of its own dialog. */
+  inline?: boolean;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    // A step has no dialog opening to move focus into it.
+    if (inline) formRef.current?.querySelector("input")?.focus();
+  }, [inline]);
   const [profile, setProfile] = useState(initialProfile);
   const [tariff, setTariff] = useState(initial);
   const [makeCurrent, setMakeCurrent] = useState(
@@ -129,114 +152,123 @@ export default function TariffForm({
     }
   }
   const first = mode.kind === "offer" && mode.first;
-  return (
-    <Modal title={title(mode, initial)} onClose={onClose} wide>
-      <form onSubmit={submit} className="modal-body">
-        {mode.kind === "offer" && mode.duplicatedFrom && (
-          <div className="tariff-copy-notice">
-            <Copy size={20} aria-hidden="true" />
-            <div>
-              <strong>A partir de {mode.duplicatedFrom}</strong>
-              <p>
-                La copia conserva los precios, las fechas y las condiciones.
-                Revisa los datos y dale un nombre antes de guardarla como una
-                nueva tarifa.
-              </p>
-            </div>
+  const form = (
+    <form ref={formRef} onSubmit={submit} className="p-6 max-[520px]:p-5">
+      {mode.kind === "offer" && mode.duplicatedFrom && (
+        <div className="mb-5 flex items-start gap-3 rounded-lg border border-border-accent bg-secondary p-4 wrap-anywhere">
+          <Copy
+            size={20}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-primary"
+          />
+          <div>
+            <strong>A partir de {mode.duplicatedFrom}</strong>
+            <p className="m-0 mt-1.5 text-sm-plus text-muted-foreground">
+              La copia conserva los precios, las fechas y las condiciones.
+              Revisa los datos y dale un nombre antes de guardarla como una
+              nueva tarifa.
+            </p>
           </div>
-        )}
-        <p className="muted">
-          Copia los precios <strong>sin impuestos</strong> de tu factura u
-          oferta, con todos sus decimales. Usa 0 cuando un término no tenga
-          coste.
-        </p>
-        {mode.kind === "record" && (
-          <PeriodDatesSection
-            dates={dates}
-            onChange={setDates}
-            hasEnd={mode.end !== undefined}
-            preview={mode.preview}
-          />
-        )}
-        {first && (
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={makeCurrent}
-              onChange={(e) => setMakeCurrent(e.target.checked)}
-            />{" "}
-            Esta es mi tarifa actual
-          </label>
-        )}
-        <div className="form-grid two">
-          <Field
-            label="Nombre de la tarifa"
-            value={tariff.name}
-            onChange={(v) => update("name", v)}
-            required
-            placeholder="Por ejemplo, Plan tranquilo"
-          />
-          <Field
-            label="Comercializadora"
-            value={tariff.provider}
-            onChange={(v) => update("provider", v)}
-            placeholder="Nombre de la compañía"
-          />
         </div>
-        <EnergySection tariff={tariff} update={update} />
-        <PowerSection tariff={tariff} update={update} />
-        <ChargesSection tariff={tariff} update={update} onEstimate={setTariff}>
-          <OfferValiditySection tariff={tariff} update={update} />
-        </ChargesSection>
-        {mode.kind !== "record" && (
-          <>
-            <section className="form-section">
-              <h3>
-                {mode.kind === "invoice"
-                  ? "04 / Tu factura de referencia"
-                  : "04 / Perfil compartido de consumo"}
-              </h3>
-              <p className="small muted">
-                {mode.kind === "invoice"
-                  ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
-                  : "Estos datos pertenecen a tu perfil compartido. Al cambiarlos aquí, cambiarán para todas las tarifas; no incluyen simulaciones sin adoptar."}
-              </p>
-              <ProfileFields value={profile} onChange={setProfile} />
-              <TaxFields value={profile} onChange={setProfile} />
-            </section>
-            <InvoicePrices
-              tariff={tariff}
-              profile={profile}
-              onApply={setTariff}
-            />
-            <TariffPreview tariff={tariff} profile={profile} />
-          </>
-        )}
-        {first && makeCurrent && (
-          <Field
-            label="Fecha de inicio"
-            type="date"
-            value={since}
-            onChange={setSince}
-            required
-            hint="Fecha en la que empezaron estas condiciones de tu contrato actual."
+      )}
+      <p className="m-0 mb-5 text-sm-plus text-muted-foreground">
+        Copia los precios <strong>sin impuestos</strong> de tu factura u oferta,
+        con todos sus decimales. Usa 0 cuando un término no tenga coste.
+      </p>
+      {mode.kind === "record" && (
+        <PeriodDatesSection
+          dates={dates}
+          onChange={setDates}
+          hasEnd={mode.end !== undefined}
+          preview={mode.preview}
+        />
+      )}
+      {first && (
+        <label className={checkboxLabel}>
+          <Checkbox
+            checked={makeCurrent}
+            onCheckedChange={(checked) => setMakeCurrent(checked === true)}
+          />{" "}
+          Esta es mi tarifa actual
+        </label>
+      )}
+      <div className={cn(two, "mb-4")}>
+        <Field
+          label="Nombre de la tarifa"
+          value={tariff.name}
+          onChange={(v) => update("name", v)}
+          required
+          placeholder="Por ejemplo, Plan tranquilo"
+        />
+        <Field
+          label="Comercializadora"
+          value={tariff.provider}
+          onChange={(v) => update("provider", v)}
+          placeholder="Nombre de la compañía"
+        />
+      </div>
+      <EnergySection tariff={tariff} update={update} />
+      <PowerSection tariff={tariff} update={update} />
+      <ChargesSection tariff={tariff} update={update} onEstimate={setTariff}>
+        <OfferValiditySection tariff={tariff} update={update} />
+      </ChargesSection>
+      {mode.kind !== "record" && (
+        <>
+          <section className={formSection}>
+            <h3 className={sectionTitle}>
+              {mode.kind === "invoice"
+                ? "04 / Tu factura de referencia"
+                : "04 / Perfil compartido de consumo"}
+            </h3>
+            <p className={sectionNote}>
+              {mode.kind === "invoice"
+                ? "Completa aquí lo que falte. Estos datos se guardarán solo en esta factura."
+                : "Estos datos pertenecen a tu perfil compartido. Al cambiarlos aquí, cambiarán para todas las tarifas; no incluyen simulaciones sin adoptar."}
+            </p>
+            <ProfileFields value={profile} onChange={setProfile} />
+            <TaxFields value={profile} onChange={setProfile} />
+          </section>
+          <InvoicePrices
+            tariff={tariff}
+            profile={profile}
+            onApply={setTariff}
           />
-        )}
-        {error && (
-          <p role="alert" className="notice error">
-            {error}
-          </p>
-        )}
-        <div className="modal-actions">
-          <button type="button" className="button secondary" onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="button primary" type="submit">
-            {submitLabel(mode)}
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </form>
+          <TariffPreview tariff={tariff} profile={profile} />
+        </>
+      )}
+      {first && makeCurrent && (
+        <Field
+          label="Fecha de inicio"
+          type="date"
+          value={since}
+          onChange={setSince}
+          required
+          hint="Fecha en la que empezaron estas condiciones de tu contrato actual."
+          className="mb-4"
+        />
+      )}
+      {error && (
+        <Alert variant="destructive" role="alert">
+          {error}
+        </Alert>
+      )}
+      <div className="mt-6 flex flex-wrap justify-end gap-2.5 border-t border-border pt-5">
+        <Button variant="outline" type="button" onClick={onClose}>
+          {inline && mode.kind === "invoice"
+            ? "Volver a la factura"
+            : "Cancelar"}
+        </Button>
+        <Button type="submit">
+          {submitLabel(mode)}
+          <ArrowRight size={16} />
+        </Button>
+      </div>
+    </form>
+  );
+  if (inline) return form;
+  return (
+    <Modal title={tariffFormTitle(mode, initial)} onClose={onClose} size="wide">
+      {form}
     </Modal>
   );
 }

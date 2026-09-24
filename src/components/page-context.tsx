@@ -1,10 +1,13 @@
 "use client";
 import { createContext, use, useMemo, useState, type ReactNode } from "react";
-import { useFeedback } from "./feedback-notice";
+import { notify } from "./feedback-notice";
 import MethodModal from "./method-modal";
+import { Button } from "@/components/ui/button";
 
-type PageContextValue = ReturnType<typeof useFeedback> & {
-  error: string;
+type PageContextValue = {
+  /** A confirmation toast; an empty string shows nothing. */
+  setMessage: (text: string) => void;
+  /** An error toast; an empty string shows nothing. */
   setError: (error: string) => void;
   openMethod: () => void;
 };
@@ -18,19 +21,14 @@ export function PageProvider({
   method: ReactNode;
   children: ReactNode;
 }) {
-  const { message, setMessage, dismiss } = useFeedback();
-  const [error, setError] = useState("");
   const [methodOpen, setMethodOpen] = useState(false);
   const value = useMemo(
     () => ({
-      message,
-      setMessage,
-      dismiss,
-      error,
-      setError,
+      setMessage: (text: string) => notify(text),
+      setError: (text: string) => notify(text, "error"),
       openMethod: () => setMethodOpen(true),
     }),
-    [message, setMessage, dismiss, error],
+    [],
   );
   return (
     <PageContext value={value}>
@@ -48,11 +46,16 @@ export function usePage() {
   return value;
 }
 
-export function MethodButton() {
+export function MethodButton({ className }: { className?: string }) {
   const { openMethod } = usePage();
   return (
-    <button className="link-button" onClick={openMethod}>
+    <Button
+      variant="link"
+      size="inline"
+      className={className}
+      onClick={openMethod}
+    >
       Método y fuentes
-    </button>
+    </Button>
   );
 }

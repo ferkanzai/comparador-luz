@@ -85,3 +85,28 @@ test("greets a signed-in user in the header and signs out", async ({
     header.getByRole("link", { name: "Iniciar sesión", exact: true }),
   ).toBeVisible();
 });
+
+test("a first visit offers one way to start and nothing that needs data", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Añadir mi tarifa actual", exact: true }),
+  ).toBeVisible();
+  for (const name of [
+    "Añadir tarifa",
+    "Simular consumo",
+    "Exportar",
+    "Comparar con PVPC",
+  ])
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(
+      0,
+    );
+  await expect(page.getByText("Guardado en este dispositivo")).toHaveCount(0);
+  // Once there is a tariff, the rest appears.
+  await openComparison(page);
+  await expect(
+    page.getByRole("button", { name: "Simular consumo", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Guardado en este dispositivo")).toBeVisible();
+});

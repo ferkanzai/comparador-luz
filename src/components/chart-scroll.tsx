@@ -6,6 +6,10 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { cn } from "@/lib/utils";
+import { chartNote } from "./bill-styles";
+
+export const chartScroll = "my-5 overflow-x-auto p-1.5";
 
 export default function ChartScroll({
   label,
@@ -32,7 +36,7 @@ export default function ChartScroll({
     <>
       <div
         ref={node}
-        className="chart-scroll"
+        className={chartScroll}
         role="region"
         aria-label={`${label}. Desplázate para ver todos los meses.`}
         tabIndex={0}
@@ -40,7 +44,7 @@ export default function ChartScroll({
         {children}
       </div>
       {overflows && (
-        <p className="small muted chart-scroll-hint" aria-hidden="true">
+        <p className={cn(chartNote, "-mt-3 mb-4")} aria-hidden="true">
           Desliza el gráfico para ver todos los meses ↔
         </p>
       )}

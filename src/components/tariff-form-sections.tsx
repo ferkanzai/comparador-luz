@@ -17,6 +17,44 @@ import {
 import type { PeriodCorrection } from "@/lib/tariff-periods";
 import { Field } from "./ui";
 import EstimateNotice from "./estimate-notice";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+import { textLink } from "./comparison-table";
+
+/* Layouts shared by the tariff form and its sections. */
+const formGrid = "grid gap-3.5 max-[1000px]:gap-2.5 max-[520px]:gap-3";
+export const two = cn(formGrid, "grid-cols-2 max-[520px]:grid-cols-1");
+export const three = cn(
+  formGrid,
+  "grid-cols-3 max-[800px]:grid-cols-2 max-[520px]:grid-cols-1",
+);
+export const formSection = "mt-5 border-t border-border pt-5";
+export const sectionTitle =
+  "m-0 font-heading text-sm-plus font-bold tracking-[-0.25px]";
+/* A note under a section title or its fields. */
+export const sectionNote = "m-0 mt-2.5 mb-5 text-sm-plus text-muted-foreground";
+export const checkboxLabel =
+  "my-2 flex min-h-11 items-center gap-2 min-[801px]:text-sm-plus";
+export const selectLabel = "my-4 block text-sm-plus font-medium";
+/* 44px selects, as the other controls. */
+export const tallSelect = "*:[select]:min-h-11";
+const sectionHeading =
+  "mb-3.5 flex items-center justify-between gap-3 max-[520px]:flex-wrap max-[520px]:gap-2.5";
+/* A section folded under its summary. */
+export const formDisclosure = cn(
+  formSection,
+  "[&>summary]:min-h-11 [&>summary]:cursor-pointer [&>summary]:content-center [&>summary]:text-sm-plus [&>summary]:font-semibold",
+);
+const chargeField = "min-w-0 rounded-lg border border-border bg-background p-4";
+const chargeNote = "m-0 mt-2.5 text-sm-plus text-muted-foreground";
 
 export type TariffUpdate = (key: keyof Tariff, value: string | boolean) => void;
 type SectionProps = { tariff: Tariff; update: TariffUpdate };
@@ -58,8 +96,8 @@ export function PeriodDatesSection({
   preview?: (dates: PeriodCorrection) => ReactNode;
 }) {
   return (
-    <section className="form-section">
-      <div className="form-grid two">
+    <section className={formSection}>
+      <div className={two}>
         <Field
           label="Fecha de inicio"
           type="date"
@@ -79,17 +117,16 @@ export function PeriodDatesSection({
       </div>
       {preview && (
         <>
-          <label className="checkbox">
-            <input
-              type="checkbox"
+          <label className={checkboxLabel}>
+            <Checkbox
               checked={dates.moveBoundary ?? false}
-              onChange={(e) =>
-                onChange({ ...dates, moveBoundary: e.target.checked })
+              onCheckedChange={(checked) =>
+                onChange({ ...dates, moveBoundary: checked === true })
               }
             />
             Ajustar también los períodos contiguos
           </label>
-          <p className="small muted">
+          <p className={sectionNote}>
             Corregimos este período sin registrar un cambio de precios. Las
             facturas guardadas conservan su propia copia: corrígelas en Mis
             facturas si lo necesitas.
@@ -97,7 +134,7 @@ export function PeriodDatesSection({
         </>
       )}
       {preview?.(dates)}
-      <p className="small muted">
+      <p className={sectionNote}>
         La fecha de fin marca el cambio: si la siguiente tarifa empieza el 1 de
         junio, la anterior termina en esa misma fecha. Ese día pertenece a la
         nueva tarifa.
@@ -108,29 +145,29 @@ export function PeriodDatesSection({
 
 export function EnergySection({ tariff, update }: SectionProps) {
   return (
-    <div className="form-section">
-      <div className="section-inline">
-        <h3>01 / Energía</h3>
-        <div className="segmented">
-          <button
-            type="button"
-            aria-pressed={tariff.kind === "periods"}
-            className={tariff.kind === "periods" ? "selected" : ""}
+    <div className={formSection}>
+      <div className={sectionHeading}>
+        <h3 className={sectionTitle}>01 / Energía</h3>
+        <ToggleGroup
+          type="single"
+          value={tariff.kind}
+          className="rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+        >
+          <ToggleGroupItem
+            value="periods"
             onClick={() => update("kind", "periods")}
           >
             3 períodos
-          </button>
-          <button
-            type="button"
-            aria-pressed={tariff.kind === "fixed"}
-            className={tariff.kind === "fixed" ? "selected" : ""}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="fixed"
             onClick={() => update("kind", "fixed")}
           >
             Precio único
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
-      <div className="form-grid three">
+      <div className={three}>
         <PriceField
           tariff={tariff}
           update={update}
@@ -167,37 +204,41 @@ export function EnergySection({ tariff, update }: SectionProps) {
 export function PowerSection({ tariff, update }: SectionProps) {
   const unit = powerUnitLabels[tariff.powerUnit];
   return (
-    <div className="form-section">
-      <div className="section-inline">
-        <h3>02 / Potencia</h3>
-        <label className="inline-label">
+    <div className={formSection}>
+      <div className={sectionHeading}>
+        <h3 className={sectionTitle}>02 / Potencia</h3>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Unidad
-          <select
+          <NativeSelect
+            className={cn(tallSelect, "*:[select]:text-foreground")}
             value={tariff.powerUnit}
             onChange={(e) => update("powerUnit", e.target.value)}
           >
-            <option value="day">€/kW/día</option>
-            <option value="month">€/kW/mes</option>
-            <option value="year">€/kW/año</option>
-          </select>
+            <NativeSelectOption value="day">€/kW/día</NativeSelectOption>
+            <NativeSelectOption value="month">€/kW/mes</NativeSelectOption>
+            <NativeSelectOption value="year">€/kW/año</NativeSelectOption>
+          </NativeSelect>
         </label>
       </div>
-      <label className="auth-label">
+      <label className={selectLabel}>
         Cómo aparece el precio de potencia
-        <select
+        <NativeSelect
+          className={tallSelect}
           value={tariff.powerKind}
           onChange={(e) => update("powerKind", e.target.value)}
         >
-          <option value="periods">Dos precios: punta y valle</option>
-          <option value="combined">
+          <NativeSelectOption value="periods">
+            Dos precios: punta y valle
+          </NativeSelectOption>
+          <NativeSelectOption value="combined">
             Un precio total de potencia: se cobra una vez
-          </option>
-          <option value="same">
+          </NativeSelectOption>
+          <NativeSelectOption value="same">
             El mismo precio por período: se cobra en punta y en valle
-          </option>
-        </select>
+          </NativeSelectOption>
+        </NativeSelect>
       </label>
-      <div className="form-grid two">
+      <div className={two}>
         <PriceField
           tariff={tariff}
           update={update}
@@ -223,7 +264,7 @@ export function PowerSection({ tariff, update }: SectionProps) {
           />
         )}
       </div>
-      <p className="small muted">
+      <p className={sectionNote}>
         {tariff.powerKind === "combined"
           ? "Multiplicamos el precio total por tus kW una sola vez. Requiere los mismos kW en ambos períodos; si son distintos, introduce los dos precios."
           : tariff.powerKind === "same"
@@ -231,11 +272,11 @@ export function PowerSection({ tariff, update }: SectionProps) {
             : "La tarifa 2.0TD tiene dos períodos de potencia, aunque tengas los mismos kW contratados."}
       </p>
       {tariff.powerUnit === "month" && (
-        <p className="notice small">
+        <Alert role="note">
           Potencia mensual: precio × kW × días ÷ 30. Si tu compañía prorratea de
           otra forma, puedes calcular el precio desde los importes de tu factura
           más abajo.
-        </p>
+        </Alert>
       )}
     </div>
   );
@@ -251,14 +292,16 @@ export function ChargesSection({
   children: ReactNode;
 }) {
   return (
-    <section className="form-section">
-      <h3>03 / Alquiler, bono social y otros costes</h3>
-      <p className="small muted">
+    <section className={formSection}>
+      <h3 className={sectionTitle}>
+        03 / Alquiler, bono social y otros costes
+      </h3>
+      <p className={sectionNote}>
         En blanco equivale a cero en estos cargos. Comprueba si están incluidos
         en el precio para no sumarlos dos veces.
       </p>
-      <div className="form-grid two charge-fields">
-        <div className="charge-field">
+      <div className={cn(two, "my-5 items-start")}>
+        <div className={chargeField}>
           <PriceField
             tariff={tariff}
             update={update}
@@ -266,17 +309,20 @@ export function ChargesSection({
             label="Alquiler de contador"
             unit="€/día"
           />
-          <button
+          <Button
+            variant="link"
+            size="inline"
+            className="min-h-11 text-left"
             type="button"
-            className="link-button estimate-action"
             onClick={() => onEstimate((t) => estimateMeter(t, "single-2013"))}
           >
             No lo sé · Usar estimación
-          </button>
+          </Button>
           {tariff.meterEstimate !== "none" && tariff.meterEstimate && (
-            <label className="auth-label small">
+            <label className={selectLabel}>
               Estimación aplicada · tipo de contador
-              <select
+              <NativeSelect
+                className={tallSelect}
                 value={tariff.meterEstimate}
                 onChange={(e) => {
                   const kind = e.target.value;
@@ -285,19 +331,19 @@ export function ChargesSection({
                 }}
               >
                 {(["single-2013", "three-2013"] as const).map((kind) => (
-                  <option key={kind} value={kind}>
+                  <NativeSelectOption key={kind} value={kind}>
                     {meterRentalLabel(kind)}
-                  </option>
+                  </NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           )}
-          <p className="small muted">
+          <p className={chargeNote}>
             La estimación inicial usa un contador inteligente monofásico. Puedes
             cambiar a trifásico. Si es tuyo, introduce 0. Prorrateamos el mes ×
             12 ÷ 365, sin impuestos.{" "}
             <a
-              className="text-link"
+              className={textLink}
               href={meterRentalSource}
               target="_blank"
               rel="noreferrer"
@@ -307,7 +353,7 @@ export function ChargesSection({
             .
           </p>
         </div>
-        <div className="charge-field">
+        <div className={chargeField}>
           <PriceField
             tariff={tariff}
             update={update}
@@ -315,24 +361,32 @@ export function ChargesSection({
             label="Financiación bono social"
             unit="€/día"
           />
-          <button
+          <Button
+            variant="link"
+            size="inline"
+            className="min-h-11 text-left"
             type="button"
-            className="link-button estimate-action"
             onClick={() => onEstimate(estimateSocial)}
           >
             No lo sé · Usar estimación
-          </button>
+          </Button>
           {tariff.socialEstimate === "ted634-2026" && (
-            <p role="status" className="estimate-note small">
+            <p
+              role="status"
+              className={cn(
+                chargeNote,
+                "rounded-md bg-success-muted px-3 py-2.5",
+              )}
+            >
               Estimación aplicada · referencia de junio de 2026.
             </p>
           )}
-          <p className="small muted">
+          <p className={chargeNote}>
             Referencia de 2026: {formatRate(socialFinancing2026.annual)} €/año ÷
             365, sin impuestos. En mercado libre depende del contrato: si ya
             está incluido, introduce 0 para no duplicarlo.{" "}
             <a
-              className="text-link"
+              className={textLink}
               href={socialFinancing2026.source}
               target="_blank"
               rel="noreferrer"
@@ -343,8 +397,8 @@ export function ChargesSection({
           </p>
         </div>
       </div>
-      <div className="form-grid two charge-fields">
-        <div className="charge-field">
+      <div className={cn(two, "my-5 items-start")}>
+        <div className={chargeField}>
           <PriceField
             tariff={tariff}
             update={update}
@@ -352,20 +406,22 @@ export function ChargesSection({
             label="Coste SNOEE (sin impuestos)"
             unit="€/kWh"
           />
-          <p className="small muted">
+          <p className={chargeNote}>
             Solo si se cobra aparte y no está incluido en los precios de energía
             que has indicado. Si ya está incluido, déjalo vacío o a 0.
           </p>
-          <details className="small">
-            <summary>¿Qué es el SNOEE?</summary>
-            <p className="muted">
+          <details className="text-sm-plus">
+            <summary className="min-h-11 cursor-pointer content-center">
+              ¿Qué es el SNOEE?
+            </summary>
+            <p className="m-0 text-muted-foreground">
               El Sistema Nacional de Obligaciones de Eficiencia Energética
               (SNOEE) exige a las comercializadoras contribuir al ahorro de
               energía. Algunas cobran este coste por separado. Es un coste del
               suministro, no un impuesto; lo multiplicamos por tus kWh y lo
               incluimos en las bases del IEE y del IVA.{" "}
               <a
-                className="text-link"
+                className={textLink}
                 href="https://www.miteco.gob.es/es/energia/eficiencia/sistema-nacional-obligaciones-efe.html"
                 target="_blank"
                 rel="noreferrer"
@@ -384,15 +440,16 @@ export function ChargesSection({
           unit="€/mes"
         />
       </div>
-      <label className="checkbox small">
-        <input
-          type="checkbox"
+      <label className={cn(checkboxLabel, "text-sm min-[801px]:text-sm")}>
+        <Checkbox
           checked={tariff.socialInElectricityTax}
-          onChange={(e) => update("socialInElectricityTax", e.target.checked)}
+          onCheckedChange={(checked) =>
+            update("socialInElectricityTax", checked === true)
+          }
         />{" "}
         Incluir financiación del bono social en la base del IEE
       </label>
-      <p className="small muted">
+      <p className={sectionNote}>
         Es el criterio general. Desmárcalo solo si quieres reproducir una
         factura que lo excluye; el cargo seguirá sujeto a IVA.
       </p>
@@ -403,9 +460,9 @@ export function ChargesSection({
 
 export function OfferValiditySection({ tariff, update }: SectionProps) {
   return (
-    <details className="form-section">
+    <details className={formDisclosure}>
       <summary>Validez y condiciones</summary>
-      <div className="form-grid two">
+      <div className={cn(two, "my-4")}>
         <Field
           label="Oferta válida hasta"
           hint="Si la oferta tiene una fecha límite para contratarla, indícala aquí. No es la fecha de fin de tu contrato."
@@ -421,10 +478,11 @@ export function OfferValiditySection({ tariff, update }: SectionProps) {
         type="url"
         maxLength={2000}
         placeholder="https://…"
+        className="mb-4"
       />
-      <label className="auth-label">
+      <label className={selectLabel}>
         Condiciones y notas
-        <textarea
+        <Textarea
           maxLength={2000}
           value={tariff.notes}
           onChange={(e) => update("notes", e.target.value)}
@@ -445,37 +503,41 @@ export function TariffPreview({
   const cost = calculate(tariff, profile);
   return (
     <section
-      className="tariff-preview form-section"
+      className={cn(formSection, "rounded-lg bg-tint p-6 max-[520px]:p-4")}
       aria-label="Resultado de esta tarifa"
     >
-      <h3>Así quedaría tu factura</h3>
+      <h3 className={sectionTitle}>Así quedaría tu factura</h3>
       <EstimateNotice tariff={tariff} />
       {cost ? (
         <>
-          <strong className="big-amount">{money(cost.total)}</strong>
-          <p className="small muted">
+          <strong className="my-px font-heading text-4xl/[inherit] font-semibold tracking-[-1.5px] max-[520px]:text-3xl/[inherit]">
+            {money(cost.total)}
+          </strong>
+          <p className={sectionNote}>
             {profile.days} días ·{" "}
             {profile.taxes ? "Con impuestos" : "Sin impuestos"}
           </p>
-          <dl className="bill-breakdown">
+          <dl className="my-4">
             {estimateLines([cost]).map(([key, label]) => (
-              <div key={key}>
+              <div key={key} className="my-2 flex justify-between gap-4">
                 <dt>{label}</dt>
-                <dd>{money(cost[key])}</dd>
+                <dd className="m-0 whitespace-nowrap tabular-nums">
+                  {money(cost[key])}
+                </dd>
               </div>
             ))}
           </dl>
-          <p className="small muted">
+          <p className={sectionNote}>
             Base IEE: {money(cost.electricityBase)} · Base IVA:{" "}
             {money(cost.vatBase)}
           </p>
         </>
       ) : (
-        <p className="notice">
+        <Alert role="note">
           Completa los precios, el consumo, los kW y los días. Si incluyes
           impuestos, indica también sus porcentajes. El precio de potencia
           combinado requiere los mismos kW en ambos períodos.
-        </p>
+        </Alert>
       )}
     </section>
   );

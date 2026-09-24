@@ -6,6 +6,15 @@ import {
   updateBillConsumption,
 } from "@/lib/bill-consumption";
 import { Field } from "./ui";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import {
+  checkboxLabel,
+  formSection,
+  sectionNote,
+  sectionTitle,
+  three,
+} from "./tariff-form-sections";
 
 export default function BillConsumptionFields({
   bill,
@@ -15,20 +24,16 @@ export default function BillConsumptionFields({
   onChange: (bill: Bill) => void;
 }) {
   return (
-    <section
-      className="form-section bill-consumption-fields"
-      aria-label="Consumo de la factura"
-    >
-      <h3>Consumo de esta factura</h3>
-      <label className="checkbox">
-        <input
-          type="checkbox"
+    <section className={formSection} aria-label="Consumo de la factura">
+      <h3 className={cn(sectionTitle, "mb-3")}>Consumo de esta factura</h3>
+      <label className={checkboxLabel}>
+        <Checkbox
           checked={!!bill.consumption}
-          onChange={(e) =>
+          onCheckedChange={(checked) =>
             onChange(
               updateBillConsumption(
                 bill,
-                e.target.checked
+                checked === true
                   ? { peakKwh: "", flatKwh: "", valleyKwh: "" }
                   : null,
               ),
@@ -39,7 +44,7 @@ export default function BillConsumptionFields({
       </label>
       {bill.consumption ? (
         <>
-          <div className="form-grid three">
+          <div className={cn(three, "mt-4")}>
             {(
               [
                 ["peakKwh", "Consumo P1 · Punta"],
@@ -64,7 +69,7 @@ export default function BillConsumptionFields({
               />
             ))}
           </div>
-          <p className="small" role="status">
+          <p className={cn(sectionNote, "text-foreground")} role="status">
             Total de los períodos:{" "}
             <strong>
               {consumptionTotal(bill.consumption) === null
@@ -72,7 +77,7 @@ export default function BillConsumptionFields({
                 : formatKwh(consumptionTotal(bill.consumption)!)}
             </strong>
           </p>
-          <p className="small muted">
+          <p className={sectionNote}>
             Sumamos los tres períodos automáticamente. Usa 0 cuando no haya
             consumo; deja desactivado el reparto si solo conoces el total.
           </p>

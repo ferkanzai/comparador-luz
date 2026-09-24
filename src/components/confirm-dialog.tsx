@@ -1,8 +1,29 @@
 "use client";
 import { useRef, type ReactNode } from "react";
 import { Trash2 } from "lucide-react";
-import { Modal } from "./ui";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
+/**
+ * Confirms a destructive action: an alert dialog from the `md` breakpoint up,
+ * a bottom drawer with the actions within thumb reach below it. Focus starts
+ * on "Cancelar".
+ */
 export default function ConfirmDialog({
   title,
   summary,
@@ -18,31 +39,67 @@ export default function ConfirmDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const desktop = useMediaQuery("(min-width: 768px)");
   const cancel = useRef<HTMLButtonElement>(null);
+  const onOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+  const onOpenAutoFocus = (event: Event) => {
+    event.preventDefault();
+    cancel.current?.focus();
+  };
+  const body = (
+    <div className="mb-5 flex items-center gap-3.5 [&_h3]:font-heading [&_h3]:text-[length:var(--text-lg)] [&_h3]:font-bold [&_h3]:tracking-[-0.25px] [&_h3]:wrap-anywhere [&_p]:text-xs-plus">
+      <span
+        className="grid h-[46px] flex-[0_0_46px] place-items-center rounded-full bg-destructive-muted text-destructive"
+        aria-hidden="true"
+      >
+        <Trash2 size={22} />
+      </span>
+      <div className="min-w-0">{summary}</div>
+    </div>
+  );
+  const actions = (
+    <>
+      <Button variant="outline" ref={cancel} onClick={onClose}>
+        Cancelar
+      </Button>
+      <Button variant="destructive" onClick={onConfirm}>
+        <Trash2 data-icon="inline-start" /> {confirmLabel}
+      </Button>
+    </>
+  );
+  if (desktop)
+    return (
+      <AlertDialog open onOpenChange={onOpenChange}>
+        <AlertDialogContent onOpenAutoFocus={onOpenAutoFocus}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="tracking-[-0.55px]">
+              {title}
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          {body}
+          <AlertDialogDescription asChild>
+            <div className="[&>p+p]:mt-3">{consequence}</div>
+          </AlertDialogDescription>
+          <AlertDialogFooter>{actions}</AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
   return (
-    <Modal
-      title={title}
-      className="confirm-dialog"
-      initialFocusRef={cancel}
-      onClose={onClose}
-    >
-      <div className="modal-body">
-        <div className="confirm-summary">
-          <span className="confirm-icon" aria-hidden="true">
-            <Trash2 size={22} />
-          </span>
-          <div>{summary}</div>
+    <Drawer open onOpenChange={onOpenChange} handleOnly>
+      <DrawerContent onOpenAutoFocus={onOpenAutoFocus}>
+        <DrawerHeader className="text-left">
+          <DrawerTitle className="font-heading text-xl font-bold tracking-[-0.55px]">
+            {title}
+          </DrawerTitle>
+        </DrawerHeader>
+        <div className="px-4 [&>p+p]:mt-3">
+          {body}
+          {consequence}
         </div>
-        {consequence}
-        <div className="modal-actions">
-          <button className="button secondary" ref={cancel} onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="button confirm-danger" onClick={onConfirm}>
-            <Trash2 size={16} /> {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </Modal>
+        <DrawerFooter className="grid grid-cols-2">{actions}</DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

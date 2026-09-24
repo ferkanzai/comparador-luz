@@ -383,7 +383,9 @@ test("account autosave keeps simulations local, reports failed saves and shows r
     page.getByText(/No se ha guardado el último cambio/),
   ).toBeVisible({ timeout: 15_000 });
   await expect(
-    page.getByRole("alert").filter({ hasText: "No se ha podido conectar" }),
+    page
+      .getByRole("region", { name: "Avisos" })
+      .getByText(/No se ha podido conectar/),
   ).toBeVisible();
   await expect(
     table.getByRole("row").filter({ hasText: "Clara Guardada" }),
@@ -421,7 +423,7 @@ test("account autosave keeps simulations local, reports failed saves and shows r
     .getByRole("button", { name: "Guardar factura", exact: true })
     .click();
   await expect(
-    page.getByRole("alert").filter({ hasText: "Regla de prueba." }),
+    page.getByRole("region", { name: "Avisos" }).getByText("Regla de prueba."),
   ).toBeVisible();
   await page.unroute("**/api/bills/*");
   await page.getByRole("button", { name: "Mis facturas", exact: true }).click();
@@ -613,10 +615,11 @@ test("preserves normalized power units and shows optional offer expiry without p
   await expect(
     dialog.getByRole("button", { name: "He revisado estos precios" }),
   ).toHaveCount(0);
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  // The page behind a modal dialog is hidden from assistive technology.
   await expect(
     table.getByRole("row").filter({ hasText: "Oferta caducada" }),
   ).toContainText("Caducada · 1 ene 2026");
-  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
   await page.reload();
   await expect(
     table.getByRole("row").filter({ hasText: "Clara Fija" }),
@@ -676,7 +679,7 @@ test("preserves tariff duplication, deletion and current-contract designation", 
     exact: true,
   });
   await remove.click();
-  const confirmation = page.getByRole("dialog", {
+  const confirmation = page.getByRole("alertdialog", {
     name: "Eliminar tarifa",
     exact: true,
   });
@@ -699,7 +702,9 @@ test("preserves tariff duplication, deletion and current-contract designation", 
     .getByRole("dialog")
     .getByRole("button", { name: "Eliminar tarifa", exact: true })
     .click();
-  await expect(page.getByRole("dialog")).toHaveCount(1);
+  // The confirmation replaces the details instead of stacking on them.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("alertdialog")).toHaveCount(1);
   await expect(confirmation).toContainText("Clara Fija (copia)");
   await page.keyboard.press("Tab");
   await expect(
@@ -767,15 +772,13 @@ test("stops adding and duplicating tariffs at the 100-tariff limit and explains 
     .getByRole("button", { name: "Eliminar tarifa", exact: true })
     .click();
   await page
-    .getByRole("dialog", { name: "Eliminar tarifa", exact: true })
+    .getByRole("alertdialog", { name: "Eliminar tarifa", exact: true })
     .getByRole("button", { name: "Eliminar tarifa", exact: true })
     .click();
   await expect(table.getByRole("row")).toHaveCount(100);
   await expect(add).toBeEnabled();
   await expect(page.getByText(/hasta 100 tarifas/)).toHaveCount(0);
-  await expect(page.locator(".workspace-status")).not.toContainText(
-    "no se puede",
-  );
+  await expect(page.getByText(/no se puede/)).toHaveCount(0);
 });
 
 test("retains the expired current tariff as baseline and excludes incompatible combined power", async ({
@@ -815,6 +818,8 @@ test("has accessible table, simulator and finalist interactions", async ({
   const audit = () =>
     page.evaluate(async () => {
       const engine = (window as typeof window & { axe: typeof axe }).axe;
+      // Dialogs fade in; audit what the reader sees once they've settled.
+      await Promise.all(document.getAnimations().map((a) => a.finished));
       return (
         await engine.run(document, {
           runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa"] },
@@ -894,12 +899,12 @@ test("starts with no sample tariffs and lets the first tariff be the current ref
 }) => {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Añadir mi primera tarifa", exact: true })
+    .getByRole("button", { name: "Añadir mi tarifa actual", exact: true })
     .click();
   await page
     .getByLabel("Nombre de la tarifa", { exact: true })
     .fill("Mi primera tarifa");
-  await page.getByRole("button", { name: "Precio único", exact: true }).click();
+  await page.getByRole("radio", { name: "Precio único", exact: true }).click();
   await page.getByLabel("Precio las 24 horas", { exact: true }).fill("0.20");
   await page.getByLabel("P1 · Punta", { exact: true }).fill("0.08");
   await page.getByLabel("P2 · Valle", { exact: true }).fill("0.02");
@@ -1015,7 +1020,10 @@ test("hides zero charges in estimates and keeps a finalist row when any finalist
   await page
     .getByRole("button", { name: "Ver desglose de Casa 24h", exact: true })
     .click();
-  const breakdown = page.getByRole("dialog").locator(".breakdown");
+  const breakdown = page
+    .getByRole("dialog")
+    .locator("dl")
+    .filter({ hasText: "Total del período" });
   await expect(breakdown).toContainText("Energía");
   await expect(breakdown).toContainText("Potencia");
   await expect(breakdown).not.toContainText("Alquiler de contador");
@@ -1089,7 +1097,10 @@ test("fits three finalists on desktop and audits the tariff breakdown contrast",
     ).violations.map((v) => v.id);
   });
   expect(violations).toEqual([]);
-  const total = page.getByRole("dialog").locator(".breakdown .total");
+  const total = page
+    .getByRole("dialog")
+    .locator("dl > div")
+    .filter({ hasText: "Total del período" });
   const selection = await total.evaluate((el) => ({
     color: getComputedStyle(el, "::selection").color,
     background: getComputedStyle(el, "::selection").backgroundColor,
@@ -1139,7 +1150,7 @@ test("sends security headers and renders the account page under the policy", asy
 
 test("keeps account hints out of field names", async ({ page }) => {
   await page.goto("/cuenta?mode=signup");
-  await page.getByRole("button", { name: "Contraseña", exact: true }).click();
+  await page.getByRole("radio", { name: "Contraseña", exact: true }).click();
   const password = page.getByLabel("Contraseña", { exact: true });
   await expect(password).toHaveAccessibleName("Contraseña");
   await expect(password).toHaveAccessibleDescription(

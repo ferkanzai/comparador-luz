@@ -102,11 +102,13 @@ export async function readWorkspace(
           .where(eq(getTableColumns(table).userId, userId))) as T[]
       ).map((part) => [part.billId, part]),
     );
-  const [billTariffs, billProfiles, billBreakdowns] = await Promise.all([
-    byBill<typeof billTariff.$inferSelect>(billTariff),
-    byBill<typeof billProfile.$inferSelect>(billProfile),
-    byBill<typeof billBreakdown.$inferSelect>(billBreakdown),
-  ]);
+  // One after another: a transaction has one connection, which can't run
+  // queries in parallel.
+  const billTariffs = await byBill<typeof billTariff.$inferSelect>(billTariff);
+  const billProfiles =
+    await byBill<typeof billProfile.$inferSelect>(billProfile);
+  const billBreakdowns =
+    await byBill<typeof billBreakdown.$inferSelect>(billBreakdown);
   const bills = rows.map((b) => ({
     ...b,
     tariff: billTariffs.get(b.id),

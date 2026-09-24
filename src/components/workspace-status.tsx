@@ -1,26 +1,32 @@
 import { saveStatusLabel, type SaveStatus } from "@/lib/sync-status";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function WorkspaceStatus({
-  loaded,
   status,
   error,
   onRetry,
 }: {
-  loaded: boolean;
   status: SaveStatus;
   error: string;
   onRetry: () => void;
 }) {
   return (
-    <span className="workspace-status" title={error || undefined}>
+    <span
+      className="flex items-center gap-2 text-sm/[1.6] text-muted-foreground"
+      title={error || undefined}
+    >
       <span
-        className={`status-dot ${status === "local" || status === "saved" ? "" : "unsaved"}`}
+        className={cn(
+          "inline-block size-1.5 shrink-0 rounded-full bg-ring",
+          status !== "local" && status !== "saved" && "bg-warning-strong",
+        )}
       />
-      {loaded ? saveStatusLabel(status) : "Cargando…"}
+      {saveStatusLabel(status)}
       {status === "error" && (
-        <button className="link-button" onClick={onRetry}>
+        <Button variant="link" size="inline" onClick={onRetry}>
           Reintentar
-        </button>
+        </Button>
       )}
     </span>
   );

@@ -112,7 +112,7 @@ test("adds historical terms directly and persists them without changing the curr
     .fill("Contrato 2025");
   await form.getByLabel("Fecha de inicio", { exact: true }).fill("2025-01-01");
   await form.getByLabel("Fecha de fin", { exact: true }).fill("2026-01-01");
-  await form.getByRole("button", { name: "Precio único", exact: true }).click();
+  await form.getByRole("radio", { name: "Precio único", exact: true }).click();
   await form.getByLabel("Precio las 24 horas", { exact: true }).fill("0.25");
   await form.getByLabel("P1 · Punta", { exact: true }).fill("0.08");
   await form.getByLabel("P2 · Valle", { exact: true }).fill("0.02");
@@ -237,7 +237,7 @@ test("removes current and historical records only after confirmation without rea
   await page
     .getByRole("button", { name: "Eliminar registro de Casa 24h", exact: true })
     .click();
-  const confirmation = page.getByRole("dialog", {
+  const confirmation = page.getByRole("alertdialog", {
     name: "Eliminar registro",
     exact: true,
   });
@@ -273,7 +273,7 @@ test("removes current and historical records only after confirmation without rea
     .getByRole("button", { name: "Eliminar registro de Anterior", exact: true })
     .click();
   await page
-    .getByRole("dialog")
+    .getByRole("alertdialog")
     .getByRole("button", { name: "Eliminar registro", exact: true })
     .click();
   await expect(page.getByRole("article")).toHaveCount(0);
@@ -300,7 +300,7 @@ test("deletes a bill only after keyboard confirmation and shows what it removes"
     name: "Eliminar factura 2026-03",
     exact: true,
   });
-  const confirmation = page.getByRole("dialog", {
+  const confirmation = page.getByRole("alertdialog", {
     name: "Eliminar factura",
     exact: true,
   });

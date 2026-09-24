@@ -7,6 +7,8 @@ async function accessibilityViolations(page: Page) {
   await page.addScriptTag({ content: axe.source });
   return page.evaluate(async () => {
     const engine = (window as typeof window & { axe: typeof axe }).axe;
+    // Dialogs fade in; audit what the reader sees once they've settled.
+    await Promise.all(document.getAnimations().map((a) => a.finished));
     return (
       await engine.run(document, {
         runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa"] },
@@ -47,7 +49,7 @@ test("the account page changes the password, exports data and asks for email con
   );
 
   await page.getByRole("button", { name: "Eliminar mi cuenta" }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("alertdialog");
   await expect(dialog).toContainText("No se puede deshacer");
   await dialog
     .getByRole("button", { name: "Enviar correo de confirmación" })

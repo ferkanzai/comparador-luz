@@ -10,6 +10,7 @@ import { currentUser } from "@/lib/current-user";
 import { withAccount } from "@/db";
 import { readWorkspace } from "@/db/workspace";
 import { redirect } from "next/navigation";
+import { shell, skipLink } from "@/components/shell-styles";
 
 // Rendered whole per request: a prerendered shell with streamed content
 // shifted the layout when the hero and workspace arrived.
@@ -21,11 +22,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const { user, accountsAvailable } = await currentUser();
   return (
     <PageProvider method={<MethodText />}>
-      <a href="#main" className="skip-link">
+      <a href="#main" className={skipLink}>
         Saltar al contenido
       </a>
       <SiteHeader actions={<HeaderActions />} />
-      <main id="main" className="shell">
+      <main id="main" className={shell}>
         <QueryProvider>
           <Dashboard
             key={user?.id ?? "guest"}

@@ -1,8 +1,7 @@
 "use client";
-import FeedbackNotice from "./feedback-notice";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { Download, ShieldCheck } from "lucide-react";
+import { Download } from "lucide-react";
 import { newTariff, type Bill, type Tariff } from "@/lib/domain";
 import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
@@ -20,6 +19,12 @@ import {
   type SaveTariffOptions,
 } from "@/lib/workspace-actions";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { panel } from "./bill-styles";
+import { cn } from "@/lib/utils";
+
+const loadingPanel = cn(panel, "p-16 text-center");
 
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 const TariffHistory = dynamic(() => import("./tariff-history"));
@@ -27,7 +32,7 @@ const TariffForm = dynamic(() => import("./tariff-form"));
 const BillForm = dynamic(() => import("./bill-form"));
 const Bills = dynamic(() => import("./bills"), {
   loading: () => (
-    <div className="panel loading" role="status">
+    <div className={loadingPanel} role="status">
       Cargando tus facturas…
     </div>
   ),
@@ -46,9 +51,9 @@ export default function Dashboard({
 }) {
   const workspace = useWorkspace(user?.id, initialWorkspace);
   const { data: w, loaded, loadError, status } = workspace;
+  const empty = !w.tariffs.length && !w.bills.length && !w.history.length;
   const [busy, setBusy] = useState(false);
-  const { message, setMessage, dismiss, error, setError, openMethod } =
-    usePage();
+  const { setMessage, setError, openMethod } = usePage();
   const [tab, setTab] = useState<WorkspaceTab>("compare");
   const navigation = useRef<HTMLElement>(null);
   const previousTab = useRef(tab);
@@ -77,70 +82,110 @@ export default function Dashboard({
   const removingTariff = w.tariffs.find(
     (tariff) => tariff.id === removingTariffId && tariff.id !== w.currentId,
   );
+  // Returning households skip the hero for their working comparison.
+  const titled = Boolean(user || w.tariffs.length);
   function run(command: WorkspaceCommand) {
     workspace.run(command);
-    setMessage("");
-    setError("");
+  }
+  // A form or confirmation opened from a tariff's details takes their place,
+  // and brings them back when it's cancelled (codebase-review ticket 26).
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const returnToDetail = useRef<string | null>(null);
+  // What opened the details. Their dialog may reopen after a form, and by then
+  // the element it would restore focus to is gone.
+  const detailTrigger = useRef<HTMLElement | null>(null);
+  function showDetails(id: string | null) {
+    if (id && !detailId)
+      detailTrigger.current = document.activeElement as HTMLElement | null;
+    setDetailId(id);
+    if (id) return;
+    // Closed for good, unless a form is taking their place.
+    requestAnimationFrame(() => {
+      if (!returnToDetail.current) detailTrigger.current?.focus();
+    });
+  }
+  const fromDetails = (open: (tariff: Tariff) => void) => (tariff: Tariff) => {
+    returnToDetail.current = detailId;
+    open(tariff);
+  };
+  /** After saving, the user moves on: back to the page, not the details. */
+  function closeAfterSaving(close: () => void) {
+    returnToDetail.current = null;
+    close();
+  }
+  function closeFromDetails(close: () => void) {
+    close();
+    const id = returnToDetail.current;
+    returnToDetail.current = null;
+    // Not after a removal, nor when recording gave the tariff a new id.
+    if (id && w.tariffs.some((tariff) => tariff.id === id)) setDetailId(id);
   }
   function handleTariffSave(tariff: Tariff, options: SaveTariffOptions) {
     run(commands.saveTariff(tariff, options));
-    setEditing(null);
+    closeAfterSaving(() => setEditing(null));
     setMessage(
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
     );
   }
   return (
     <>
-      {user || w.tariffs.length ? (
-        <h1 className="workspace-title">Tu espacio de electricidad</h1>
-      ) : (
-        hero
-      )}
-      <div className="workspace-bar">
+      {titled ? <h1 className="sr-only">Tu espacio de electricidad</h1> : hero}
+      <div
+        className={cn(
+          "mb-7 flex justify-between gap-3 border-b border-border max-[520px]:mb-5",
+          titled && "mt-4",
+        )}
+      >
         <WorkspaceTabs ref={navigation} tab={tab} onChange={setTab} />
-        <WorkspaceStatus
-          loaded={loaded}
-          status={status}
-          error={workspace.error}
-          onRetry={workspace.reload}
-        />
       </div>
-      {loaded && (
-        <div className="save-strip">
-          <span>
-            <ShieldCheck size={16} />
-            {!user
-              ? "Tus datos se guardan automáticamente en este dispositivo."
-              : "Los cambios se guardan automáticamente."}
-          </span>
+      {/* One line for the save status, once there is something saved. */}
+      {loaded && (!empty || (status !== "local" && status !== "saved")) && (
+        <div
+          className={cn(
+            "-mt-3 mb-6 flex items-center justify-between gap-4 max-[520px]:mt-0 max-[520px]:flex-wrap",
+            titled && "mb-4 py-2.5 max-[600px]:flex-row max-[600px]:gap-2.5",
+          )}
+        >
+          <WorkspaceStatus
+            status={status}
+            error={workspace.error}
+            onRetry={workspace.reload}
+          />
           {/* Signed-in users download their data from the account page. */}
           {!user && (
-            <button
-              className="button secondary small-button"
+            <Button
+              variant="outline"
+              size="sm"
+
               onClick={() => downloadWorkspace(w)}
             >
               <Download size={15} />
               Exportar
-            </button>
+            </Button>
           )}
         </div>
       )}
       {status === "outdated" ? (
-        <div className="notice" role="alert">
+        <Alert role="alert">
           Hay una versión nueva de la aplicación. Recarga la página para seguir
           guardando.{" "}
-          <button
-            className="button secondary small-button"
+          <Button
+            variant="outline"
+            size="sm"
+
             onClick={() => window.location.reload()}
           >
             Recargar
-          </button>
-        </div>
+          </Button>
+        </Alert>
       ) : (
+        // An account's failed saves arrive as toasts; a guest's browser that
+        // refuses to store the workspace stays a visible state.
+        !user &&
         workspace.error && (
-          <div className="notice error" role="alert">
+          <Alert variant="destructive" role="alert">
             {workspace.error}
-          </div>
+          </Alert>
         )
       )}
       {user && !user.emailVerified && (
@@ -152,34 +197,24 @@ export default function Dashboard({
           onError={setError}
         />
       )}
-      {message && (
-        <FeedbackNotice
-          key={message.id}
-          message={message}
-          onDismiss={dismiss}
-        />
-      )}
-      {error && (
-        <FeedbackNotice
-          message={{ id: 0, text: error, kind: "error" }}
-          onDismiss={() => setError("")}
-        />
-      )}
       {loadError && (
-        <div className="notice error" role="alert">
+        <Alert variant="destructive" role="alert">
           {loadError}{" "}
-          <button className="link-button" onClick={workspace.reload}>
+          <Button variant="link" size="inline" onClick={workspace.reload}>
             Reintentar
-          </button>
-        </div>
+          </Button>
+        </Alert>
       )}
       {!loaded && !loadError && (
-        <div className="panel loading" role="status">
+        <div className={loadingPanel} role="status">
           Cargando tus tarifas y facturas…
         </div>
       )}
       {loaded && (
-        <fieldset className="workspace-content" disabled={busy}>
+        <fieldset
+          className="min-h-[calc(100dvh-160px)] min-w-0 disabled:opacity-70"
+          disabled={busy}
+        >
           {tab === "compare" ? (
             <>
               <ComparisonWorkspace
@@ -188,28 +223,35 @@ export default function Dashboard({
                 onAdd={() => setEditing({ tariff: newTariff() })}
                 onMethod={openMethod}
                 onBill={user ? setBillDraft : undefined}
+                detailId={detailId}
+                onDetails={showDetails}
                 actions={{
-                  onEdit: (tariff) => setEditing({ tariff }),
-                  onDuplicate: (tariff) =>
+                  onEdit: fromDetails((tariff) => setEditing({ tariff })),
+                  onDuplicate: fromDetails((tariff) =>
                     setEditing({
                       tariff: duplicateTariff(tariff),
                       duplicatedFrom: tariff.name,
                     }),
-                  onCurrent: (tariff) =>
+                  ),
+                  onCurrent: fromDetails((tariff) =>
                     setRecordDraft({
                       tariff,
                       kind: "current",
                       title: "Registrar como actual",
                     }),
+                  ),
                   onHistorical: user
-                    ? (tariff) =>
+                    ? fromDetails((tariff) =>
                         setRecordDraft({
                           tariff,
                           kind: "historical",
                           title: "Registrar como anterior",
-                        })
+                        }),
+                      )
                     : undefined,
-                  onRemove: (tariff) => setRemovingTariffId(tariff.id),
+                  onRemove: fromDetails((tariff) =>
+                    setRemovingTariffId(tariff.id),
+                  ),
                 }}
               />
               {!user && <SignupBanner />}
@@ -233,7 +275,9 @@ export default function Dashboard({
           summary={
             <>
               {removingTariff.provider && (
-                <p className="muted">{removingTariff.provider}</p>
+                <p className="text-muted-foreground">
+                  {removingTariff.provider}
+                </p>
               )}
               <h3>{removingTariff.name}</h3>
             </>
@@ -241,7 +285,7 @@ export default function Dashboard({
           consequence={
             <>
               <p>Esta oferta se eliminará de la comparativa.</p>
-              <p className="muted">
+              <p className="text-muted-foreground">
                 Tus tarifas registradas y tus facturas se conservan.
               </p>
             </>
@@ -249,9 +293,11 @@ export default function Dashboard({
           confirmLabel="Eliminar tarifa"
           onConfirm={() => {
             run(commands.removeTariff(removingTariff.id));
+            // The removed tariff has no details to return to.
+            returnToDetail.current = null;
             setRemovingTariffId(null);
           }}
-          onClose={() => setRemovingTariffId(null)}
+          onClose={() => closeFromDetails(() => setRemovingTariffId(null))}
         />
       )}
       {billDraft && (
@@ -278,7 +324,8 @@ export default function Dashboard({
               title: "Corregir datos",
             }}
             run={run}
-            onClose={() => setEditing(null)}
+            onClose={() => closeFromDetails(() => setEditing(null))}
+            onSaved={() => closeAfterSaving(() => setEditing(null))}
           />
         ) : (
           <TariffForm
@@ -293,7 +340,7 @@ export default function Dashboard({
             }}
             initial={editing.tariff}
             initialProfile={w.profile}
-            onClose={() => setEditing(null)}
+            onClose={() => closeFromDetails(() => setEditing(null))}
           />
         ))}
       {recordDraft && (
@@ -301,7 +348,8 @@ export default function Dashboard({
           workspace={w}
           draft={recordDraft}
           run={run}
-          onClose={() => setRecordDraft(null)}
+          onClose={() => closeFromDetails(() => setRecordDraft(null))}
+          onSaved={() => closeAfterSaving(() => setRecordDraft(null))}
         />
       )}
       {!accountsAvailable && (
