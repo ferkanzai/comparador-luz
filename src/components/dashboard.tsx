@@ -80,9 +80,42 @@ export default function Dashboard({
   function run(command: WorkspaceCommand) {
     workspace.run(command);
   }
+  // A form or confirmation opened from a tariff's details takes their place,
+  // and brings them back when it's cancelled (codebase-review ticket 26).
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const returnToDetail = useRef<string | null>(null);
+  // What opened the details. Their dialog may reopen after a form, and by then
+  // the element it would restore focus to is gone.
+  const detailTrigger = useRef<HTMLElement | null>(null);
+  function showDetails(id: string | null) {
+    if (id && !detailId)
+      detailTrigger.current = document.activeElement as HTMLElement | null;
+    setDetailId(id);
+    if (id) return;
+    // Closed for good, unless a form is taking their place.
+    requestAnimationFrame(() => {
+      if (!returnToDetail.current) detailTrigger.current?.focus();
+    });
+  }
+  const fromDetails = (open: (tariff: Tariff) => void) => (tariff: Tariff) => {
+    returnToDetail.current = detailId;
+    open(tariff);
+  };
+  /** After saving, the user moves on: back to the page, not the details. */
+  function closeAfterSaving(close: () => void) {
+    returnToDetail.current = null;
+    close();
+  }
+  function closeFromDetails(close: () => void) {
+    close();
+    const id = returnToDetail.current;
+    returnToDetail.current = null;
+    // Not after a removal, nor when recording gave the tariff a new id.
+    if (id && w.tariffs.some((tariff) => tariff.id === id)) setDetailId(id);
+  }
   function handleTariffSave(tariff: Tariff, options: SaveTariffOptions) {
     run(commands.saveTariff(tariff, options));
-    setEditing(null);
+    closeAfterSaving(() => setEditing(null));
     setMessage(
       "Tarifa aplicada. El resultado se actualiza con tu consumo y los impuestos elegidos.",
     );
@@ -180,28 +213,35 @@ export default function Dashboard({
                 onAdd={() => setEditing({ tariff: newTariff() })}
                 onMethod={openMethod}
                 onBill={user ? setBillDraft : undefined}
+                detailId={detailId}
+                onDetails={showDetails}
                 actions={{
-                  onEdit: (tariff) => setEditing({ tariff }),
-                  onDuplicate: (tariff) =>
+                  onEdit: fromDetails((tariff) => setEditing({ tariff })),
+                  onDuplicate: fromDetails((tariff) =>
                     setEditing({
                       tariff: duplicateTariff(tariff),
                       duplicatedFrom: tariff.name,
                     }),
-                  onCurrent: (tariff) =>
+                  ),
+                  onCurrent: fromDetails((tariff) =>
                     setRecordDraft({
                       tariff,
                       kind: "current",
                       title: "Registrar como actual",
                     }),
+                  ),
                   onHistorical: user
-                    ? (tariff) =>
+                    ? fromDetails((tariff) =>
                         setRecordDraft({
                           tariff,
                           kind: "historical",
                           title: "Registrar como anterior",
-                        })
+                        }),
+                      )
                     : undefined,
-                  onRemove: (tariff) => setRemovingTariffId(tariff.id),
+                  onRemove: fromDetails((tariff) =>
+                    setRemovingTariffId(tariff.id),
+                  ),
                 }}
               />
               {!user && <SignupBanner />}
@@ -241,9 +281,11 @@ export default function Dashboard({
           confirmLabel="Eliminar tarifa"
           onConfirm={() => {
             run(commands.removeTariff(removingTariff.id));
+            // The removed tariff has no details to return to.
+            returnToDetail.current = null;
             setRemovingTariffId(null);
           }}
-          onClose={() => setRemovingTariffId(null)}
+          onClose={() => closeFromDetails(() => setRemovingTariffId(null))}
         />
       )}
       {billDraft && (
@@ -270,7 +312,8 @@ export default function Dashboard({
               title: "Corregir datos",
             }}
             run={run}
-            onClose={() => setEditing(null)}
+            onClose={() => closeFromDetails(() => setEditing(null))}
+            onSaved={() => closeAfterSaving(() => setEditing(null))}
           />
         ) : (
           <TariffForm
@@ -285,7 +328,7 @@ export default function Dashboard({
             }}
             initial={editing.tariff}
             initialProfile={w.profile}
-            onClose={() => setEditing(null)}
+            onClose={() => closeFromDetails(() => setEditing(null))}
           />
         ))}
       {recordDraft && (
@@ -293,7 +336,8 @@ export default function Dashboard({
           workspace={w}
           draft={recordDraft}
           run={run}
-          onClose={() => setRecordDraft(null)}
+          onClose={() => closeFromDetails(() => setRecordDraft(null))}
+          onSaved={() => closeAfterSaving(() => setRecordDraft(null))}
         />
       )}
       {!accountsAvailable && (

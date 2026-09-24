@@ -44,7 +44,7 @@ Review of performance, architecture, composition, design, security, account and 
 | 23  | [Comparison table scrolling on desktop and phone](issues/23-comparison-table-scrolling.md)                   | Design                    | M      | completed       |            |
 | 24  | [Zero-value lines in cost breakdowns](issues/24-zero-value-breakdown-lines.md)                               | Design                    | S      | completed       |            |
 | 25  | [Guest first-run screen](issues/25-guest-first-run.md)                                                       | Design                    | S      | needs-triage    |            |
-| 26  | [Avoid stacked dialogs](issues/26-stacked-dialogs.md)                                                        | Design                    | M      | ready-for-agent | 07         |
+| 26  | [Avoid stacked dialogs](issues/26-stacked-dialogs.md)                                                        | Design                    | M      | completed       | 07         |
 | 27  | [Record why the current contract lives in the offers list (ADR-0001)](issues/27-current-contract-storage.md) | Architecture              | S      | completed       |            |
 | 28  | [Send only changes instead of the whole workspace on each save](issues/28-delta-sync.md)                     | Performance, Architecture | L      | wontfix         | 03, 07     |
 | 29  | [Keep hints out of form labels in the account form](issues/29-account-form-label-hints.md)                   | Accounts, Accessibility   | S      | completed       |            |

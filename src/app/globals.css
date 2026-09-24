@@ -1048,26 +1048,6 @@
     padding: calc(var(--spacing) * 16);
     text-align: center;
   }
-  .modal {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: 0;
-    width: min(510px, calc(100vw - 32px));
-    max-height: 90dvh;
-    background: var(--background);
-    color: var(--foreground);
-    box-shadow: 0 30px 100px
-      color-mix(in oklab, var(--inverse-hover) 20%, transparent);
-  }
-  .modal.wide {
-    width: min(800px, calc(100vw - 32px));
-  }
-  .modal.finalist-modal {
-    width: min(1440px, calc(100vw - 32px));
-  }
-  .modal.confirm-dialog {
-    width: min(440px, calc(100vw - 32px));
-  }
   .confirm-summary {
     display: flex;
     align-items: center;
@@ -1100,17 +1080,6 @@
     padding-top: 0;
     border-top: 0;
   }
-  .confirm-dialog .button {
-    min-height: 44px;
-    padding: calc(var(--spacing) * 3);
-    font-size: var(--text-sm);
-    white-space: normal;
-  }
-
-  .modal::backdrop {
-    background: color-mix(in oklab, var(--inverse-hover) 56.5%, transparent);
-    backdrop-filter: blur(4px);
-  }
   .bill-concepts {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1127,20 +1096,6 @@
     .bill-concepts {
       grid-template-columns: minmax(0, 1fr);
     }
-  }
-  .modal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: calc(var(--spacing) * 5) calc(var(--spacing) * 6);
-    border-bottom: 1px solid var(--border);
-    background: var(--background);
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-  .modal-head h2 {
-    font-size: var(--text-xl);
   }
   .modal-body {
     padding: calc(var(--spacing) * 6) calc(var(--spacing) * 6)
@@ -2368,12 +2323,6 @@
     }
     .save-strip > div {
       margin-left: auto;
-    }
-    .modal-head {
-      padding: calc(var(--spacing) * 4) calc(var(--spacing) * 5);
-    }
-    .modal-head h2 {
-      font-size: var(--text-2xl);
     }
     .modal-body {
       padding: calc(var(--spacing) * 5);

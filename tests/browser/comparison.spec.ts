@@ -615,10 +615,11 @@ test("preserves normalized power units and shows optional offer expiry without p
   await expect(
     dialog.getByRole("button", { name: "He revisado estos precios" }),
   ).toHaveCount(0);
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+  // The page behind a modal dialog is hidden from assistive technology.
   await expect(
     table.getByRole("row").filter({ hasText: "Oferta caducada" }),
   ).toContainText("Caducada · 1 ene 2026");
-  await page.getByRole("button", { name: "Cerrar", exact: true }).click();
   await page.reload();
   await expect(
     table.getByRole("row").filter({ hasText: "Clara Fija" }),
@@ -678,7 +679,7 @@ test("preserves tariff duplication, deletion and current-contract designation", 
     exact: true,
   });
   await remove.click();
-  const confirmation = page.getByRole("dialog", {
+  const confirmation = page.getByRole("alertdialog", {
     name: "Eliminar tarifa",
     exact: true,
   });
@@ -701,7 +702,9 @@ test("preserves tariff duplication, deletion and current-contract designation", 
     .getByRole("dialog")
     .getByRole("button", { name: "Eliminar tarifa", exact: true })
     .click();
-  await expect(page.getByRole("dialog")).toHaveCount(1);
+  // The confirmation replaces the details instead of stacking on them.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("alertdialog")).toHaveCount(1);
   await expect(confirmation).toContainText("Clara Fija (copia)");
   await page.keyboard.press("Tab");
   await expect(
@@ -769,7 +772,7 @@ test("stops adding and duplicating tariffs at the 100-tariff limit and explains 
     .getByRole("button", { name: "Eliminar tarifa", exact: true })
     .click();
   await page
-    .getByRole("dialog", { name: "Eliminar tarifa", exact: true })
+    .getByRole("alertdialog", { name: "Eliminar tarifa", exact: true })
     .getByRole("button", { name: "Eliminar tarifa", exact: true })
     .click();
   await expect(table.getByRole("row")).toHaveCount(100);
@@ -817,6 +820,8 @@ test("has accessible table, simulator and finalist interactions", async ({
   const audit = () =>
     page.evaluate(async () => {
       const engine = (window as typeof window & { axe: typeof axe }).axe;
+      // Dialogs fade in; audit what the reader sees once they've settled.
+      await Promise.all(document.getAnimations().map((a) => a.finished));
       return (
         await engine.run(document, {
           runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa"] },

@@ -4,7 +4,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** completed
 
 **Effort:** M
 
@@ -15,10 +15,12 @@
 
 ## Checklist
 
-- [ ] Bill form: create the tariff in a step inside the same dialog (with a "Volver a la factura" button), or let the bill form link an invoice-only price snapshot without creating a comparator tariff.
-- [ ] Details → form: decide whether closing the form returns to the details, and make it consistent.
-- [ ] Browser tests for the keyboard focus order through both flows.
+- [x] Bill form: create the tariff in a step inside the same dialog (with a "Volver a la factura" button), or let the bill form link an invoice-only price snapshot without creating a comparator tariff.
+- [x] Details → form: decide whether closing the form returns to the details, and make it consistent.
+- [x] Browser tests for the keyboard focus order through both flows.
 
 ## Comments
 
 Triaged (user, 2026-09-24): fixed as part of `.scratch/design-system/` stage 06, when dialogs move to shadcn (Dialog on desktop, Drawer on phones). Creating a tariff from a bill becomes a step inside the bill dialog, with "Volver a la factura". Closing a form opened from a tariff's details returns to the details.
+
+Implemented in design-system stage 06 (2026-09-24). See `.scratch/design-system/issues/06-dialogs.md`.

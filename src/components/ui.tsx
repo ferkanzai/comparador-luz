@@ -1,12 +1,5 @@
 "use client";
-import {
-  useEffect,
-  useId,
-  useRef,
-  type ChangeEvent,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useId, type ChangeEvent, type ReactNode, type RefObject } from "react";
 import {
   Field as UiField,
   FieldDescription,
@@ -23,6 +16,22 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -30,7 +39,6 @@ import {
 } from "@/components/ui/input-group";
 import { X, Zap } from "lucide-react";
 import Link from "next/link";
-import { lockModalScroll } from "@/lib/modal-scroll";
 import { Button } from "@/components/ui/button";
 export function Brand() {
   return (
@@ -120,6 +128,10 @@ export function Field({
     </UiField>
   );
 }
+/**
+ * A dialog from the `md` breakpoint up, and a bottom drawer below it that is
+ * dragged only by its handle, so scrolling a long form never dismisses it.
+ */
 export function Modal({
   title,
   children,
@@ -135,41 +147,63 @@ export function Modal({
   className?: string;
   initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const id = useId();
-  useEffect(() => {
-    const dialog = ref.current;
-    dialog?.showModal();
-    initialFocusRef?.current?.focus();
-    const unlock = lockModalScroll();
-    return () => {
-      dialog?.close();
-      unlock();
-    };
-  }, [initialFocusRef]);
-  return (
-    <dialog
-      ref={ref}
-      className={`modal ${wide ? "wide" : ""} ${className}`}
-      aria-labelledby={id}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-    >
-      <div className="modal-head">
-        <h2 id={id}>{title}</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          aria-label="Cerrar"
+  const desktop = useMediaQuery("(min-width: 768px)");
+  const onOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+  const onOpenAutoFocus = (event: Event) => {
+    if (!initialFocusRef?.current) return;
+    event.preventDefault();
+    initialFocusRef.current.focus();
+  };
+  const close = (
+    <Button variant="ghost" size="icon" aria-label="Cerrar">
+      <X />
+    </Button>
+  );
+  // `modal` remains a hook for the form layouts inside dialogs.
+  const content = cn("modal", className);
+  const head =
+    "modal-head flex-row items-center justify-between gap-4 border-b";
+  const title_ = "font-heading text-xl font-bold";
+  if (desktop)
+    return (
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent
+          showCloseButton={false}
+          onOpenAutoFocus={onOpenAutoFocus}
+          className={cn(
+            "flex max-h-[90dvh] flex-col gap-0 overflow-hidden bg-background p-0 sm:max-w-[510px]",
+            wide && "sm:max-w-[800px]",
+            className.includes("finalist-modal") &&
+              "sm:max-w-[min(1440px,calc(100vw-2rem))]",
+            content,
+          )}
         >
-          <X size={20} />
-        </Button>
-      </div>
-      {children}
-    </dialog>
+          <DialogHeader className={cn(head, "px-6 py-4")}>
+            <DialogTitle className={title_}>{title}</DialogTitle>
+            <DialogClose asChild>{close}</DialogClose>
+          </DialogHeader>
+          <div className="min-h-0 overflow-y-auto">{children}</div>
+        </DialogContent>
+      </Dialog>
+    );
+  return (
+    <Drawer open onOpenChange={onOpenChange} handleOnly>
+      <DrawerContent
+        onOpenAutoFocus={onOpenAutoFocus}
+        className={cn(
+          "bg-background data-[vaul-drawer-direction=bottom]:max-h-[90dvh]",
+          content,
+        )}
+      >
+        <DrawerHeader className={cn(head, "px-5 py-3 text-left")}>
+          <DrawerTitle className={title_}>{title}</DrawerTitle>
+          <DrawerClose asChild>{close}</DrawerClose>
+        </DrawerHeader>
+        <div className="min-h-0 overflow-y-auto">{children}</div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 export function Empty({

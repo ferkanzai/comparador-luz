@@ -19,11 +19,15 @@ export default function TariffRecordForm({
   draft,
   run,
   onClose,
+  onSaved = onClose,
 }: {
   workspace: Workspace;
   draft: TariffRecordDraft;
   run: (command: WorkspaceCommand) => void;
+  /** Cancel, X or Escape. */
   onClose: () => void;
+  /** After saving; closes like `onClose` unless told otherwise. */
+  onSaved?: () => void;
 }) {
   const periods = tariffPeriods(workspace);
   const original = periods.find((p) => p.id === draft.periodId);
@@ -79,7 +83,7 @@ export default function TariffRecordForm({
                 ? commands.recordCurrent(tariff, start)
                 : commands.recordHistorical(tariff, start, end),
           );
-          onClose();
+          onSaved();
         },
       }}
     />

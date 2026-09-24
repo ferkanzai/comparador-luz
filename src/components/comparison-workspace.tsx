@@ -59,7 +59,12 @@ export default function ComparisonWorkspace({
   actions,
   onBill,
   onMethod,
+  detailId,
+  onDetails,
 }: {
+  /** The tariff whose details are open; the dashboard owns it so forms can return to it. */
+  detailId: string | null;
+  onDetails: (id: string | null) => void;
   data: Workspace;
   run: (command: WorkspaceCommand) => void;
   onAdd: () => void;
@@ -106,7 +111,6 @@ export default function ComparisonWorkspace({
     run(commands.updateProfile(profile));
   const tariffRoom = canAddTariff(data);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
   const current = data.tariffs.find((tariff) => tariff.id === data.currentId);
   const [unit, setUnit] = usePowerComparisonUnit(current?.powerUnit ?? "day");
   const profile = data.profile;
@@ -330,7 +334,7 @@ export default function ComparisonWorkspace({
               rows={rows}
               currentId={data.currentId}
               unit={unit}
-              onDetails={setDetailId}
+              onDetails={onDetails}
               onEdit={actions.onEdit}
               onRemove={actions.onRemove}
             />
@@ -429,7 +433,7 @@ export default function ComparisonWorkspace({
           unit={unit}
           actions={actions}
           canDuplicate={tariffRoom}
-          onClose={() => setDetailId(null)}
+          onClose={() => onDetails(null)}
         />
       )}
     </div>

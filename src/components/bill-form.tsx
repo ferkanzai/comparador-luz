@@ -16,7 +16,10 @@ import { billLines, billReconciliation } from "@/lib/bill-data";
 import { Field, Modal } from "./ui";
 import EstimateNotice from "./estimate-notice";
 import BillConsumptionFields from "./bill-consumption-fields";
-import TariffForm from "./tariff-form";
+import TariffForm, {
+  tariffFormTitle,
+  type TariffFormMode,
+} from "./tariff-form";
 import {
   billConsumption,
   consumptionTotal,
@@ -46,7 +49,31 @@ export default function BillForm({
     ...initial,
     consumption: billConsumption(initial),
   });
+  // Creating a tariff from the bill's prices is a step inside this dialog.
   const [creatingTariff, setCreatingTariff] = useState<Tariff | null>(null);
+  const createTariffButton = useRef<HTMLButtonElement>(null);
+  function backToBill() {
+    setCreatingTariff(null);
+    requestAnimationFrame(() => createTariffButton.current?.focus());
+  }
+  const invoiceMode: TariffFormMode = {
+    kind: "invoice",
+    onSave: (tariff, profile) => {
+      setPendingTariff(tariff);
+      const consumption = {
+        peakKwh: profile.peakKwh,
+        flatKwh: profile.flatKwh,
+        valleyKwh: profile.valleyKwh,
+      };
+      const next = { ...editing, tariff, profile };
+      setEditing(
+        consumptionTotal(consumption) !== null
+          ? updateBillConsumption(next, consumption)
+          : next,
+      );
+      backToBill();
+    },
+  };
   const [pendingTariff, setPendingTariff] = useState<Tariff | null>(null);
   const availableTariffs = pendingTariff
     ? [...w.tariffs, pendingTariff]
@@ -90,376 +117,370 @@ export default function BillForm({
     <>
       <Modal
         title={
-          w.bills.some((b) => b.id === editing.id)
-            ? "Editar factura"
-            : "Registrar una factura"
+          creatingTariff
+            ? tariffFormTitle(invoiceMode, creatingTariff)
+            : w.bills.some((b) => b.id === editing.id)
+              ? "Editar factura"
+              : "Registrar una factura"
         }
         onClose={() => {
-          if (!saving) onClose();
+          if (creatingTariff) backToBill();
+          else if (!saving) onClose();
         }}
       >
-        <form className="modal-body" onSubmit={save}>
-          <fieldset disabled={saving}>
-            {editing.tariff && <EstimateNotice tariff={editing.tariff} />}
-            <div className="form-grid two">
-              <Field
-                label="Inicio del período"
-                type="date"
-                value={editing.periodStart}
-                onChange={(periodStart) =>
-                  setEditing({ ...editing, periodStart })
-                }
-              />
-              <Field
-                label="Fin del período"
-                type="date"
-                value={editing.periodEnd}
-                onChange={(periodEnd) =>
-                  setEditing({
-                    ...editing,
-                    periodEnd,
-                    ...(periodEnd ? { month: periodEnd.slice(0, 7) } : {}),
-                  })
-                }
-              />
-            </div>
-            {editing.periodStart &&
-              editing.periodEnd &&
-              editing.periodEnd > editing.periodStart && (
-                <p className="small muted">
-                  {Math.round(
-                    (Date.parse(editing.periodEnd) -
-                      Date.parse(editing.periodStart)) /
-                      86400000,
-                  )}{" "}
-                  días entre lecturas. Revisa las fechas de tu factura; no tiene
-                  que coincidir con un mes natural.
-                </p>
-              )}
+        {creatingTariff ? (
+          <TariffForm
+            inline
+            initial={creatingTariff}
+            initialProfile={newInvoiceProfile(editing)}
+            onClose={backToBill}
+            mode={invoiceMode}
+          />
+        ) : (
+          <form className="modal-body" onSubmit={save}>
+            <fieldset disabled={saving}>
+              {editing.tariff && <EstimateNotice tariff={editing.tariff} />}
+              <div className="form-grid two">
+                <Field
+                  label="Inicio del período"
+                  type="date"
+                  value={editing.periodStart}
+                  onChange={(periodStart) =>
+                    setEditing({ ...editing, periodStart })
+                  }
+                />
+                <Field
+                  label="Fin del período"
+                  type="date"
+                  value={editing.periodEnd}
+                  onChange={(periodEnd) =>
+                    setEditing({
+                      ...editing,
+                      periodEnd,
+                      ...(periodEnd ? { month: periodEnd.slice(0, 7) } : {}),
+                    })
+                  }
+                />
+              </div>
+              {editing.periodStart &&
+                editing.periodEnd &&
+                editing.periodEnd > editing.periodStart && (
+                  <p className="small muted">
+                    {Math.round(
+                      (Date.parse(editing.periodEnd) -
+                        Date.parse(editing.periodStart)) /
+                        86400000,
+                    )}{" "}
+                    días entre lecturas. Revisa las fechas de tu factura; no
+                    tiene que coincidir con un mes natural.
+                  </p>
+                )}
 
-            <p className="muted">
-              Revisa el importe real de tu factura. Si vienes del comparador, ya
-              hemos copiado el consumo y el desglose: puedes corregirlos antes
-              de guardar.
-            </p>
-            <div className="form-grid two">
+              <p className="muted">
+                Revisa el importe real de tu factura. Si vienes del comparador,
+                ya hemos copiado el consumo y el desglose: puedes corregirlos
+                antes de guardar.
+              </p>
+              <div className="form-grid two">
+                <Field
+                  label="Mes para el gráfico"
+                  hint="Por defecto, el mes en que termina el período. Puedes cambiarlo."
+                  type="month"
+                  required
+                  value={editing.month}
+                  onChange={(v) => setEditing({ ...editing, month: v })}
+                />
+                <Field
+                  label="Total pagado"
+                  signed
+                  required
+                  decimal
+                  unit="€"
+                  value={editing.paid}
+                  onChange={(v) => setEditing({ ...editing, paid: v })}
+                />
+              </div>
               <Field
-                label="Mes para el gráfico"
-                hint="Por defecto, el mes en que termina el período. Puedes cambiarlo."
-                type="month"
-                required
-                value={editing.month}
-                onChange={(v) => setEditing({ ...editing, month: v })}
-              />
-              <Field
-                label="Total pagado"
-                signed
-                required
+                label="Descuento sobre el total (opcional)"
                 decimal
                 unit="€"
-                value={editing.paid}
-                onChange={(v) => setEditing({ ...editing, paid: v })}
+                hint="Importe positivo que se resta después de impuestos. Si el descuento reduce una base imponible, copia los conceptos e impuestos ya descontados de tu factura y no lo restes aquí otra vez."
+                value={editing.credit}
+                onChange={(credit) => setEditing({ ...editing, credit })}
               />
-            </div>
-            <Field
-              label="Descuento sobre el total (opcional)"
-              decimal
-              unit="€"
-              hint="Importe positivo que se resta después de impuestos. Si el descuento reduce una base imponible, copia los conceptos e impuestos ya descontados de tu factura y no lo restes aquí otra vez."
-              value={editing.credit}
-              onChange={(credit) => setEditing({ ...editing, credit })}
-            />
-            <Field
-              label="Comercializadora"
-              required
-              value={editing.provider}
-              onChange={(v) => setEditing({ ...editing, provider: v })}
-            />
-            <BillConsumptionFields bill={editing} onChange={setEditing} />
-            <label className="auth-label">
-              Tarifa de esta factura
-              <NativeSelect
-                ref={tariffSelect}
-                value={editing.tariff ? "snapshot" : ""}
-                onChange={(e) => {
-                  setPastTariffMessage("");
-                  setEditing({
-                    ...editing,
-                    tariff:
-                      e.target.value === "snapshot"
-                        ? editing.tariff
-                        : structuredClone(
-                            availableTariffs.find(
-                              (t) => `live:${t.id}` === e.target.value,
-                            ) ?? null,
-                          ),
-                  });
-                }}
-              >
-                <NativeSelectOption value="">Sin vincular</NativeSelectOption>
-                {editing.tariff && (
-                  <NativeSelectOption value="snapshot">
-                    {editing.tariff.name} · precios de esta factura
-                  </NativeSelectOption>
-                )}
-                <optgroup label="Tarifas guardadas">
-                  {availableTariffs
-                    .filter(
-                      (t) =>
-                        JSON.stringify(t) !== JSON.stringify(editing.tariff),
-                    )
-                    .map((t) => (
-                      <NativeSelectOption key={t.id} value={`live:${t.id}`}>
-                        {t.name}
-                        {t.id === editing.tariff?.id
-                          ? " · precios actuales"
-                          : ""}
-                      </NativeSelectOption>
+              <Field
+                label="Comercializadora"
+                required
+                value={editing.provider}
+                onChange={(v) => setEditing({ ...editing, provider: v })}
+              />
+              <BillConsumptionFields bill={editing} onChange={setEditing} />
+              <label className="auth-label">
+                Tarifa de esta factura
+                <NativeSelect
+                  ref={tariffSelect}
+                  value={editing.tariff ? "snapshot" : ""}
+                  onChange={(e) => {
+                    setPastTariffMessage("");
+                    setEditing({
+                      ...editing,
+                      tariff:
+                        e.target.value === "snapshot"
+                          ? editing.tariff
+                          : structuredClone(
+                              availableTariffs.find(
+                                (t) => `live:${t.id}` === e.target.value,
+                              ) ?? null,
+                            ),
+                    });
+                  }}
+                >
+                  <NativeSelectOption value="">Sin vincular</NativeSelectOption>
+                  {editing.tariff && (
+                    <NativeSelectOption value="snapshot">
+                      {editing.tariff.name} · precios de esta factura
+                    </NativeSelectOption>
+                  )}
+                  <optgroup label="Tarifas guardadas">
+                    {availableTariffs
+                      .filter(
+                        (t) =>
+                          JSON.stringify(t) !== JSON.stringify(editing.tariff),
+                      )
+                      .map((t) => (
+                        <NativeSelectOption key={t.id} value={`live:${t.id}`}>
+                          {t.name}
+                          {t.id === editing.tariff?.id
+                            ? " · precios actuales"
+                            : ""}
+                        </NativeSelectOption>
+                      ))}
+                  </optgroup>
+                </NativeSelect>
+                <small>
+                  Se guarda una copia de los precios; los cambios futuros no
+                  alteran esta factura. Comprueba que coincidan con los precios
+                  unitarios impresos en ella.
+                </small>
+              </label>
+              {w.history.length > 0 && (
+                <div className="past-tariff-picker">
+                  <Button
+                    variant="link"
+                    size="inline"
+                    type="button"
+
+                    aria-expanded={showPastTariffs}
+                    aria-controls={pastTariffsId}
+                    onClick={() => setShowPastTariffs(!showPastTariffs)}
+                  >
+                    {showPastTariffs
+                      ? "Ocultar tarifas anteriores"
+                      : "Elegir una tarifa anterior"}
+                  </Button>
+                  {showPastTariffs && (
+                    <div id={pastTariffsId}>
+                      <label className="auth-label">
+                        Precios que tenías antes
+                        <NativeSelect
+                          defaultValue=""
+                          onChange={(event) => {
+                            const previous = w.history.find(
+                              (h) => h.id === event.target.value,
+                            );
+                            if (!previous) return;
+                            setEditing({
+                              ...editing,
+                              tariff: structuredClone(previous.tariff),
+                            });
+                            setPastTariffMessage(
+                              `Precios de ${shortDate(previous.start)} a ${shortDate(previous.end)} vinculados. Los importes de la factura no cambian.`,
+                            );
+                            setShowPastTariffs(false);
+                            tariffSelect.current?.focus();
+                          }}
+                        >
+                          <NativeSelectOption value="" disabled>
+                            Selecciona la tarifa y el período
+                          </NativeSelectOption>
+                          {[...w.history]
+                            .sort((a, b) => b.end.localeCompare(a.end))
+                            .map((h) => (
+                              <NativeSelectOption key={h.id} value={h.id}>
+                                {h.tariff.name} · {shortDate(h.start)}
+                                {h.start === h.end
+                                  ? " · cambio de precios ese día"
+                                  : ` a ${shortDate(h.end)}`}
+                              </NativeSelectOption>
+                            ))}
+                        </NativeSelect>
+                        <small>
+                          Vincula una copia de esos precios; los importes de la
+                          factura no cambian.
+                        </small>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+              <label className="checkbox">
+                <Checkbox
+                  checked={!!editing.breakdown}
+                  onCheckedChange={(checked) =>
+                    setEditing({
+                      ...editing,
+                      breakdown:
+                        checked === true
+                          ? {
+                              energy: "0",
+                              power: "0",
+                              social: "0",
+                              snoee: "0",
+                              meter: "0",
+                              services: "0",
+                              electricityTax: "0",
+                              vat: "0",
+                              servicesVat: "0",
+                            }
+                          : null,
+                    })
+                  }
+                />{" "}
+                Guardar el desglose por conceptos
+              </label>
+              {editing.breakdown && (
+                <>
+                  <p className="small muted">
+                    Copia los importes facturados. Conservamos el total pagado
+                    que has indicado y comprobamos que la suma menos el
+                    descuento coincida, incluidos los impuestos.
+                  </p>
+                  <div className="bill-concepts">
+                    {billLines.map(([key, label]) => (
+                      <div key={key} className="bill-concept">
+                        <Field
+                          label={label}
+                          value={editing.breakdown![key]}
+                          decimal
+                          unit="€"
+                          required
+                          onChange={(value) =>
+                            setEditing({
+                              ...editing,
+                              breakdown: {
+                                ...editing.breakdown!,
+                                [key]: value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
                     ))}
-                </optgroup>
-              </NativeSelect>
-              <small>
-                Se guarda una copia de los precios; los cambios futuros no
-                alteran esta factura. Comprueba que coincidan con los precios
-                unitarios impresos en ella.
-              </small>
-            </label>
-            {w.history.length > 0 && (
-              <div className="past-tariff-picker">
+                  </div>
+                  <Alert
+                    variant={
+                      reconciliation?.difference ? "destructive" : "default"
+                    }
+                    className="bill-reconciliation"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {reconciliation ? (
+                      <>
+                        <p>
+                          Suma de conceptos:{" "}
+                          <strong>{money(reconciliation.gross)}</strong> ·
+                          Descuento: {money(numberOf(editing.credit))}
+                        </p>
+                        <p>
+                          Resultado del desglose:{" "}
+                          <strong>{money(reconciliation.net)}</strong> · Total
+                          pagado: {money(numberOf(editing.paid))}
+                        </p>
+                        {reconciliation.difference === 0 ? (
+                          <strong>El desglose coincide con el total.</strong>
+                        ) : (
+                          <strong>
+                            {reconciliation.difference > 0
+                              ? "Sobran"
+                              : "Faltan"}{" "}
+                            {money(Math.abs(reconciliation.difference))} en el
+                            desglose. Revisa los importes antes de guardar.
+                          </strong>
+                        )}
+                      </>
+                    ) : (
+                      <p>
+                        Completa todos los importes del desglose y el total para
+                        comprobar que coinciden. Usa 0 si un concepto no tiene
+                        coste.
+                      </p>
+                    )}
+                  </Alert>
+                </>
+              )}
+              <section className="form-section bill-invoice-tariff">
+                <h3>Precios de esta factura</h3>
+                <p className="small muted">
+                  Un importe parecido no confirma que la tarifa sea la misma. Si
+                  los precios unitarios son distintos, puedes guardar una tarifa
+                  con los que aparecen en tu factura.
+                </p>
                 <Button
                   variant="link"
                   size="inline"
                   type="button"
 
-                  aria-expanded={showPastTariffs}
-                  aria-controls={pastTariffsId}
-                  onClick={() => setShowPastTariffs(!showPastTariffs)}
-                >
-                  {showPastTariffs
-                    ? "Ocultar tarifas anteriores"
-                    : "Elegir una tarifa anterior"}
-                </Button>
-                {showPastTariffs && (
-                  <div id={pastTariffsId}>
-                    <label className="auth-label">
-                      Precios que tenías antes
-                      <NativeSelect
-                        defaultValue=""
-                        onChange={(event) => {
-                          const previous = w.history.find(
-                            (h) => h.id === event.target.value,
-                          );
-                          if (!previous) return;
-                          setEditing({
-                            ...editing,
-                            tariff: structuredClone(previous.tariff),
-                          });
-                          setPastTariffMessage(
-                            `Precios de ${shortDate(previous.start)} a ${shortDate(previous.end)} vinculados. Los importes de la factura no cambian.`,
-                          );
-                          setShowPastTariffs(false);
-                          tariffSelect.current?.focus();
-                        }}
-                      >
-                        <NativeSelectOption value="" disabled>
-                          Selecciona la tarifa y el período
-                        </NativeSelectOption>
-                        {[...w.history]
-                          .sort((a, b) => b.end.localeCompare(a.end))
-                          .map((h) => (
-                            <NativeSelectOption key={h.id} value={h.id}>
-                              {h.tariff.name} · {shortDate(h.start)}
-                              {h.start === h.end
-                                ? " · cambio de precios ese día"
-                                : ` a ${shortDate(h.end)}`}
-                            </NativeSelectOption>
-                          ))}
-                      </NativeSelect>
-                      <small>
-                        Vincula una copia de esos precios; los importes de la
-                        factura no cambian.
-                      </small>
-                    </label>
-                  </div>
-                )}
-              </div>
-            )}
-            <label className="checkbox">
-              <Checkbox
-                checked={!!editing.breakdown}
-                onCheckedChange={(checked) =>
-                  setEditing({
-                    ...editing,
-                    breakdown:
-                      checked === true
-                        ? {
-                            energy: "0",
-                            power: "0",
-                            social: "0",
-                            snoee: "0",
-                            meter: "0",
-                            services: "0",
-                            electricityTax: "0",
-                            vat: "0",
-                            servicesVat: "0",
-                          }
-                        : null,
-                  })
-                }
-              />{" "}
-              Guardar el desglose por conceptos
-            </label>
-            {editing.breakdown && (
-              <>
-                <p className="small muted">
-                  Copia los importes facturados. Conservamos el total pagado que
-                  has indicado y comprobamos que la suma menos el descuento
-                  coincida, incluidos los impuestos.
-                </p>
-                <div className="bill-concepts">
-                  {billLines.map(([key, label]) => (
-                    <div key={key} className="bill-concept">
-                      <Field
-                        label={label}
-                        value={editing.breakdown![key]}
-                        decimal
-                        unit="€"
-                        required
-                        onChange={(value) =>
-                          setEditing({
-                            ...editing,
-                            breakdown: { ...editing.breakdown!, [key]: value },
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Alert
-                  variant={
-                    reconciliation?.difference ? "destructive" : "default"
+                  ref={createTariffButton}
+                  disabled={tariffsFull}
+                  aria-describedby={tariffsFull ? tariffLimitId : undefined}
+                  onClick={() =>
+                    setCreatingTariff({
+                      ...newTariff(),
+                      provider: editing.provider,
+                    })
                   }
-                  className="bill-reconciliation"
-                  role="status"
-                  aria-live="polite"
                 >
-                  {reconciliation ? (
-                    <>
-                      <p>
-                        Suma de conceptos:{" "}
-                        <strong>{money(reconciliation.gross)}</strong> ·
-                        Descuento: {money(numberOf(editing.credit))}
-                      </p>
-                      <p>
-                        Resultado del desglose:{" "}
-                        <strong>{money(reconciliation.net)}</strong> · Total
-                        pagado: {money(numberOf(editing.paid))}
-                      </p>
-                      {reconciliation.difference === 0 ? (
-                        <strong>El desglose coincide con el total.</strong>
-                      ) : (
-                        <strong>
-                          {reconciliation.difference > 0 ? "Sobran" : "Faltan"}{" "}
-                          {money(Math.abs(reconciliation.difference))} en el
-                          desglose. Revisa los importes antes de guardar.
-                        </strong>
-                      )}
-                    </>
-                  ) : (
-                    <p>
-                      Completa todos los importes del desglose y el total para
-                      comprobar que coinciden. Usa 0 si un concepto no tiene
-                      coste.
-                    </p>
-                  )}
-                </Alert>
-              </>
-            )}
-            <section className="form-section bill-invoice-tariff">
-              <h3>Precios de esta factura</h3>
-              <p className="small muted">
-                Un importe parecido no confirma que la tarifa sea la misma. Si
-                los precios unitarios son distintos, puedes guardar una tarifa
-                con los que aparecen en tu factura.
-              </p>
-              <Button
-                variant="link"
-                size="inline"
-                type="button"
-
-                disabled={tariffsFull}
-                aria-describedby={tariffsFull ? tariffLimitId : undefined}
-                onClick={() =>
-                  setCreatingTariff({
-                    ...newTariff(),
-                    provider: editing.provider,
-                  })
-                }
-              >
-                Crear tarifa con estos precios
-              </Button>
-              <p className="small muted">
-                Se guardará junto con la factura, sin cambiar tu contrato
-                actual.
-              </p>
-              {tariffsFull && (
-                <p id={tariffLimitId} className="small muted">
-                  {tariffLimitMessage}
+                  Crear tarifa con estos precios
+                </Button>
+                <p className="small muted">
+                  Se guardará junto con la factura, sin cambiar tu contrato
+                  actual.
                 </p>
+                {tariffsFull && (
+                  <p id={tariffLimitId} className="small muted">
+                    {tariffLimitMessage}
+                  </p>
+                )}
+              </section>
+              <Field
+                label="Notas (opcional)"
+                value={editing.notes}
+                onChange={(v) => setEditing({ ...editing, notes: v })}
+                maxLength={2000}
+              />
+              {error && (
+                <Alert variant="destructive" role="alert">
+                  {error}
+                </Alert>
               )}
-            </section>
-            <Field
-              label="Notas (opcional)"
-              value={editing.notes}
-              onChange={(v) => setEditing({ ...editing, notes: v })}
-              maxLength={2000}
-            />
-            {error && (
-              <Alert variant="destructive" role="alert">
-                {error}
-              </Alert>
-            )}
-            <div className="modal-actions">
-              <Button
-                variant="outline"
-                type="button"
+              <div className="modal-actions">
+                <Button
+                  variant="outline"
+                  type="button"
 
-                onClick={onClose}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {saving ? "Guardando factura…" : "Guardar factura"}
-              </Button>
-            </div>
-          </fieldset>
-        </form>
+                  onClick={onClose}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  {saving ? "Guardando factura…" : "Guardar factura"}
+                </Button>
+              </div>
+            </fieldset>
+          </form>
+        )}
       </Modal>
-      {creatingTariff && (
-        <TariffForm
-          initial={creatingTariff}
-          initialProfile={newInvoiceProfile(editing)}
-          onClose={() => setCreatingTariff(null)}
-          mode={{
-            kind: "invoice",
-            onSave: (tariff, profile) => {
-              setPendingTariff(tariff);
-              const consumption = {
-                peakKwh: profile.peakKwh,
-                flatKwh: profile.flatKwh,
-                valleyKwh: profile.valleyKwh,
-              };
-              const next = { ...editing, tariff, profile };
-              setEditing(
-                consumptionTotal(consumption) !== null
-                  ? updateBillConsumption(next, consumption)
-                  : next,
-              );
-              setCreatingTariff(null);
-            },
-          }}
-        />
-      )}
     </>
   );
 }
