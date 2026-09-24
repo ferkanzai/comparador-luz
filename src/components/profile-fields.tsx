@@ -17,7 +17,7 @@ const checkbox =
   "my-2 flex min-h-11 items-center gap-2 min-[801px]:text-sm-plus";
 /* A dot in each energy period's colour before its label. */
 const periodDots =
-  "[&>*_label]:before:mr-1.5 [&>*_label]:before:inline-block [&>*_label]:before:size-[5px] [&>*_label]:before:rounded-full [&>*_label]:before:bg-period-1 [&>*:nth-child(2)_label]:before:bg-period-2 [&>*:nth-child(3)_label]:before:bg-period-3";
+  "[&>*_label]:gap-1.5 [&>*_label]:whitespace-nowrap [&>*_label]:before:inline-block [&>*_label]:before:size-[5px] [&>*_label]:before:rounded-full [&>*_label]:before:bg-period-1 [&>*:nth-child(2)_label]:before:bg-period-2 [&>*:nth-child(3)_label]:before:bg-period-3";
 
 export function ProfileFields({
   value,
@@ -123,6 +123,7 @@ export function TaxFields({
             variant="link"
             size="inline"
             type="button"
+            className="self-start"
             onClick={() =>
               onChange({
                 ...value,

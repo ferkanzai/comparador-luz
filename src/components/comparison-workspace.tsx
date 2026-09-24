@@ -278,7 +278,12 @@ export default function ComparisonWorkspace({
             <Empty
               icon={<Zap size={26} />}
               title="Empecemos por tu tarifa actual."
-              action={<Button onClick={onAdd}>Añadir mi primera tarifa</Button>}
+              action={
+                <div className="grid justify-items-center gap-1">
+                  <Button onClick={onAdd}>Añadir mi primera tarifa</Button>
+                  <CnmcLink />
+                </div>
+              }
             >
               Ten tu última factura a mano. Añade tus precios y después las
               ofertas que quieras comparar.
@@ -344,7 +349,7 @@ export default function ComparisonWorkspace({
               <Button
                 variant="link"
                 size="inline"
-                className="ml-auto text-xs whitespace-nowrap disabled:text-muted-foreground disabled:opacity-100"
+                className="ml-auto text-xs whitespace-nowrap disabled:text-muted-foreground"
                 disabled={selectedIds.length < 2}
                 onClick={() => setFinalistsOpen(true)}
               >
@@ -405,20 +410,13 @@ export default function ComparisonWorkspace({
           </p>
         </div>
       )}
-      <div className="mt-6 border-t border-border pt-6">
-        {data.tariffs.length > 0 && (
+      {/* With no tariffs, the CNMC link sits in the empty state instead. */}
+      {data.tariffs.length > 0 && (
+        <div className="mt-6 border-t border-border pt-6">
           <PvpcComparison profile={effectiveProfile} current={current} />
-        )}
-        <a
-          className="mt-3.5 inline-flex min-h-11 items-center gap-2 text-xs-plus font-semibold text-inherit no-underline underline-offset-4 hover:text-primary hover:underline"
-          href="https://comparador.cnmc.gob.es/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Buscar otras ofertas en la CNMC{" "}
-          <ExternalLink size={15} className="shrink-0" />
-        </a>
-      </div>
+          <CnmcLink />
+        </div>
+      )}
       {profileOpen && (
         <Modal
           title="Tu perfil de consumo"
@@ -467,5 +465,19 @@ export default function ComparisonWorkspace({
         />
       )}
     </div>
+  );
+}
+
+function CnmcLink() {
+  return (
+    <a
+      className="mt-3.5 inline-flex min-h-11 items-center gap-2 text-xs-plus font-semibold text-inherit no-underline underline-offset-4 hover:text-primary hover:underline"
+      href="https://comparador.cnmc.gob.es/"
+      target="_blank"
+      rel="noreferrer"
+    >
+      Buscar otras ofertas en la CNMC{" "}
+      <ExternalLink size={15} className="shrink-0" />
+    </a>
   );
 }
