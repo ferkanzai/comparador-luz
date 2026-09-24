@@ -332,11 +332,6 @@
     display: block;
   }
 
-  .eyebrow {
-    font-size: var(--text-sm);
-    letter-spacing: 1.65px;
-    font-weight: 600;
-  }
   .button {
     display: inline-flex;
     align-items: center;
@@ -429,57 +424,7 @@
     text-decoration: underline;
     text-underline-offset: 3px;
   }
-  .account-settings,
-  .legal-page {
-    max-width: 720px;
-    margin: calc(var(--spacing) * 10) auto calc(var(--spacing) * 5);
-  }
-  .settings-section {
-    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 7);
-    margin-bottom: calc(var(--spacing) * 5);
-  }
-  .settings-section h2 {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--spacing) * 2.5);
-    font-size: var(--text-xl);
-    margin: 0 0 calc(var(--spacing) * 3);
-  }
-  .settings-section p {
-    margin: 0 0 calc(var(--spacing) * 4);
-    color: var(--muted-foreground);
-  }
-  .settings-section fieldset {
-    border: 0;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: calc(var(--spacing) * 3.5);
-    justify-items: start;
-  }
-  .settings-section .auth-label {
-    width: 100%;
-    max-width: 420px;
-    margin: 0;
-  }
-  .legal-page a,
-  .auth-security a {
-    color: var(--primary);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .danger-zone {
-    border-color: var(--destructive-border);
-  }
-  .legal-page h2 {
-    font-size: var(--text-xl);
-    margin: calc(var(--spacing) * 8) 0 calc(var(--spacing) * 2.5);
-  }
-  .legal-page p,
-  .legal-page li {
-    color: var(--muted-foreground);
-    line-height: 1.6;
-  }
+
   .shell {
     max-width: 1400px;
     margin: auto;
@@ -575,17 +520,6 @@
     margin-top: calc(var(--spacing) * 1.5);
   }
 
-  .section-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: calc(var(--spacing) * 5);
-    margin-bottom: calc(var(--spacing) * 5);
-  }
-  .section-heading h2 {
-    margin-top: calc(var(--spacing) * 1.5);
-  }
-
   .empty {
     text-align: center;
     padding: calc(var(--spacing) * 10) calc(var(--spacing) * 6);
@@ -651,23 +585,6 @@
     text-align: center;
   }
 
-  .modal-body {
-    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 6)
-      calc(var(--spacing) * 6);
-  }
-  .modal-body > .muted,
-  .modal-body > p,
-  .modal-body > fieldset > .muted,
-  .modal-body > fieldset > p {
-    font-size: var(--text-sm-plus);
-    margin-bottom: calc(var(--spacing) * 5);
-  }
-  /* Forms wrap their fields in a fieldset, so it can disable them while saving. */
-  .modal-body > .field,
-  .modal-body > fieldset > .field {
-    margin-bottom: calc(var(--spacing) * 4);
-  }
-
   select {
     border: 1px solid var(--border);
     background: var(--card);
@@ -675,27 +592,6 @@
     border-radius: var(--radius-md);
     padding: calc(var(--spacing) * 2);
     font-size: var(--text-sm-plus);
-  }
-
-  .method ol {
-    padding-left: calc(var(--spacing) * 5);
-    font-size: var(--text-sm-plus);
-  }
-  .method li {
-    padding: calc(var(--spacing) * 1.5) 0;
-  }
-  .source-links {
-    display: grid;
-    gap: calc(var(--spacing) * 2.5);
-    border-top: 1px solid var(--border);
-    padding-top: calc(var(--spacing) * 5);
-    font-size: var(--text-sm-plus);
-  }
-  .source-links a {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--spacing) * 2);
-    text-decoration: underline;
   }
 
   table {
@@ -731,177 +627,6 @@
     text-transform: capitalize;
   }
 
-  .account-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: 100dvh;
-  }
-  .account-story {
-    background: var(--foreground);
-    color: var(--inverse-foreground);
-    padding: calc(var(--spacing) * 12) clamp(25px, 6vw, 90px);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: calc(var(--spacing) * 16);
-    position: relative;
-    overflow: hidden;
-  }
-  .account-story:after {
-    content: "";
-    position: absolute;
-    width: 450px;
-    height: 450px;
-    border: 1px solid color-mix(in oklab, var(--period-3) 13.3%, transparent);
-    border-radius: 50%;
-    right: -290px;
-    bottom: -150px;
-    box-shadow:
-      0 0 0 60px color-mix(in oklab, var(--period-3) 2.4%, transparent),
-      0 0 0 120px color-mix(in oklab, var(--period-3) 1.6%, transparent);
-    pointer-events: none;
-  }
-  .account-story .brand-icon {
-    background: var(--lime);
-    color: var(--foreground);
-  }
-  .account-story .brand-dot {
-    color: var(--lime);
-  }
-  .account-story .eyebrow {
-    color: var(--inverse-muted);
-    font-size: var(--text-sm);
-  }
-  .account-story h2 {
-    font-size: clamp(35px, 3.3vw, 51px);
-    line-height: 1.22;
-    letter-spacing: -2px;
-    margin: calc(var(--spacing) * 5) 0;
-  }
-  .account-story h2 em {
-    font-style: normal;
-    color: var(--lime);
-  }
-  .account-story p {
-    font-size: var(--text-base);
-    color: var(--inverse-muted);
-    max-width: 360px;
-    line-height: 1.8;
-  }
-  .account-story ul {
-    list-style: none;
-    padding: 0;
-    margin-top: calc(var(--spacing) * 8);
-    font-size: var(--text-sm-plus);
-    display: grid;
-    gap: calc(var(--spacing) * 4);
-    color: var(--success-border);
-  }
-  .account-story li {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--spacing) * 3);
-  }
-  .account-story > .small {
-    font-size: var(--text-sm);
-    color: var(--chart-5-soft);
-  }
-  .account-side {
-    padding: calc(var(--spacing) * 12) clamp(25px, 6vw, 90px);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .account-card {
-    margin: auto 0;
-    padding: calc(var(--spacing) * 16) 0;
-    max-width: 430px;
-  }
-  @media (min-width: 801px) {
-    .account-layout {
-      height: 100dvh;
-      grid-template-rows: minmax(0, 1fr);
-    }
-    .account-story,
-    .account-side {
-      min-height: 0;
-    }
-    .account-story {
-      gap: clamp(16px, 3dvh, 60px);
-    }
-    .account-side {
-      overflow-y: auto;
-    }
-    .account-card {
-      flex-shrink: 0;
-    }
-  }
-  @media (min-width: 801px) and (max-height: 600px) {
-    .account-story h2 {
-      font-size: var(--text-3xl);
-      margin: calc(var(--spacing) * 4) 0;
-    }
-    .account-story ul {
-      margin: calc(var(--spacing) * 5) 0 0;
-      gap: calc(var(--spacing) * 2.5);
-    }
-  }
-  .account-card > .eyebrow {
-    color: var(--muted-foreground);
-    font-size: var(--text-sm);
-  }
-  .account-card h1 {
-    font-size: var(--text-3xl);
-    font-weight: 600;
-    letter-spacing: -1.3px;
-    margin: calc(var(--spacing) * 3) 0;
-  }
-  .account-card > p {
-    color: var(--muted-foreground);
-    font-size: var(--text-base);
-  }
-  .account-card form {
-    margin-top: calc(var(--spacing) * 7);
-  }
-  .auth-label {
-    display: block;
-    font-size: var(--text-sm-plus);
-    font-weight: 500;
-    margin: calc(var(--spacing) * 4) 0;
-  }
-  .auth-label small {
-    display: block;
-    font-size: var(--text-sm);
-    color: var(--muted-foreground);
-    font-weight: 400;
-    margin-top: calc(var(--spacing) * 1.5);
-  }
-  .forgot {
-    display: block;
-    margin: 0 0 calc(var(--spacing) * 6) auto;
-    font-size: var(--text-sm);
-    color: var(--primary);
-  }
-  .account-card .auth-switch {
-    font-size: var(--text-sm-plus);
-    text-align: center;
-    margin: calc(var(--spacing) * 6) 0;
-  }
-  .auth-switch button {
-    font-size: var(--text-sm-plus);
-    color: var(--primary);
-  }
-  .auth-security {
-    display: flex;
-    gap: calc(var(--spacing) * 2);
-    align-items: center;
-    justify-content: center;
-    font-size: var(--text-sm);
-    color: var(--muted-foreground);
-    margin-top: calc(var(--spacing) * 9);
-    border-top: 1px solid var(--border);
-    padding-top: calc(var(--spacing) * 6);
-  }
   .sr-only {
     position: absolute;
     width: 1px;
@@ -965,12 +690,6 @@
     .workspace-bar nav {
       gap: calc(var(--spacing) * 6);
     }
-    .account-story {
-      padding: calc(var(--spacing) * 9);
-    }
-    .account-side {
-      padding: calc(var(--spacing) * 9);
-    }
   }
   @media (max-width: 800px) {
     .site-footer {
@@ -978,27 +697,6 @@
     }
     .workspace-status {
       display: none;
-    }
-
-    .account-layout {
-      grid-template-columns: 1fr;
-    }
-    .account-story {
-      padding: calc(var(--spacing) * 6);
-    }
-    .account-story > div,
-    .account-story > .small {
-      display: none;
-    }
-    .account-side {
-      padding: calc(var(--spacing) * 6);
-      min-height: calc(100dvh - 86px);
-    }
-    .account-card {
-      width: 100%;
-      margin: auto;
-      max-width: 440px;
-      padding: calc(var(--spacing) * 9) 0;
     }
   }
   @media (max-width: 520px) {
@@ -1120,29 +818,15 @@
     .save-strip > div {
       margin-left: auto;
     }
-    .modal-body {
-      padding: calc(var(--spacing) * 5);
-    }
 
     .modal .field > label {
       font-size: var(--text-sm);
-    }
-
-    .section-heading h2 {
-      font-size: var(--text-2xl);
-    }
-    .section-heading p {
-      font-size: var(--text-sm-plus);
-      margin-top: calc(var(--spacing) * 2);
     }
 
     th,
     td {
       padding: calc(var(--spacing) * 3) calc(var(--spacing) * 3.5);
       font-size: var(--text-sm);
-    }
-    .account-card h1 {
-      font-size: var(--text-3xl);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -1181,27 +865,6 @@
   summary:focus-visible {
     outline: 3px solid var(--primary);
     box-shadow: 0 0 0 6px var(--card);
-  }
-  .account-story :focus-visible {
-    outline-color: var(--lime);
-    box-shadow: none;
-  }
-
-  .auth-method {
-    margin: calc(var(--spacing) * 6) 0 calc(var(--spacing) * 3);
-  }
-  .auth-method button {
-    flex: 1;
-  }
-
-  .otp-actions {
-    margin-top: calc(var(--spacing) * 4);
-  }
-  .verification-banner {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--spacing) * 4);
-    flex-wrap: wrap;
   }
 
   .modal {
@@ -1247,58 +910,6 @@
     align-items: center;
   }
 
-  .otp-control {
-    display: flex;
-    position: relative;
-    width: 100%;
-  }
-  .otp-group {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: calc(var(--spacing) * 2);
-    width: 100%;
-  }
-  .otp-slot {
-    position: relative;
-    display: grid;
-    place-items: center;
-    height: 56px;
-    border: 1px solid var(--input);
-    border-radius: var(--radius-md);
-    background: var(--card);
-    color: var(--foreground);
-    font-size: var(--text-2xl);
-    font-weight: 600;
-  }
-  .otp-slot[data-active="true"] {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-    border-color: var(--primary);
-  }
-  .otp-control:has(input[aria-invalid="true"]) .otp-slot {
-    border-color: var(--destructive);
-  }
-  .otp-control:has(input:disabled) {
-    opacity: 0.6;
-  }
-  .otp-caret {
-    position: absolute;
-    width: 2px;
-    height: 24px;
-    background: var(--primary);
-    animation: otp-blink 1s step-end infinite;
-  }
-  @keyframes otp-blink {
-    50% {
-      opacity: 0;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .otp-caret {
-      animation: none;
-    }
-  }
-
   /* Desktop density only: retain the mobile type scale and touch targets. */
   @media (min-width: 801px) {
     .shell,
@@ -1306,10 +917,6 @@
       max-width: 1280px;
     }
 
-    .auth-label input,
-    .auth-label select {
-      font-size: var(--text-sm-plus);
-    }
     .user-name {
       font-size: var(--text-sm-plus);
     }

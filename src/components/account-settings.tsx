@@ -10,6 +10,20 @@ import { downloadWorkspace } from "@/lib/workspace-export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+import {
+  authField,
+  authHint,
+  eyebrow,
+  fieldset,
+  narrowPage,
+} from "./account-styles";
+
+const section = "mb-5 rounded-xl border border-border bg-card px-7 py-6";
+const sectionTitle =
+  "m-0 mb-3 flex items-center gap-2.5 font-heading text-xl/[1.6] font-bold tracking-[-0.55px]";
+const sectionText = "m-0 mb-4 text-muted-foreground";
+const settingsField = cn(authField, "m-0 w-full max-w-[420px]");
 
 export default function AccountSettings({
   user,
@@ -111,33 +125,39 @@ export default function AccountSettings({
   }
 
   return (
-    <div className="account-settings">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">TU CUENTA</span>
-          <h1>{user.name || "Tu cuenta"}</h1>
-          <p className="muted">{user.email}</p>
-        </div>
+    <div className={narrowPage}>
+      <div className="mb-5">
+        <span className={eyebrow}>TU CUENTA</span>
+        <h1 className="m-0 font-heading text-[2rem]/[1.6] font-bold">
+          {user.name || "Tu cuenta"}
+        </h1>
+        <p className="m-0 text-muted-foreground max-[520px]:mt-2 max-[520px]:text-sm-plus">
+          {user.email}
+        </p>
       </div>
 
-      <section className="panel settings-section" aria-labelledby="password">
-        <h2 id="password">
+      <section className={section} aria-labelledby="password">
+        <h2 id="password" className={sectionTitle}>
           <KeyRound size={19} aria-hidden="true" /> Contraseña
         </h2>
         {hasPassword ? (
           <form onSubmit={changePassword}>
-            <fieldset disabled={busy}>
-              <label className="auth-label">
-                Contraseña actual
+            <fieldset
+              className={cn(fieldset, "grid justify-items-start gap-3.5")}
+              disabled={busy}
+            >
+              <div className={settingsField}>
+                <label htmlFor="current-password">Contraseña actual</label>
                 <Input
+                  id="current-password"
                   name="currentPassword"
                   type="password"
                   required
                   autoComplete="current-password"
                   maxLength={128}
                 />
-              </label>
-              <div className="auth-label">
+              </div>
+              <div className={settingsField}>
                 <label htmlFor="new-password">Nueva contraseña</label>
                 <Input
                   id="new-password"
@@ -149,7 +169,7 @@ export default function AccountSettings({
                   autoComplete="new-password"
                   aria-describedby="new-password-hint"
                 />
-                <small id="new-password-hint">
+                <small id="new-password-hint" className={authHint}>
                   Al menos 12 caracteres. Cerraremos tus otras sesiones.
                 </small>
               </div>
@@ -158,13 +178,12 @@ export default function AccountSettings({
           </form>
         ) : (
           <>
-            <p>
+            <p className={sectionText}>
               Entras con un código por correo. Si quieres, puedes crear también
               una contraseña.
             </p>
             <Button
               variant="outline"
-
               disabled={busy}
               onClick={sendPasswordLink}
             >
@@ -174,26 +193,20 @@ export default function AccountSettings({
         )}
       </section>
 
-      <section className="panel settings-section" aria-labelledby="your-data">
-        <h2 id="your-data">
+      <section className={section} aria-labelledby="your-data">
+        <h2 id="your-data" className={sectionTitle}>
           <Download size={19} aria-hidden="true" /> Tus datos
         </h2>
-        <p>Descarga tus tarifas, facturas e historial en un archivo JSON.</p>
-        <Button
-          variant="outline"
-
-          disabled={busy}
-          onClick={exportData}
-        >
+        <p className={sectionText}>
+          Descarga tus tarifas, facturas e historial en un archivo JSON.
+        </p>
+        <Button variant="outline" disabled={busy} onClick={exportData}>
           <Download size={16} /> Descargar mis datos
         </Button>
       </section>
 
-      <section
-        className="panel settings-section danger-zone"
-        aria-labelledby="delete-account"
-      >
-        <h2 id="delete-account">
+      <section className={section} aria-labelledby="delete-account">
+        <h2 id="delete-account" className={sectionTitle}>
           <Trash2 size={19} aria-hidden="true" /> Eliminar cuenta
         </h2>
         {deletionSent ? (
@@ -204,13 +217,12 @@ export default function AccountSettings({
           </Alert>
         ) : (
           <>
-            <p>
+            <p className={sectionText}>
               Borra tu cuenta y todo lo que guarda: tarifas, facturas e
               historial. Te enviaremos un correo para confirmarlo.
             </p>
             <Button
               variant="destructive"
-
               disabled={busy}
               onClick={() => setConfirming(true)}
             >
@@ -228,7 +240,7 @@ export default function AccountSettings({
             </p>
           }
           consequence={
-            <p className="muted">
+            <p className="text-muted-foreground">
               Si quieres conservarlos, descarga antes tus datos. Te enviaremos
               un correo a {user.email} para confirmar la eliminación.
             </p>

@@ -16,7 +16,7 @@ export default function VerificationBanner({
   onError: (message: string) => void;
 }) {
   return (
-    <Alert className="verification-banner" role="note">
+    <Alert className="flex flex-wrap items-center gap-4" role="note">
       <span>
         Confirma tu dirección de correo con el enlace que te hemos enviado.
       </span>
@@ -24,7 +24,6 @@ export default function VerificationBanner({
         variant="link"
         size="inline"
         type="button"
-
         disabled={busy}
         onClick={async () => {
           onBusyChange(true);

@@ -11,6 +11,14 @@ import { Brand } from "./ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  authField,
+  authHint,
+  eyebrow,
+  fieldset,
+  textLink,
+} from "./account-styles";
+import { cn } from "@/lib/utils";
 export default function AccountForm({
   configured,
   mode: initialMode,
@@ -150,47 +158,54 @@ export default function AccountForm({
           ? "Una nueva contraseña."
           : "Tu luz, en su sitio.";
   return (
-    <main className="account-layout">
-      <div className="account-story">
+    <main className="grid min-h-dvh grid-cols-2 max-[800px]:grid-cols-1 min-[801px]:h-dvh min-[801px]:grid-rows-[minmax(0,1fr)]">
+      {/* The brand turns lime on the dark panel. */}
+      <div className="relative flex flex-col justify-between gap-16 overflow-hidden bg-inverse px-[clamp(25px,6vw,90px)] py-12 text-inverse-foreground after:pointer-events-none after:absolute after:-right-[290px] after:-bottom-[150px] after:size-[450px] after:rounded-full after:border after:border-period-3/[13.3%] after:shadow-[0_0_0_60px_color-mix(in_oklab,var(--period-3)_2.4%,transparent),0_0_0_120px_color-mix(in_oklab,var(--period-3)_1.6%,transparent)] after:content-[''] max-[1000px]:p-9 max-[800px]:p-6 min-[801px]:min-h-0 min-[801px]:gap-[clamp(16px,3dvh,60px)] [&_.brand-dot]:text-lime [&_.brand-icon]:bg-lime [&_.brand-icon]:text-inverse [&_:focus-visible]:shadow-none [&_:focus-visible]:outline-lime">
         <Brand />
-        <div>
-          <span className="eyebrow">TU CUADERNO DE ELECTRICIDAD</span>
-          <h2>
+        <div className="max-[800px]:hidden">
+          <span className={cn(eyebrow, "text-inverse-muted")}>
+            TU CUADERNO DE ELECTRICIDAD
+          </span>
+          <h2 className="my-5 font-heading text-[clamp(35px,3.3vw,51px)]/[1.22] font-bold tracking-[-2px] [@media(min-width:801px)_and_(max-height:600px)]:my-4 [@media(min-width:801px)_and_(max-height:600px)]:text-3xl/[1.22]">
             Un poco de claridad.
             <br />
-            <em>Un buen ahorro.</em>
+            <em className="text-lime not-italic">Un buen ahorro.</em>
           </h2>
-          <p>
+          <p className="m-0 max-w-[360px] text-base/[1.8] text-inverse-muted">
             Tus precios de hoy, las alternativas de mañana y todo lo que has
             pagado. Por fin, juntos.
           </p>
-          <ul>
+          <ul className="m-0 mt-8 mb-[1em] grid list-none gap-4 p-0 text-sm-plus text-success-border [@media(min-width:801px)_and_(max-height:600px)]:mt-5 [@media(min-width:801px)_and_(max-height:600px)]:mb-0 [@media(min-width:801px)_and_(max-height:600px)]:gap-2.5">
             {[
               "Compara con tu consumo real",
               "Conserva cada cambio de tarifa",
               "Sigue tus facturas mes a mes",
             ].map((s) => (
-              <li key={s}>
+              <li key={s} className="flex items-center gap-3">
                 <Check size={17} />
                 {s}
               </li>
             ))}
           </ul>
         </div>
-        <span className="small">
+        <span className="text-sm/[1.6] text-chart-5-soft max-[800px]:hidden">
           Hecho para entender tu factura, sin complicaciones.
         </span>
       </div>
-      <div className="account-side">
+      <div className="flex flex-col px-[clamp(25px,6vw,90px)] py-12 max-[1000px]:p-9 max-[800px]:min-h-[calc(100dvh-86px)] max-[800px]:p-6 min-[801px]:min-h-0 min-[801px]:overflow-y-auto">
         <Button asChild variant="link" size="inline" className="self-start">
           <Link href="/">
             <ArrowLeft size={16} /> Volver al comparador
           </Link>
         </Button>
-        <div className="account-card">
-          <span className="eyebrow">LUZ EN CLARO / TU CUENTA</span>
-          <h1>{title}</h1>
-          <p>
+        <div className="mx-0 my-auto max-w-[430px] py-16 max-[800px]:m-auto max-[800px]:w-full max-[800px]:max-w-[440px] max-[800px]:py-9 min-[801px]:shrink-0">
+          <span className={cn(eyebrow, "text-muted-foreground")}>
+            LUZ EN CLARO / TU CUENTA
+          </span>
+          <h1 className="my-3 font-heading text-3xl/[1.6] font-semibold tracking-[-1.3px]">
+            {title}
+          </h1>
+          <p className="m-0 text-base/[1.6] text-muted-foreground">
             {mode === "signup"
               ? "Crea tu cuenta y guarda lo que importa."
               : mode === "forgot"
@@ -212,7 +227,7 @@ export default function AccountForm({
             <ToggleGroup
               type="single"
               value={method}
-              className="segmented auth-method w-full rounded-lg bg-muted p-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
+              className="mt-6 mb-3 w-full rounded-lg bg-muted p-1 *:flex-1 *:data-[state=on]:bg-card *:data-[state=on]:shadow-sm"
               aria-label="Forma de acceso"
             >
               <ToggleGroupItem
@@ -238,17 +253,18 @@ export default function AccountForm({
             </ToggleGroup>
           )}
           {method === "otp" && (mode === "signup" || mode === "signin") && (
-            <p className="small muted">
+            <p className="m-0 text-base/[1.6] text-muted-foreground">
               Un código y estás dentro. Si es tu primera vez, crearemos tu
               cuenta al verificarlo.
             </p>
           )}
-          <form onSubmit={submit}>
-            <fieldset disabled={!configured || busy}>
+          <form className="mt-7" onSubmit={submit}>
+            <fieldset className={fieldset} disabled={!configured || busy}>
               {mode === "signup" && !sent && (
-                <label className="auth-label">
-                  Tu nombre
+                <div className={authField}>
+                  <label htmlFor="name">Tu nombre</label>
                   <Input
+                    id="name"
                     name="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -256,12 +272,13 @@ export default function AccountForm({
                     autoComplete="name"
                     maxLength={100}
                   />
-                </label>
+                </div>
               )}
               {mode !== "reset" && (
-                <label className="auth-label">
-                  Correo electrónico
+                <div className={authField}>
+                  <label htmlFor="email">Correo electrónico</label>
                   <Input
+                    id="email"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -273,10 +290,10 @@ export default function AccountForm({
                     autoComplete="email"
                     maxLength={254}
                   />
-                </label>
+                </div>
               )}
               {sent && method === "otp" && (
-                <div className="auth-label">
+                <div className={authField}>
                   <label htmlFor="otp">Código de 6 dígitos</label>
                   <InputOTP
                     ref={codeInput}
@@ -300,14 +317,14 @@ export default function AccountForm({
                       ))}
                     </InputOTPGroup>
                   </InputOTP>
-                  <small id="otp-hint">
+                  <small id="otp-hint" className={authHint}>
                     Enviado a {email}. Caduca en 10 minutos.
                   </small>
                 </div>
               )}
               {(method === "password" || mode === "reset") &&
                 mode !== "forgot" && (
-                  <div className="auth-label">
+                  <div className={authField}>
                     <label htmlFor="password">
                       {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
                     </label>
@@ -326,7 +343,7 @@ export default function AccountForm({
                       }
                     />
                     {mode !== "signin" && (
-                      <small id="password-hint">
+                      <small id="password-hint" className={authHint}>
                         Al menos 12 caracteres. Puedes usar una frase.
                       </small>
                     )}
@@ -336,9 +353,8 @@ export default function AccountForm({
                 <Button
                   variant="link"
                   size="inline"
-                  className="forgot"
+                  className="mb-6"
                   type="button"
-
                   onClick={() => switchMode("forgot")}
                 >
                   He olvidado mi contraseña
@@ -361,12 +377,11 @@ export default function AccountForm({
                 <ArrowRight size={17} />
               </Button>
               {sent && method === "otp" && (
-                <div className="otp-actions">
+                <div className="mt-4">
                   <Button
                     variant="link"
                     size="inline"
                     type="button"
-
                     onClick={() => {
                       setSent(false);
                       setOtp("");
@@ -384,14 +399,13 @@ export default function AccountForm({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <p className="auth-switch">
+          <p className="my-6 text-center text-sm-plus text-muted-foreground">
             {mode === "signin"
               ? "¿Primera vez por aquí?"
               : "¿Ya tienes cuenta?"}{" "}
             <Button
               variant="link"
               size="inline"
-
               disabled={busy}
               onClick={() =>
                 switchMode(mode === "signin" ? "signup" : "signin")
@@ -400,11 +414,13 @@ export default function AccountForm({
               {mode === "signin" ? "Crear una cuenta" : "Iniciar sesión"}
             </Button>
           </p>
-          <div className="auth-security">
+          <div className="mt-9 flex items-center justify-center gap-2 border-t border-border pt-6 text-sm/[1.6] text-muted-foreground">
             <ShieldCheck size={16} />
             <span>
               Tus datos solo están disponibles en tu cuenta.{" "}
-              <Link href="/privacidad">Cómo los tratamos</Link>
+              <Link href="/privacidad" className={textLink}>
+                Cómo los tratamos
+              </Link>
             </span>
           </div>
         </div>
