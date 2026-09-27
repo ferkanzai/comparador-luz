@@ -6,14 +6,17 @@ import {
   regulatedRatesReviewedLabel,
 } from "@/lib/regulated-rates";
 
+/* Inside the method dialog, whose text is set by the dialog. */
+const paragraph = "mb-5 text-sm-plus";
+
 export default function MethodText() {
   return (
     <>
-      <p>
+      <p className={paragraph}>
         Estimación para hogares 2.0TD de Península y Baleares con precios fijos
         o por períodos, siempre introducidos sin impuestos.
       </p>
-      <ol>
+      <ol className="mb-5 list-decimal pl-5 text-sm-plus [&>li]:py-1.5">
         <li>
           <strong>Energía:</strong> kWh de cada período × su precio.
         </li>
@@ -48,32 +51,32 @@ export default function MethodText() {
           separado al {formatRate(generalVat.percent)} %.
         </li>
       </ol>
-      <p>
+      <p className={paragraph}>
         Puedes estimar el alquiler y la financiación del bono social al editar
         una tarifa. Guardamos el valor de referencia elegido y marcamos el
         cálculo como aproximado. Comprueba si tu contrato ya incluye esos cargos
         antes de añadirlos.
       </p>
-      <p>
+      <p className={paragraph}>
         Los costes mensuales de servicios se prorratean a 12 × días / 365. Los
         importes se redondean a céntimos por concepto. Si tu factura muestra
         precios redondeados, usa «Calcular precios desde los importes» al editar
         la tarifa. Tu factura puede tener diferencias de redondeo.
       </p>
-      <p>
+      <p className={paragraph}>
         Tipos generales de referencia: IVA {formatRate(generalVat.percent)} % e
         IEE {formatRate(electricityTax.percent)} %. Revisión:{" "}
         {regulatedRatesReviewedLabel}. Usa los tipos de tu factura para períodos
         con medidas temporales. No se aplica automáticamente un tipo por fecha.
       </p>
-      <p>
+      <p className={paragraph}>
         PVPC se muestra aparte como referencia histórica con medias por período
         del último mes completo; no reconstruye tu factura horaria ni predice
         precios futuros. No simula compensación solar, descuentos del bono
         social, IGIC, IPSI, penalizaciones ni promociones temporales. Introduce
         precios netos de descuentos y comprueba permanencias antes de cambiar.
       </p>
-      <div className="source-links">
+      <div className="grid gap-2.5 border-t border-border pt-5 text-sm-plus [&>a]:flex [&>a]:items-center [&>a]:gap-2 [&>a]:underline [&_svg]:shrink-0">
         <a
           href="https://www.miteco.gob.es/es/energia/eficiencia/sistema-nacional-obligaciones-efe.html"
           target="_blank"

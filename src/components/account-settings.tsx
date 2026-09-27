@@ -1,12 +1,29 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { Download, KeyRound, Trash2 } from "lucide-react";
-import FeedbackNotice, { useFeedback } from "./feedback-notice";
+import { useFeedback } from "./feedback-notice";
 import ConfirmDialog from "./confirm-dialog";
 import { authClient } from "@/lib/auth-client";
 import type { CurrentUser } from "@/lib/current-user";
 import { workspaceSchema } from "@/lib/domain";
 import { downloadWorkspace } from "@/lib/workspace-export";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+import {
+  authField,
+  authHint,
+  eyebrow,
+  fieldset,
+  narrowPage,
+} from "./account-styles";
+
+const section = "mb-5 rounded-xl border border-border bg-card px-7 py-6";
+const sectionTitle =
+  "m-0 mb-3 flex items-center gap-2.5 font-heading text-xl/[1.6] font-bold tracking-[-0.55px] [&>svg]:shrink-0";
+const sectionText = "m-0 mb-4 text-muted-foreground";
+const settingsField = cn(authField, "m-0 w-full max-w-[420px]");
 
 export default function AccountSettings({
   user,
@@ -15,14 +32,13 @@ export default function AccountSettings({
   user: CurrentUser;
   hasPassword: boolean;
 }) {
-  const { message, setMessage, dismiss } = useFeedback();
+  const { setMessage } = useFeedback();
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deletionSent, setDeletionSent] = useState(false);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
-    dismiss();
     try {
       await action();
     } catch (e) {
@@ -109,35 +125,41 @@ export default function AccountSettings({
   }
 
   return (
-    <div className="account-settings">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">TU CUENTA</span>
-          <h1>{user.name || "Tu cuenta"}</h1>
-          <p className="muted">{user.email}</p>
-        </div>
+    <div className={narrowPage}>
+      <div className="mb-5">
+        <span className={eyebrow}>TU CUENTA</span>
+        <h1 className="m-0 font-heading text-[2rem]/[1.6] font-bold">
+          {user.name || "Tu cuenta"}
+        </h1>
+        <p className="m-0 text-muted-foreground max-[520px]:mt-2 max-[520px]:text-sm-plus">
+          {user.email}
+        </p>
       </div>
 
-      <section className="panel settings-section" aria-labelledby="password">
-        <h2 id="password">
+      <section className={section} aria-labelledby="password">
+        <h2 id="password" className={sectionTitle}>
           <KeyRound size={19} aria-hidden="true" /> Contraseña
         </h2>
         {hasPassword ? (
           <form onSubmit={changePassword}>
-            <fieldset disabled={busy}>
-              <label className="auth-label">
-                Contraseña actual
-                <input
+            <fieldset
+              className={cn(fieldset, "grid justify-items-start gap-3.5")}
+              disabled={busy}
+            >
+              <div className={settingsField}>
+                <label htmlFor="current-password">Contraseña actual</label>
+                <Input
+                  id="current-password"
                   name="currentPassword"
                   type="password"
                   required
                   autoComplete="current-password"
                   maxLength={128}
                 />
-              </label>
-              <div className="auth-label">
+              </div>
+              <div className={settingsField}>
                 <label htmlFor="new-password">Nueva contraseña</label>
-                <input
+                <Input
                   id="new-password"
                   name="newPassword"
                   type="password"
@@ -147,83 +169,68 @@ export default function AccountSettings({
                   autoComplete="new-password"
                   aria-describedby="new-password-hint"
                 />
-                <small id="new-password-hint">
+                <small id="new-password-hint" className={authHint}>
                   Al menos 12 caracteres. Cerraremos tus otras sesiones.
                 </small>
               </div>
-              <button className="button primary" type="submit">
-                Cambiar contraseña
-              </button>
+              <Button type="submit">Cambiar contraseña</Button>
             </fieldset>
           </form>
         ) : (
           <>
-            <p>
+            <p className={sectionText}>
               Entras con un código por correo. Si quieres, puedes crear también
               una contraseña.
             </p>
-            <button
-              className="button secondary"
+            <Button
+              variant="outline"
               disabled={busy}
               onClick={sendPasswordLink}
             >
               Enviarme un enlace para crear una contraseña
-            </button>
+            </Button>
           </>
         )}
       </section>
 
-      <section className="panel settings-section" aria-labelledby="your-data">
-        <h2 id="your-data">
+      <section className={section} aria-labelledby="your-data">
+        <h2 id="your-data" className={sectionTitle}>
           <Download size={19} aria-hidden="true" /> Tus datos
         </h2>
-        <p>Descarga tus tarifas, facturas e historial en un archivo JSON.</p>
-        <button
-          className="button secondary"
-          disabled={busy}
-          onClick={exportData}
-        >
+        <p className={sectionText}>
+          Descarga tus tarifas, facturas e historial en un archivo JSON.
+        </p>
+        <Button variant="outline" disabled={busy} onClick={exportData}>
           <Download size={16} /> Descargar mis datos
-        </button>
+        </Button>
       </section>
 
-      <section
-        className="panel settings-section danger-zone"
-        aria-labelledby="delete-account"
-      >
-        <h2 id="delete-account">
+      <section className={section} aria-labelledby="delete-account">
+        <h2 id="delete-account" className={sectionTitle}>
           <Trash2 size={19} aria-hidden="true" /> Eliminar cuenta
         </h2>
         {deletionSent ? (
-          <p className="notice" role="status">
+          <Alert role="status">
             Te hemos enviado un correo a {user.email}. Abre el enlace en este
             navegador para eliminar la cuenta. Caduca en una hora. Hasta
             entonces no se borra nada.
-          </p>
+          </Alert>
         ) : (
           <>
-            <p>
+            <p className={sectionText}>
               Borra tu cuenta y todo lo que guarda: tarifas, facturas e
               historial. Te enviaremos un correo para confirmarlo.
             </p>
-            <button
-              className="button confirm-danger"
+            <Button
+              variant="destructive"
               disabled={busy}
               onClick={() => setConfirming(true)}
             >
               <Trash2 size={16} /> Eliminar mi cuenta
-            </button>
+            </Button>
           </>
         )}
       </section>
-
-      {message && (
-        <FeedbackNotice
-          key={message.id}
-          message={message}
-          onDismiss={dismiss}
-        />
-      )}
       {confirming && (
         <ConfirmDialog
           title="¿Eliminar tu cuenta?"
@@ -233,7 +240,7 @@ export default function AccountSettings({
             </p>
           }
           consequence={
-            <p className="muted">
+            <p className="text-muted-foreground">
               Si quieres conservarlos, descarga antes tus datos. Te enviaremos
               un correo a {user.email} para confirmar la eliminación.
             </p>

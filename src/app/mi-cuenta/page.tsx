@@ -9,6 +9,7 @@ import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
 import { getAuth } from "@/lib/auth";
 import { currentUser } from "@/lib/current-user";
+import { shell, skipLink } from "@/components/shell-styles";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Mi cuenta · Luz en claro" };
@@ -21,11 +22,11 @@ export default async function MyAccount() {
   });
   return (
     <PageProvider method={<MethodText />}>
-      <a href="#main" className="skip-link">
+      <a href="#main" className={skipLink}>
         Saltar al contenido
       </a>
       <SiteHeader actions={<HeaderActions />} />
-      <main id="main" className="shell">
+      <main id="main" className={shell}>
         <AccountSettings
           user={user}
           hasPassword={accounts.some((a) => a.providerId === "credential")}

@@ -24,6 +24,22 @@ import YearComparison from "./year-comparison";
 import { invoiceYears } from "@/lib/year-comparison";
 import { consumptionMonths, formatKwh } from "@/lib/bill-consumption";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { cn } from "@/lib/utils";
+import { formDisclosure, tallSelect } from "./tariff-form-sections";
+import {
+  bodyCell,
+  chartNote,
+  headCell,
+  panel,
+  table,
+  tableCaption,
+  tableScroll,
+} from "./bill-styles";
 export default function Bills({
   workspace: w,
   run,
@@ -94,20 +110,28 @@ export default function Bills({
   }
   return (
     <>
-      <div className="section-heading">
+      <div className="mb-5 flex items-center justify-between gap-5 max-[520px]:flex-col max-[520px]:items-start">
         <div>
-          <span className="eyebrow">LO QUE REALMENTE HAS PAGADO</span>
-          <h2>Tus facturas, con perspectiva.</h2>
-          <p className="muted">
+          <span className="text-sm/[1.6] font-semibold tracking-[1.65px]">
+            LO QUE REALMENTE HAS PAGADO
+          </span>
+          <h2 className="m-0 mt-1.5 font-heading text-2xl/[1.6] font-bold tracking-[-0.55px]">
+            Tus facturas, con perspectiva.
+          </h2>
+          <p className="m-0 text-muted-foreground max-[520px]:mt-2 max-[520px]:text-sm-plus">
             Lo que pagas y consumes, mes a mes o año a año.
           </p>
         </div>
-        <button className="button primary" onClick={create}>
+        <Button onClick={create}>
           <Plus size={17} />
           Añadir factura
-        </button>
+        </Button>
       </div>
-      <div className="bill-views" role="group" aria-label="Vista de facturas">
+      <div
+        className="mb-6 flex items-center gap-6 border-b border-border [&>button]:relative [&>button]:px-0.5 [&>button]:py-3.5 [&>button]:font-semibold [&>button]:text-muted-foreground [&>button]:aria-pressed:text-foreground [&>button]:aria-pressed:after:absolute [&>button]:aria-pressed:after:inset-x-0 [&>button]:aria-pressed:after:-bottom-px [&>button]:aria-pressed:after:h-[3px] [&>button]:aria-pressed:after:rounded-t-sm [&>button]:aria-pressed:after:bg-primary"
+        role="group"
+        aria-label="Vista de facturas"
+      >
         <button
           type="button"
           aria-pressed={!showYears}
@@ -124,7 +148,7 @@ export default function Bills({
             Por años
           </button>
         )}
-        <span className="small muted">
+        <span className="ml-auto text-sm-plus text-muted-foreground max-[600px]:hidden">
           {showYears
             ? "Compara dos años de facturas"
             : "Tu registro de facturas"}
@@ -134,32 +158,38 @@ export default function Bills({
         <YearComparison bills={w.bills} />
       ) : (
         <>
-          <div className="panel bill-chart">
-            <div className="section-inline">
+          <div
+            className={cn(panel, "mb-6 p-6 max-[520px]:px-4 max-[520px]:py-5")}
+          >
+            <div className="flex items-center justify-between gap-3 max-[520px]:flex-wrap max-[520px]:items-start">
               <div>
-                <span className="muted">
+                <span className="text-muted-foreground max-[520px]:text-sm/[1.6]">
                   {chartView === "consumption"
                     ? "Consumo registrado"
                     : "Pagado"}{" "}
                   en {year}
                 </span>
-                <div className="big-amount">
+                <div className="my-px font-heading text-4xl/[1.6] font-semibold tracking-[-1.5px] max-[520px]:text-3xl/[1.6]">
                   {chartView === "consumption"
                     ? recordedConsumption
                       ? formatKwh(knownKwh)
                       : "— kWh"
                     : money(total)}
                 </div>
-                <span className="small muted">
+                <span className={chartNote}>
                   {bills.length} facturas ·{" "}
                   {months.filter((m) => m.count).length} meses con datos
                   {chartView === "consumption" &&
                     ` · ${recordedConsumption}/${bills.length} facturas con kWh`}
                 </span>
               </div>
-              <label className="inline-label">
+              <label className="flex items-center gap-2 text-sm/[1.6] text-muted-foreground">
                 Año
-                <select value={year} onChange={(e) => setYear(e.target.value)}>
+                <NativeSelect
+                  className={tallSelect}
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                >
                   {Array.from(
                     new Set([
                       today().slice(0, 4),
@@ -169,9 +199,9 @@ export default function Bills({
                     .sort()
                     .reverse()
                     .map((y) => (
-                      <option key={y}>{y}</option>
+                      <NativeSelectOption key={y}>{y}</NativeSelectOption>
                     ))}
-                </select>
+                </NativeSelect>
               </label>
             </div>
             <BillsChart
@@ -183,7 +213,7 @@ export default function Bills({
             />
             {chartView !== "consumption" && (
               <>
-                <p className="small muted">
+                <p className={chartNote}>
                   Cada factura se agrupa en el mes elegido (por defecto, el mes
                   de fin del período), sin prorratearla. Otros cargos: bono
                   social, SNOEE, alquiler y servicios. Las facturas antiguas sin
@@ -191,45 +221,56 @@ export default function Bills({
                   facturas, como «—». Los descuentos se restan del total y
                   aparecen bajo el cero en las barras.
                 </p>
-                <details className="form-section">
+                <details className={formDisclosure}>
                   <summary>Ver desglose mensual en tabla</summary>
                   <div
-                    className="table-scroll"
+                    className={tableScroll}
                     tabIndex={0}
                     role="region"
                     aria-label="Desglose mensual"
                   >
-                    <table>
-                      <caption className="bill-table-caption">
-                        Total antes de descuentos · Pagado después de descuentos.
+                    <table className={table}>
+                      <caption className={tableCaption}>
+                        Total antes de descuentos · Pagado después de
+                        descuentos.
                       </caption>
                       <thead>
                         <tr>
-                          <th scope="col">Mes</th>
+                          <th className={headCell} scope="col">
+                            Mes
+                          </th>
                           {groups.map(([key, label]) => (
-                            <th scope="col" key={key}>
+                            <th className={headCell} scope="col" key={key}>
                               {label}
                             </th>
                           ))}
-                          <th scope="col">Total</th>
-                          <th scope="col">Pagado</th>
+                          <th className={headCell} scope="col">
+                            Total
+                          </th>
+                          <th className={headCell} scope="col">
+                            Pagado
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {months.map((m) => (
                           <tr key={m.month}>
-                            <th scope="row">{m.label}</th>
+                            <th className={headCell} scope="row">
+                              {m.label}
+                            </th>
                             {groups.map(([key]) => (
-                              <td key={key}>
+                              <td key={key} className={bodyCell}>
                                 {m.count ? money(m.totals[key]) : "—"}
                               </td>
                             ))}
-                            <td>
+                            <td className={bodyCell}>
                               {m.count
                                 ? money(m.amount - m.totals.credit)
                                 : "—"}
                             </td>
-                            <td>{m.count ? money(m.amount) : "—"}</td>
+                            <td className={bodyCell}>
+                              {m.count ? money(m.amount) : "—"}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -240,14 +281,14 @@ export default function Bills({
             )}
           </div>
           {!bills.length ? (
-            <div className="panel">
+            <div className={panel}>
               <Empty
                 icon={<Receipt size={26} />}
                 title="Tu historial empieza con una factura."
                 action={
-                  <button className="button secondary" onClick={create}>
+                  <Button variant="outline" onClick={create}>
                     Registrar mi primera factura
-                  </button>
+                  </Button>
                 }
               >
                 Añade el importe real o guarda tu cálculo como factura desde el
@@ -268,7 +309,7 @@ export default function Bills({
           title="Eliminar factura"
           summary={
             <>
-              <p className="muted">
+              <p className="text-muted-foreground">
                 {removing.provider} · {money(billTotal(removing))}
               </p>
               <h3>{billMonthLabel(removing.month)}</h3>
@@ -279,7 +320,7 @@ export default function Bills({
               <p>
                 Esta factura se eliminará de Mis facturas y de sus gráficos.
               </p>
-              <p className="muted">
+              <p className="text-muted-foreground">
                 Tus tarifas, tu historial de contratos y el resto de facturas se
                 conservan.
               </p>

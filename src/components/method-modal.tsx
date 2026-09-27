@@ -11,7 +11,7 @@ export default function MethodModal({
 }) {
   return (
     <Modal title="Sin letra pequeña en el cálculo" onClose={onClose}>
-      <div className="modal-body method">{children}</div>
+      <div className="p-6 max-[520px]:p-5">{children}</div>
     </Modal>
   );
 }

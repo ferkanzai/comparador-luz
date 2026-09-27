@@ -5,6 +5,9 @@ import MethodText from "@/components/method-text";
 import { PageProvider } from "@/components/page-context";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
+import { eyebrow, narrowPage, textLink } from "@/components/account-styles";
+import { cn } from "@/lib/utils";
+import { shell, skipLink } from "@/components/shell-styles";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Privacidad · Luz en claro" };
@@ -13,18 +16,28 @@ const contact = "contact@fercarmona.dev";
 export default function Privacy() {
   return (
     <PageProvider method={<MethodText />}>
-      <a href="#main" className="skip-link">
+      <a href="#main" className={skipLink}>
         Saltar al contenido
       </a>
       <SiteHeader actions={<HeaderActions />} />
-      <main id="main" className="shell">
-        <article className="legal-page">
-          <span className="eyebrow">PRIVACIDAD</span>
-          <h1>Qué guardamos y por qué</h1>
+      <main id="main" className={shell}>
+        <article
+          className={cn(
+            narrowPage,
+            "[&_h2]:mt-8 [&_h2]:mb-2.5 [&_h2]:font-heading [&_h2]:text-xl/[1.6] [&_h2]:font-bold [&_h2]:tracking-[-0.55px] [&_li]:text-muted-foreground [&_p]:m-0 [&_p]:text-muted-foreground [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-10",
+          )}
+        >
+          <span className={eyebrow}>PRIVACIDAD</span>
+          <h1 className="m-0 font-heading text-[2rem]/[1.6] font-bold">
+            Qué guardamos y por qué
+          </h1>
           <h2>Quién es el responsable</h2>
           <p>
             Fernando Carmona Ayuela. Puedes escribirme a{" "}
-            <a href={`mailto:${contact}`}>{contact}</a>.
+            <a className={textLink} href={`mailto:${contact}`}>
+              {contact}
+            </a>
+            .
           </p>
 
           <h2>Si usas el comparador sin cuenta</h2>
@@ -99,11 +112,17 @@ export default function Privacy() {
           <h2>Tus derechos</h2>
           <p>
             Puedes descargar tus datos y eliminar tu cuenta cuando quieras desde{" "}
-            <Link href="/mi-cuenta">Mi cuenta</Link>. Al eliminarla borramos la
-            cuenta y todos sus datos de electricidad. También puedes pedirnos
-            acceso, corrección, oposición o limitación en{" "}
-            <a href={`mailto:${contact}`}>{contact}</a>, y reclamar ante la
-            Agencia Española de Protección de Datos (aepd.es).
+            <Link className={textLink} href="/mi-cuenta">
+              Mi cuenta
+            </Link>
+            . Al eliminarla borramos la cuenta y todos sus datos de
+            electricidad. También puedes pedirnos acceso, corrección, oposición
+            o limitación en{" "}
+            <a className={textLink} href={`mailto:${contact}`}>
+              {contact}
+            </a>
+            , y reclamar ante la Agencia Española de Protección de Datos
+            (aepd.es).
           </p>
         </article>
         <SiteFooter />

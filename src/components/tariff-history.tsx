@@ -30,6 +30,19 @@ import TariffPriceComparison from "./tariff-price-comparison";
 
 import type { TariffRecordDraft } from "./tariff-record-form";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+
+/* Record actions: 40px targets, 44px on a phone. */
+const recordAction =
+  "h-auto min-h-10 gap-2 text-xs-plus whitespace-normal max-[700px]:min-h-11 max-[700px]:text-xs";
+/* The unit prices of a record, large, three to a row. */
+const recordRates =
+  "grid max-w-[500px] grid-cols-3 gap-5 min-[901px]:max-w-[420px] max-[700px]:gap-3 *:block [&_dd]:text-xl/[1.6] [&_dd]:font-[550] [&_dd]:tracking-[-0.5px] [&_dd_span]:text-2xs [&_dd_span]:font-normal [&_dd_span]:tracking-normal max-[700px]:[&_dd_span]:-mt-0.5 max-[700px]:[&_dd_span]:block [&_dt]:text-xs-plus";
+/* The same prices unrounded, one per line. */
+const originalRates =
+  "mt-1.5 max-w-[500px] gap-1 min-[901px]:max-w-[420px] max-[700px]:gap-3 *:grid *:grid-cols-[60px_minmax(0,1fr)] *:gap-2 [&_dd]:text-xs-plus [&_dd]:whitespace-normal [&_dd]:wrap-anywhere [&_dd_span]:text-2xs [&_dt]:text-xs-plus";
 const TariffRecordForm = dynamic(() => import("./tariff-record-form"));
 
 export default function TariffHistory({
@@ -49,19 +62,25 @@ export default function TariffHistory({
   const removing = periods.find((p) => p.id === removingId);
   return (
     <>
-      <div className="tariff-ledger-heading">
+      <div className="mb-6 flex items-center justify-between gap-4 max-[700px]:mb-4 max-[700px]:block">
         <div>
-          <h2>Mis tarifas</h2>
-          <p className="muted">Tus contratos y sus precios, en orden.</p>
+          <h2 className="m-0 font-heading text-3xl/[1.6] font-bold tracking-[-1px] max-[700px]:text-2xl/[1.6]">
+            Mis tarifas
+          </h2>
+          <p className="m-0 mt-1 text-sm-plus text-muted-foreground">
+            Tus contratos y sus precios, en orden.
+          </p>
         </div>
-        <div className="tariff-history-actions">
-          <button className="button primary" onClick={() => setChoosing(true)}>
+        <div className="flex flex-wrap items-center gap-4 max-[700px]:mt-3 max-[700px]:gap-x-4 max-[700px]:gap-y-1.5">
+          <Button onClick={() => setChoosing(true)}>
             {workspace.currentId
               ? "Cambiar tarifa actual"
               : "Registrar tarifa actual"}
-          </button>
-          <button
-            className="ledger-add"
+          </Button>
+          <Button
+            variant="link"
+            size="inline"
+            className="min-h-11 gap-1.5 border-0 text-sm font-semibold text-foreground"
             onClick={() =>
               setDraft({
                 tariff: newTariff(),
@@ -70,18 +89,18 @@ export default function TariffHistory({
               })
             }
           >
-            <Plus size={16} />
+            <Plus />
             Añadir tarifa anterior
-          </button>
+          </Button>
         </div>
       </div>
       {error && (
-        <p role="alert" className="notice error">
+        <Alert variant="destructive" role="alert">
           {error}
-        </p>
+        </Alert>
       )}
       {periods.length > 0 && <TariffPriceComparison periods={periods} />}
-      <div className="history-list">
+      <div className="grid gap-3 min-[901px]:grid-cols-2 min-[901px]:items-stretch min-[901px]:gap-5">
         {periods.map((period) => {
           const problem = periodProblem(period, periods);
           const hasEstimates = Boolean(estimatedCharges(period.tariff));
@@ -97,17 +116,24 @@ export default function TariffHistory({
             (v) => formatTariffPrice(v) !== decimalComma(v),
           );
           return (
-            <article className="tariff-record" key={period.id}>
-              <div className="tariff-record-identity">
-                <div className="record-heading-line">
+            <article
+              key={period.id}
+              className="grid grid-cols-[minmax(210px,1fr)_minmax(0,1.7fr)] gap-x-8 gap-y-2 bg-card p-5 *:min-w-0 min-[901px]:flex min-[901px]:flex-col min-[901px]:gap-3.5 min-[901px]:px-6 max-[700px]:grid-cols-1 max-[700px]:gap-4 max-[700px]:p-4"
+            >
+              <div>
+                <div className="mb-1.5 flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <span
-                    className={`record-status ${period.current ? "is-current" : ""}`}
+                    className={cn(
+                      "flex items-center gap-1.5 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase",
+                      period.current &&
+                        "text-primary before:size-1.5 before:rounded-full before:bg-current",
+                    )}
                   >
                     {period.current ? "Tu tarifa actual" : "Tarifa anterior"}
                   </span>
                   {problem && (
                     <details
-                      className="record-date-notice"
+                      className="relative ml-auto"
                       onKeyDown={(event) => {
                         if (event.key === "Escape") {
                           event.currentTarget.open = false;
@@ -121,43 +147,60 @@ export default function TariffHistory({
                     >
                       <summary
                         aria-label={`Revisar fechas de ${period.tariff.name}`}
+                        className="flex min-h-6 cursor-pointer list-none items-center gap-1.5 text-2xs text-caution [&::-webkit-details-marker]:hidden"
                       >
                         <TriangleAlert size={13} /> Revisar fechas
                       </summary>
-                      <div className="record-date-explanation">
-                        <p>{problem}</p>
-                        <p>Usa «Corregir datos» para ajustar este período.</p>
+                      <div className="absolute top-[calc(100%+6px)] right-0 z-5 flex w-[min(270px,calc(100vw-68px))] flex-col gap-1.5 rounded-sm border border-warning-border bg-warning-muted px-3.5 py-3 text-xs-plus text-warning shadow-md">
+                        <p className="m-0">{problem}</p>
+                        <p className="m-0">
+                          Usa «Corregir datos» para ajustar este período.
+                        </p>
                       </div>
                     </details>
                   )}
                 </div>
-                <h3>{period.tariff.name}</h3>
-                <p className="record-provider">{period.tariff.provider}</p>
-                <p className="record-dates">
+                <h3 className="m-0 font-heading text-xl leading-[1.35] font-bold tracking-[-0.25px] wrap-anywhere">
+                  {period.tariff.name}
+                </h3>
+                <p className="m-0 text-sm/[1.6] text-muted-foreground">
+                  {period.tariff.provider}
+                </p>
+                <p className="m-0 mt-2 text-xs-plus text-muted-foreground tabular-nums *:whitespace-nowrap max-[700px]:mt-1">
                   <span>{shortDate(period.start)}</span>
                   <span aria-hidden="true"> → </span>
                   <span className="sr-only"> hasta </span>
                   <span>{period.current ? "Hoy" : shortDate(period.end)}</span>
                 </p>
               </div>
-              <div className="tariff-record-prices">
-                <p className="record-price-label">
+              <div>
+                <p className="m-0 mb-1.5 text-2xs font-semibold tracking-[0.06em] uppercase">
                   <CostCategoryLabel category="energy">
                     Energía
                   </CostCategoryLabel>{" "}
-                  <span>· sin impuestos</span>
+                  <span className="font-normal tracking-normal text-muted-foreground normal-case">
+                    · sin impuestos
+                  </span>
                 </p>
-                <EnergyRates tariff={period.tariff} compact />
-                <details className="record-price-details">
-                  <summary>
-                    <ChevronDown size={14} /> Potencia y otros cargos
+                <EnergyRates
+                  tariff={period.tariff}
+                  compact
+                  className={recordRates}
+                />
+                <details className="group/prices">
+                  <summary className="flex min-h-9 w-fit cursor-pointer list-none flex-wrap items-center gap-1.5 text-xs-plus text-muted-foreground [&::-webkit-details-marker]:hidden">
+                    <ChevronDown
+                      size={14}
+                      className="shrink-0 group-open/prices:rotate-180"
+                    />{" "}
+                    Potencia y otros cargos
                     {hasEstimates && (
-                      <span className="record-estimate-label">
+                      <span className="border-0 border-b border-dotted border-input text-2xs text-muted-foreground">
                         Incluye estimaciones
                       </span>
                     )}
                   </summary>
-                  <dl className="record-extra-prices">
+                  <dl className="m-0 mb-2 text-xs-plus *:mb-1.5 *:grid *:grid-cols-[100px_minmax(0,1fr)] *:gap-2 [&_dd]:m-0 [&_dd]:tabular-nums [&_dt]:text-muted-foreground">
                     <div>
                       <dt>
                         <CostCategoryLabel category="power">
@@ -204,20 +247,33 @@ export default function TariffHistory({
                     </div>
                   </dl>
                   {roundedEnergy && (
-                    <div className="record-original-energy">
-                      <p>Precios de energía originales · sin redondear</p>
-                      <EnergyRates tariff={period.tariff} />
+                    <div className="my-3 text-xs/[1.6] text-muted-foreground">
+                      <p className="m-0">
+                        Precios de energía originales · sin redondear
+                      </p>
+                      <EnergyRates
+                        tariff={period.tariff}
+                        className={originalRates}
+                      />
                     </div>
                   )}
-                  {hasEstimates && <EstimateNotice tariff={period.tariff} />}
+                  {hasEstimates && (
+                    <EstimateNotice tariff={period.tariff} className="my-2" />
+                  )}
                   {period.tariff.notes && (
-                    <p className="small muted">{period.tariff.notes}</p>
+                    <p className="m-0 text-sm-plus text-muted-foreground">
+                      {period.tariff.notes}
+                    </p>
                   )}
                 </details>
               </div>
-              <div className="tariff-record-actions">
-                <button
-                  className="record-edit"
+              <div className="col-span-full flex flex-wrap items-center gap-x-5 gap-y-1 min-[901px]:mt-auto min-[901px]:gap-x-3.5 max-[700px]:gap-x-2">
+                <Button
+                  variant="outline"
+                  className={cn(
+                    recordAction,
+                    "rounded-sm px-3 font-semibold max-[700px]:px-2",
+                  )}
                   aria-label={`Corregir datos de ${period.tariff.name}`}
                   onClick={() =>
                     setDraft({
@@ -228,11 +284,13 @@ export default function TariffHistory({
                     })
                   }
                 >
-                  <Pencil size={14} /> Corregir datos
-                </button>
+                  <Pencil className="size-3.5" /> Corregir datos
+                </Button>
                 {period.current && (
-                  <button
-                    className="record-change"
+                  <Button
+                    variant="link"
+                    size="inline"
+                    className={cn(recordAction, "border-0 font-semibold")}
                     onClick={() =>
                       setDraft({
                         tariff: period.tariff,
@@ -241,11 +299,17 @@ export default function TariffHistory({
                       })
                     }
                   >
-                    <RefreshCw size={14} /> Registrar cambio de precios
-                  </button>
+                    <RefreshCw className="size-3.5" /> Registrar cambio de
+                    precios
+                  </Button>
                 )}
-                <button
-                  className="record-compare"
+                <Button
+                  variant="link"
+                  size="inline"
+                  className={cn(
+                    recordAction,
+                    "border-0 font-normal text-muted-foreground",
+                  )}
                   onClick={() => {
                     try {
                       run(commands.comparePeriod(period.id));
@@ -259,23 +323,25 @@ export default function TariffHistory({
                     }
                   }}
                 >
-                  Volver a comparar <ArrowUpRight size={14} />
-                </button>
-                <button
-                  className="record-remove"
+                  Volver a comparar <ArrowUpRight className="size-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 rounded-sm text-muted-foreground hover:bg-destructive-muted hover:text-destructive max-[700px]:size-11"
                   aria-label={`Eliminar registro de ${period.tariff.name}`}
                   title="Eliminar registro"
                   onClick={() => setRemovingId(period.id)}
                 >
-                  <Trash2 size={16} />
-                </button>
+                  <Trash2 />
+                </Button>
               </div>
             </article>
           );
         })}
       </div>
       {!periods.length && (
-        <div className="panel">
+        <div className="rounded-xl border border-border bg-card">
           <Empty icon={<History size={26} />} title="Tu historia empieza aquí.">
             Añade los precios y las fechas de una tarifa que hayas tenido.
           </Empty>
@@ -286,7 +352,7 @@ export default function TariffHistory({
           title="Eliminar registro"
           summary={
             <>
-              <p className="muted">
+              <p className="text-muted-foreground">
                 {removing.current ? "Tarifa actual" : "Tarifa anterior"} · desde{" "}
                 {shortDate(removing.start)}{" "}
                 {removing.current
@@ -303,7 +369,9 @@ export default function TariffHistory({
                   ? "Te quedarás sin tarifa actual hasta que registres otra. No reactivaremos una tarifa anterior."
                   : "Quedará un hueco en tu historial. No cambiaremos las fechas de otras tarifas."}
               </p>
-              <p className="muted">Las facturas guardadas no cambian.</p>
+              <p className="text-muted-foreground">
+                Las facturas guardadas no cambian.
+              </p>
             </>
           }
           confirmLabel="Eliminar registro"
@@ -319,17 +387,17 @@ export default function TariffHistory({
           title="Registrar tarifa actual"
           onClose={() => setChoosing(false)}
         >
-          <div className="modal-body">
-            <p>
+          <div className="p-6 max-[520px]:p-5">
+            <p className="m-0 mb-5 text-sm-plus">
               Elige una oferta del comparador o introduce los precios de tu
               contrato. Esta acción no cambia tu compañía.
             </p>
-            <div className="tariff-choice-list">
+            <div className="my-5 flex flex-wrap items-center gap-4">
               {workspace.tariffs
                 .filter((t) => t.id !== workspace.currentId)
                 .map((tariff) => (
-                  <button
-                    className="button secondary"
+                  <Button
+                    variant="outline"
                     key={tariff.id}
                     onClick={() => {
                       setChoosing(false);
@@ -341,11 +409,10 @@ export default function TariffHistory({
                     }}
                   >
                     {tariff.name}
-                  </button>
+                  </Button>
                 ))}
             </div>
-            <button
-              className="button primary"
+            <Button
               onClick={() => {
                 setChoosing(false);
                 setDraft({
@@ -356,7 +423,7 @@ export default function TariffHistory({
               }}
             >
               Introducir nueva tarifa
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

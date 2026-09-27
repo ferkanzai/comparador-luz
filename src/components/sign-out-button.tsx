@@ -1,12 +1,15 @@
 "use client";
 import { LogOut } from "lucide-react";
 import { usePage } from "./page-context";
+import { Button } from "@/components/ui/button";
 
 export default function SignOutButton() {
   const { setError } = usePage();
   return (
-    <button
-      className="icon-button"
+    <Button
+      variant="ghost"
+      size="icon"
+
       title="Cerrar sesión"
       aria-label="Cerrar sesión"
       onClick={async () => {
@@ -21,6 +24,6 @@ export default function SignOutButton() {
       }}
     >
       <LogOut size={18} />
-    </button>
+    </Button>
   );
 }

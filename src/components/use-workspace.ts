@@ -26,6 +26,7 @@ import {
   type WorkspaceCommand,
 } from "@/lib/workspace-commands";
 import type { SaveStatus } from "@/lib/sync-status";
+import { notify } from "./feedback-notice";
 
 export type InitialWorkspace = Promise<{ data: Workspace } | { error: string }>;
 
@@ -174,6 +175,7 @@ function useAccountWorkspace(userId?: string, initial?: InitialWorkspace) {
     onError: (failure) => {
       if (failure instanceof SaveError && failure.status === 426)
         setOutdated(true);
+      else notify(failure.message, "error");
       setError(failure.message);
     },
     onSettled: () => {
