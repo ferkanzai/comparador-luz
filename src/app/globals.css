@@ -184,6 +184,20 @@
   :root {
     color-scheme: light;
   }
+  /* iOS Safari gives date inputs a fixed native width wider than a phone's
+     column, which scrolled drawers sideways. Only iOS has this callout. */
+  @supports (-webkit-touch-callout: none) {
+    input[type="date"],
+    input[type="month"] {
+      -webkit-appearance: none;
+      appearance: none;
+      min-width: 0;
+      max-width: 100%;
+    }
+    input::-webkit-date-and-time-value {
+      text-align: left;
+    }
+  }
   html {
     @apply font-sans;
   }
