@@ -241,8 +241,8 @@ export default function ComparisonWorkspace({
         />
       )}
       <section aria-labelledby="comparison-heading">
-        <div className="mb-5 flex items-center justify-between gap-4 max-[600px]:gap-2">
-          <div>
+        <div className="mb-5 flex items-center justify-between gap-4 max-[600px]:items-end max-[600px]:gap-2">
+          <div className="min-w-0">
             <span className="text-3xs font-semibold tracking-[1.4px] text-muted-foreground">
               TU CONSUMO, FRENTE A CADA OFERTA
             </span>
@@ -262,9 +262,11 @@ export default function ComparisonWorkspace({
               disabled={!tariffRoom}
               aria-describedby={tariffRoom ? undefined : "tariff-limit"}
               onClick={onAdd}
+              // Compact on a phone, so the heading keeps one line.
+              className="max-[600px]:h-10 max-[600px]:gap-1.5 max-[600px]:px-3 max-[600px]:text-sm-plus"
             >
               <Plus size={17} />
-              Añadir tarifa
+              Añadir<span className="max-[600px]:sr-only"> tarifa</span>
             </Button>
           )}
         </div>
