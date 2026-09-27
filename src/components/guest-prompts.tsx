@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, History, Receipt } from "lucide-react";
 import { Empty } from "./ui";
+import type { WorkspaceTab } from "@/lib/workspace-tab";
 
 export function SignupBanner() {
   return (
@@ -23,7 +24,11 @@ export function SignupBanner() {
   );
 }
 
-export function AccountRequired({ section }: { section: "history" | "bills" }) {
+export function AccountRequired({
+  section,
+}: {
+  section: Exclude<WorkspaceTab, "compare">;
+}) {
   return (
     <div className="panel">
       <Empty

@@ -8,7 +8,7 @@ import { useWorkspace, type InitialWorkspace } from "./use-workspace";
 import ComparisonWorkspace from "./comparison-workspace";
 import ConfirmDialog from "./confirm-dialog";
 import type { TariffRecordDraft } from "./tariff-record-form";
-import WorkspaceTabs, { type WorkspaceTab } from "./workspace-tabs";
+import WorkspaceTabs, { useWorkspaceTab } from "./workspace-tabs";
 import WorkspaceStatus from "./workspace-status";
 import VerificationBanner from "./verification-banner";
 import { AccountRequired, SignupBanner } from "./guest-prompts";
@@ -49,7 +49,7 @@ export default function Dashboard({
   const [busy, setBusy] = useState(false);
   const { message, setMessage, dismiss, error, setError, openMethod } =
     usePage();
-  const [tab, setTab] = useState<WorkspaceTab>("compare");
+  const [tab, setTab] = useWorkspaceTab();
   const navigation = useRef<HTMLElement>(null);
   const previousTab = useRef(tab);
   useEffect(() => {

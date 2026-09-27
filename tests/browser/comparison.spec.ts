@@ -1124,6 +1124,30 @@ test("keeps section navigation in a consistent position across all three tabs", 
   }
 });
 
+test("keeps the open tab in the URL across reloads and Back", async ({
+  page,
+}) => {
+  await openComparison(page);
+  const navigation = page.getByRole("navigation", {
+    name: "Secciones del comparador",
+  });
+  const tab = (name: string) =>
+    navigation.getByRole("button", { name, exact: true });
+  await tab("Mis facturas").click();
+  await expect(page).toHaveURL(/\/\?tab=facturas$/);
+  await tab("Mis tarifas").click();
+  await expect(page).toHaveURL(/\/\?tab=tarifas$/);
+  await page.reload();
+  await expect(tab("Mis tarifas")).toHaveAttribute("aria-current", "page");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/\?tab=facturas$/);
+  await expect(tab("Mis facturas")).toHaveAttribute("aria-current", "page");
+  await tab("Comparador").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/?tab=otra");
+  await expect(tab("Comparador")).toHaveAttribute("aria-current", "page");
+});
+
 test("sends security headers and renders the account page under the policy", async ({
   page,
 }) => {

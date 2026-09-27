@@ -52,7 +52,7 @@ The account and database integration tests run only with explicitly configured d
 The signed-in autosave/failure/conflict scenario additionally requires a disposable local PostgreSQL database whose name ends in `_test`. Migrate that database using the existing setup instructions, stop any dev server on port 3000, and run:
 
 ```sh
-COMPARISON_TEST_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55433/luz_redesign_test pnpm test:browser
+COMPARISON_TEST_DATABASE_URL=postgresql://postgres:luz-local-test-only@127.0.0.1:55432/luz_test pnpm test:browser
 ```
 
 The test runner starts its own server with that database and console-only email; it refuses to reuse another server in account-test mode. Without the variable, the account scenario is explicitly skipped. Synthetic data is test-only and is never installed in production or shown to new guests.
