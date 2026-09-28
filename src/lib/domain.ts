@@ -261,6 +261,11 @@ const moneyFormat = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
 });
+const wholeMoneyFormat = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+});
 const shortDateFormat = new Intl.DateTimeFormat("es-ES", {
   day: "numeric",
   month: "short",
@@ -273,6 +278,8 @@ const shortMonthFormat = new Intl.DateTimeFormat("es-ES", {
 });
 export const today = () => isoDateFormat.format(new Date());
 export const money = (n: number) => moneyFormat.format(n);
+/** Rounded to whole euros, for annualized amounts that only approximate. */
+export const wholeMoney = (n: number) => wholeMoneyFormat.format(n);
 export const shortDate = (s: string) =>
   s ? shortDateFormat.format(new Date(s)) : "Sin fecha";
 export const shortMonthLabel = (month: string) =>

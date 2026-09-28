@@ -128,6 +128,7 @@ export default function FinalistComparison({
                       total={cost.total}
                       baseline={baseline}
                       current={tariff.id === currentId}
+                      days={cost.days}
                     />
                   </>
                 ) : (

@@ -6,6 +6,7 @@ import {
   shortDate,
   shortMonthLabel,
   today,
+  wholeMoney,
 } from "../src/lib/domain";
 
 test("formats money in euros with Spanish separators", () => {
@@ -13,6 +14,12 @@ test("formats money in euros with Spanish separators", () => {
   assert.equal(money(-3.456), "-3,46\u00a0€");
   assert.equal(money(1234.5), "1234,50\u00a0€");
   assert.equal(money(98765.432), "98.765,43\u00a0€");
+});
+
+test("rounds annualized amounts to whole euros", () => {
+  assert.equal(wholeMoney(364.6), "365\u00a0€");
+  assert.equal(wholeMoney(1342.7), "1343\u00a0€");
+  assert.equal(wholeMoney(12345.4), "12.345\u00a0€");
 });
 
 test("formats short dates and months in UTC", () => {

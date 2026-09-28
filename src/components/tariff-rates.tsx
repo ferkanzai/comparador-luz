@@ -3,11 +3,13 @@ import {
   decimalComma,
   formatPowerPrice,
   money,
+  wholeMoney,
   powerDescription,
   powerUnitLabels,
   type Tariff,
 } from "@/lib/domain";
 import { cents } from "@/lib/calculator";
+import { annualize } from "@/lib/savings-summary";
 import { formatTariffPrice } from "@/lib/tariff-price-format";
 import { cn } from "@/lib/utils";
 
@@ -83,10 +85,13 @@ export function CostDifference({
   total,
   baseline,
   current,
+  days,
 }: {
   total: number;
   baseline?: number;
   current: boolean;
+  /** The period's days; when given, the difference is also annualized. */
+  days?: number;
 }) {
   const note = "mt-1.5 block text-2xs tabular-nums";
   const reference = cn(note, "text-muted-foreground");
@@ -107,6 +112,11 @@ export function CostDifference({
       {difference === 0
         ? "Mismo coste"
         : `${difference > 0 ? "Ahorras" : "Pagas más"} ${money(Math.abs(difference))}`}
+      {days !== undefined && difference !== 0 && (
+        <span className="mt-0.5 block font-normal">
+          ≈ {wholeMoney(annualize(Math.abs(difference), days))} al año
+        </span>
+      )}
     </span>
   );
 }

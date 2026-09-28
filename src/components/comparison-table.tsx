@@ -139,6 +139,7 @@ function TariffTotal({ row: { cost, reason }, baseline, current }: RowProps) {
         total={cost.total}
         baseline={baseline}
         current={current}
+        days={cost.days}
       />
     </>
   ) : (
@@ -204,10 +205,12 @@ function RowActions({
 
 function TableRow(props: RowProps) {
   const { tariff, cost } = props.row;
+  const leading = props.cheapest && !props.current;
   const body = cn(
     cell,
     "group-last/row:border-b-0 group-hover/row:bg-inverse-foreground",
     props.current && "bg-background",
+    leading && "bg-success-muted",
   );
   return (
     <tr className="group/row">
@@ -217,7 +220,9 @@ function TableRow(props: RowProps) {
           body,
           stickyColumn,
           "z-1 text-sm font-medium tracking-[0.8px] text-muted-foreground uppercase",
-          !props.current && "bg-card",
+          !props.current && !leading && "bg-card",
+          // A green edge marks the cheapest tariff, when it is not the current one.
+          leading && "shadow-[inset_4px_0_0_var(--success)]",
         )}
       >
         <TariffIdentity {...props} />
@@ -254,6 +259,9 @@ function TariffCard(props: RowProps) {
         className={cn(
           "flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-4",
           props.current && "bg-background",
+          props.cheapest &&
+            !props.current &&
+            "border-success-border bg-success-muted shadow-[inset_4px_0_0_var(--success)]",
         )}
         aria-label={tariff.name}
       >

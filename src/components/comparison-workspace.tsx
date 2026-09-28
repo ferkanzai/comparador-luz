@@ -40,6 +40,8 @@ import { usePowerComparisonUnit } from "./use-power-comparison-unit";
 import { ProfileFields, TaxFields, TaxAssumptions } from "./profile-fields";
 import { Empty, Modal } from "./ui";
 import FinalistComparison from "./finalist-comparison";
+import SavingsSummaryPanel from "./savings-summary";
+import { summarizeSavings } from "@/lib/savings-summary";
 import PvpcComparison from "./pvpc-comparison";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 import { Button } from "@/components/ui/button";
@@ -159,6 +161,7 @@ export default function ComparisonWorkspace({
     })
     .sort((a, b) => (a.cost?.total ?? Infinity) - (b.cost?.total ?? Infinity));
   const baseline = rows.find((row) => row.tariff.id === data.currentId);
+  const summary = summarizeSavings(rows, data.currentId);
   const detail = rows.find((row) => row.tariff.id === detailId);
   return (
     <div className="min-w-0">
@@ -293,6 +296,12 @@ export default function ComparisonWorkspace({
           </Card>
         ) : (
           <>
+            {summary && (
+              <SavingsSummaryPanel
+                summary={summary}
+                simulated={simulation !== null}
+              />
+            )}
             <div className="mb-3 flex items-center justify-between gap-4 max-[1000px]:flex-wrap max-[600px]:flex-nowrap max-[600px]:items-end max-[600px]:gap-2">
               <p className="m-0 text-xs font-semibold max-[600px]:text-2xs">
                 {profile.days || "—"} días ·{" "}
