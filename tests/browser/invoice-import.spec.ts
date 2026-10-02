@@ -105,7 +105,14 @@ test("an account records the imported bill from the bills tab", async ({
       .getByLabel("Mes de la factura", { exact: true })
       .locator("option:checked"),
   ).toHaveText("Septiembre");
-  await expect(dialog.getByLabel("Mes de la factura: año")).toHaveValue("2026");
+  const year = dialog.getByLabel("Mes de la factura: año");
+  await expect(year).toHaveValue("2026");
+  // Typed, so any year since 1990 works, and an unfinished one is flagged.
+  await year.fill("20");
+  await expect(dialog.getByText(/año con cuatro cifras/)).toBeVisible();
+  await year.fill("2006");
+  await expect(dialog.getByText(/año con cuatro cifras/)).toHaveCount(0);
+  await year.fill("2026");
   await dialog.getByLabel("Desde cuándo tienes esta tarifa").fill("2026-02-27");
   // The bill is the last of the import's saves.
   const billSaved = page.waitForResponse(

@@ -94,7 +94,12 @@ function hasLegacyPriceLines(value: unknown): boolean {
 export const billSchema = z
   .object({
     id: z.uuid(),
-    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    month: z
+      .string()
+      .regex(
+        /^\d{4}-(0[1-9]|1[0-2])$/,
+        "Indica el mes y el año de la factura.",
+      ),
     periodStart: optionalDate.default(""),
     periodEnd: optionalDate.default(""),
     provider: z.string().trim().min(1).max(100),

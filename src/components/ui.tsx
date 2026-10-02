@@ -182,22 +182,19 @@ export function MonthField({
 }) {
   const id = useId();
   const [year, month] = (value || today().slice(0, 7)).split("-");
-  const thisYear = Number(today().slice(0, 4));
-  const first = Math.min(2015, Number(year));
-  const years = Array.from(
-    { length: Math.max(thisYear + 1, Number(year)) - first + 1 },
-    (_, index) => String(Math.max(thisYear + 1, Number(year)) - index),
-  );
-  const select = "*:[select]:min-h-11";
+  // Any year: old invoices are welcome, so only the format is checked.
+  const yearProblem = /^\d{4}$/.test(year)
+    ? ""
+    : "Escribe el año con cuatro cifras.";
   return (
-    <UiField className="min-w-0">
+    <UiField className="min-w-0" data-invalid={!!yearProblem || undefined}>
       <FieldLabel htmlFor={id} className="mb-1.5 text-muted-foreground">
         {label}
       </FieldLabel>
       <div className="flex gap-2">
         <NativeSelect
           id={id}
-          className={cn("flex-1", select)}
+          className="flex-1 *:[select]:min-h-11"
           value={month}
           aria-describedby={hint ? `${id}-hint` : undefined}
           onChange={(e) => onChange(`${year}-${e.target.value}`)}
@@ -211,19 +208,23 @@ export function MonthField({
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <NativeSelect
+        <Input
           aria-label={`${label}: año`}
-          className={cn("w-28", select)}
+          className="h-11 w-24"
+          inputMode="numeric"
+          pattern="[0-9]{4}"
+          maxLength={4}
+          required
           value={year}
-          onChange={(e) => onChange(`${e.target.value}-${month}`)}
-        >
-          {years.map((y) => (
-            <NativeSelectOption key={y} value={y}>
-              {y}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          aria-invalid={!!yearProblem || undefined}
+          aria-describedby={yearProblem ? `${id}-error` : undefined}
+          // Typed as is, so an unfinished year can't save as the old one.
+          onChange={(e) =>
+            onChange(`${e.target.value.replace(/\D/g, "")}-${month}`)
+          }
+        />
       </div>
+      {yearProblem && <FieldError id={`${id}-error`}>{yearProblem}</FieldError>}
       {hint && <FieldDescription id={`${id}-hint`}>{hint}</FieldDescription>}
     </UiField>
   );

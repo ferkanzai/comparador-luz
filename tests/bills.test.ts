@@ -229,3 +229,25 @@ test("reconciliation distinguishes missing values, exact matches and credit mism
     null,
   );
 });
+
+test("a bill's reporting month takes any four-digit year, however old", () => {
+  const base = {
+    id: crypto.randomUUID(),
+    provider: "Supplier",
+    paid: "26.35",
+    kwh: "43",
+    notes: "",
+    tariff: null,
+  };
+  const month = (m: string) => billSchema.safeParse({ ...base, month: m });
+  assert.ok(month("2006-03").success);
+  assert.ok(month("1950-01").success);
+  for (const wrong of ["20-09", "2026-13", ""]) {
+    const result = month(wrong);
+    assert.equal(result.success, false, wrong);
+    assert.equal(
+      result.error!.issues[0].message,
+      "Indica el mes y el año de la factura.",
+    );
+  }
+});
