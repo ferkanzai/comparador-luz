@@ -10,6 +10,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "./input-otp";
 import { Brand } from "./ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "./password-input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   authField,
@@ -327,10 +328,9 @@ export default function AccountForm({
                     <label htmlFor="password">
                       {mode === "reset" ? "Nueva contraseña" : "Contraseña"}
                     </label>
-                    <Input
+                    <PasswordInput
                       id="password"
                       name="password"
-                      type="password"
                       required
                       minLength={mode === "signin" ? 1 : 12}
                       maxLength={128}

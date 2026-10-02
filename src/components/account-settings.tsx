@@ -8,7 +8,7 @@ import type { CurrentUser } from "@/lib/current-user";
 import { workspaceSchema } from "@/lib/domain";
 import { downloadWorkspace } from "@/lib/workspace-export";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "./password-input";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import {
@@ -148,10 +148,9 @@ export default function AccountSettings({
             >
               <div className={settingsField}>
                 <label htmlFor="current-password">Contraseña actual</label>
-                <Input
+                <PasswordInput
                   id="current-password"
                   name="currentPassword"
-                  type="password"
                   required
                   autoComplete="current-password"
                   maxLength={128}
@@ -159,10 +158,9 @@ export default function AccountSettings({
               </div>
               <div className={settingsField}>
                 <label htmlFor="new-password">Nueva contraseña</label>
-                <Input
+                <PasswordInput
                   id="new-password"
                   name="newPassword"
-                  type="password"
                   required
                   minLength={12}
                   maxLength={128}

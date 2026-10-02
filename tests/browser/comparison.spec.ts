@@ -1181,3 +1181,16 @@ test("keeps account hints out of field names", async ({ page }) => {
     "Al menos 12 caracteres. Puedes usar una frase.",
   );
 });
+
+test("the password can be shown and hidden again", async ({ page }) => {
+  await page.goto("/cuenta");
+  await page.getByRole("radio", { name: "Contraseña", exact: true }).click();
+  const password = page.getByLabel("Contraseña", { exact: true });
+  await password.fill("una frase secreta");
+  await expect(password).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Mostrar contraseña" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+  await expect(password).toHaveValue("una frase secreta");
+  await page.getByRole("button", { name: "Ocultar contraseña" }).click();
+  await expect(password).toHaveAttribute("type", "password");
+});
