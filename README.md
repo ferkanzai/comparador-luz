@@ -7,6 +7,7 @@ A Spanish electricity dashboard for comparing offers and recording your househol
 - PostgreSQL persistence (Drizzle) with account-scoped foreign keys and row-level security; each change saves on its own, and the last save wins.
 - Saved consumption, current tariff, manually entered offers and optional offer expiry.
 - Dated contract history, with separate corrections and real price changes.
+- Invoice import: the CNMC QR code on a PDF or photo prefills a bill, the comparison profile and the tariff, decoded in the browser.
 - Bills with actual date ranges, consumption snapshots, editable breakdowns, immediate saving, monthly stacked charts and JSON export.
 - Optional IVA and IEE, social-bonus financing, separately billed SNOEE costs, meter rental and maintenance services, with visible breakdowns.
 - Spanish number formatting, decimal commas, keyboard-accessible dialogs and responsive layouts.
@@ -24,7 +25,7 @@ Vercel deployments automatically run database migrations before building through
 
 ## Daily workflow
 
-Start with your current tariff or your consumption. Every tariff uses one shared comparison profile. The comparison table shows estimated period totals, savings, energy and power costs, original unit prices, and other charges. Power quotes can be compared in a shared day/month/year unit. On a phone, scroll the table horizontally while tariff names remain visible. Select up to three tariffs for an optional detailed comparison; selection does not change your current contract.
+Start with your current tariff or your consumption, or **Importar mi factura**: the QR code on a 2.0TD invoice fills the comparison profile, the tariff and, for accounts, the bill. The review lets you keep or skip each one; nothing from the invoice is sent to the server. Supplier names come from the CNMC register (`data/cnmc-suppliers.csv`); regenerate them with `npx tsx scripts/generate-suppliers.ts`. Every tariff uses one shared comparison profile. The comparison table shows estimated period totals, savings, energy and power costs, original unit prices, and other charges. Power quotes can be compared in a shared day/month/year unit. On a phone, scroll the table horizontally while tariff names remain visible. Select up to three tariffs for an optional detailed comparison; selection does not change your current contract.
 
 Use **Editar perfil** to change the shared inputs. **Simular consumo** accepts punta, llano and valle kWh directly, like an invoice, and shows their calculated total on the right (below on a phone). Simulations apply to every result but stay outside autosave and export until you choose **Usar este consumo**. **Restablecer** returns to the underlying profile. Reset or adopt a simulation before creating a bill from the comparison, then check the actual invoice figures.
 

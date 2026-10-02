@@ -86,3 +86,37 @@ export function adoptSimulation(
 ): Workspace {
   return { ...w, profile: { ...w.profile, ...consumption } };
 }
+
+/** Where an imported invoice's tariff goes, preselected from the current tariff. */
+export type TariffRole =
+  "current" | "matches-current" | "price-change" | "offer";
+/** A current tariff or a price change starts on a date the user gives. */
+export const roleStartsContract = (role: TariffRole) =>
+  role === "current" || role === "price-change";
+
+export type InvoiceImportChoices = {
+  bill: Bill | null;
+  profile: Profile | null;
+  tariff: Tariff | null;
+  role: TariffRole;
+  /** When the tariff's terms began, for a current tariff or a price change. */
+  since: string;
+};
+/** Saves what the household kept from an imported invoice; null skips that part. */
+export function importInvoice(
+  w: Workspace,
+  { bill, profile, tariff, role, since }: InvoiceImportChoices,
+): Workspace {
+  let next = profile ? updateProfile(w, profile) : w;
+  if (tariff && roleStartsContract(role)) {
+    if (!since) throw new Error("Indica desde cuándo tienes estos precios.");
+    next = recordCurrent(next, tariff, since);
+  } else if (tariff && role === "offer")
+    next = saveTariff(next, tariff, {
+      makeCurrent: false,
+      profile: next.profile,
+      since: "",
+    });
+  // The bill carries its own tariff snapshot, saved or not.
+  return bill ? saveBill(next, bill) : next;
+}

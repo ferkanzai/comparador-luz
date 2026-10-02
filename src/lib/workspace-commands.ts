@@ -9,11 +9,14 @@ import {
 } from "./tariff-periods";
 import {
   adoptSimulation,
+  importInvoice,
   removeBill,
+  roleStartsContract,
   removeTariff,
   saveBill,
   saveTariff,
   updateProfile,
+  type InvoiceImportChoices,
   type SaveTariffOptions,
 } from "./workspace-actions";
 
@@ -52,6 +55,17 @@ const offer = (tariff: Tariff): SaveRequest => ({
   path: `/api/offers/${tariff.id}`,
   body: tariff,
 });
+// Registers the current tariff, or a price change that closes the previous period.
+const contractRequest = (tariff: Tariff, since: string): SaveRequest => ({
+  method: "POST",
+  path: "/api/contract/current",
+  body: { tariff, since },
+});
+const billRequest = (bill: Bill, newOffer?: Tariff): SaveRequest => ({
+  method: "PUT",
+  path: `/api/bills/${bill.id}`,
+  body: { bill, ...(newOffer ? { newOffer } : {}) },
+});
 
 export const commands = {
   updateProfile: (profile: Profile): WorkspaceCommand => ({
@@ -71,11 +85,7 @@ export const commands = {
     requests: (before, after) => [
       ...profileChanges(before, after),
       options.makeCurrent && !before.currentId
-        ? {
-            method: "POST",
-            path: "/api/contract/current",
-            body: { tariff, since: options.since },
-          }
+        ? contractRequest(tariff, options.since)
         : offer(tariff),
     ],
   }),
@@ -93,13 +103,7 @@ export const commands = {
   }),
   saveBill: (bill: Bill, newTariff?: Tariff): WorkspaceCommand => ({
     apply: (w) => saveBill(w, bill, newTariff),
-    requests: () => [
-      {
-        method: "PUT",
-        path: `/api/bills/${bill.id}`,
-        body: { bill, ...(newTariff ? { newOffer: newTariff } : {}) },
-      },
-    ],
+    requests: () => [billRequest(bill, newTariff)],
   }),
   removeBill: (id: string): WorkspaceCommand => ({
     apply: (w) => removeBill(w, id),
@@ -107,13 +111,7 @@ export const commands = {
   }),
   recordCurrent: (tariff: Tariff, since: string): WorkspaceCommand => ({
     apply: (w) => recordCurrent(w, tariff, since),
-    requests: () => [
-      {
-        method: "POST",
-        path: "/api/contract/current",
-        body: { tariff, since },
-      },
-    ],
+    requests: () => [contractRequest(tariff, since)],
   }),
   recordHistorical: (
     tariff: Tariff,
@@ -154,5 +152,20 @@ export const commands = {
       after.tariffs
         .filter((t) => !before.tariffs.some((b) => b.id === t.id))
         .map(offer),
+  }),
+  importInvoice: (choices: InvoiceImportChoices): WorkspaceCommand => ({
+    apply: (w) => importInvoice(w, choices),
+    requests: (before, after) => {
+      const { bill, tariff, role, since } = choices;
+      return [
+        ...profileChanges(before, after),
+        ...(tariff && roleStartsContract(role)
+          ? [contractRequest(tariff, since)]
+          : tariff && role === "offer"
+            ? [offer(tariff)]
+            : []),
+        ...(bill ? [billRequest(bill)] : []),
+      ];
+    },
   }),
 };

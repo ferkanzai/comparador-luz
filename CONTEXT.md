@@ -17,7 +17,7 @@ _Avoid_: User profile, account profile.
 A temporary variation of the comparison profile's total consumption or distribution across energy periods, used to compare every tariff on the same hypothetical basis. It becomes part of the household's comparison profile only when explicitly adopted; it is not recorded consumption from a bill.
 
 **Supplier (comercializadora)**:
-The company offering the tariff or named on the bill; “provider” refers to this same role. It is distinct from the electricity distributor that operates the local network.
+The company offering the tariff or named on the bill; “provider” refers to this same role. It is distinct from the electricity distributor that operates the local network. Invoices identify it by its code in the CNMC supplier register (R2-XXX).
 
 **Tariff (tarifa)**:
 A named set of pre-tax energy and power prices, optional charges, and offer information entered for a supplier. Prices represent the final contracted rates after applicable contractual discounts.
@@ -130,6 +130,13 @@ A separate estimate using the last complete calendar month's published retail PV
 **Bill (factura)**:
 A user-recorded supplier invoice with a reporting month and net amount paid, optionally including billing dates, consumption, charge breakdown, and tariff and profile snapshots. “Invoice” names the same concept here; amounts initially copied from a comparison are draft estimates to check against the actual invoice.
 _Avoid_: Calculation result, tariff.
+
+**Invoice QR (código QR de la factura)**:
+The CNMC-mandated QR code on a 2.0TD electricity invoice, linking to the CNMC comparator with the invoice's billing dates, contracted power, consumption by period, list prices before taxes and discounts, billed subtotals, total, and supplier code. It also carries supply-point identifiers the app does not keep.
+
+**Invoice import (importar factura)**:
+Reading an invoice QR from a PDF or image on the household's device to prefill a bill, comparison profile, and tariff, each reviewed and saved only if the user chooses. The invoice itself is neither stored nor sent anywhere.
+_Avoid_: Bill upload, automatic bill recording.
 
 **Billing period (período facturado)**:
 The interval between a bill's start and end meter-reading dates, with duration equal to end minus start. It may cross calendar months and is distinct from the month chosen for reporting.

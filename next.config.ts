@@ -4,9 +4,11 @@ const isDev = process.env.NODE_ENV === "development";
 
 // No nonces: they would force dynamic rendering of every page. Inline scripts
 // stay allowed for Next's hydration payload; exfiltration is blocked instead.
+// 'wasm-unsafe-eval' lets the invoice QR decoder compile its own WebAssembly;
+// it doesn't allow eval of scripts.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",

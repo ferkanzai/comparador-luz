@@ -47,6 +47,14 @@ export default function Privacy() {
             tu navegador.
           </p>
 
+          <h2>Si importas una factura</h2>
+          <p>
+            El PDF o la imagen de tu factura se leen en tu navegador: no los
+            recibimos ni los guardamos. De su código QR solo se guarda lo que
+            decidas guardar (la factura, tu consumo y tu tarifa), nunca tu CUPS
+            ni tu código postal.
+          </p>
+
           <h2>Si creas una cuenta</h2>
           <ul>
             <li>

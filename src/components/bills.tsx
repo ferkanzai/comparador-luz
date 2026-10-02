@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Plus, Receipt } from "lucide-react";
+import { FileUp, Plus, Receipt } from "lucide-react";
 import {
   money,
   today,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/bill-data";
 import { Empty } from "./ui";
 import BillForm from "./bill-form";
+import InvoiceImportDialog from "./invoice-import-dialog";
 import ConfirmDialog from "./confirm-dialog";
 import BillsChart from "./bills-chart";
 import BillList from "./bill-list";
@@ -48,6 +49,7 @@ export default function Bills({
   run: (command: WorkspaceCommand) => void;
 }) {
   const [editing, setEditing] = useState<Bill | null>(null);
+  const [importing, setImporting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const removing = w.bills.find((b) => b.id === removingId);
   const [year, setYear] = useState(today().slice(0, 4));
@@ -122,10 +124,16 @@ export default function Bills({
             Lo que pagas y consumes, mes a mes o año a año.
           </p>
         </div>
-        <Button onClick={create}>
-          <Plus size={17} />
-          Añadir factura
-        </Button>
+        <div className="flex flex-wrap gap-2.5">
+          <Button variant="outline" onClick={() => setImporting(true)}>
+            <FileUp size={17} />
+            Importar factura
+          </Button>
+          <Button onClick={create}>
+            <Plus size={17} />
+            Añadir factura
+          </Button>
+        </div>
       </div>
       <div
         className="mb-6 flex items-center gap-6 border-b border-border [&>button]:relative [&>button]:px-0.5 [&>button]:py-3.5 [&>button]:font-semibold [&>button]:text-muted-foreground [&>button]:aria-pressed:text-foreground [&>button]:aria-pressed:after:absolute [&>button]:aria-pressed:after:inset-x-0 [&>button]:aria-pressed:after:-bottom-px [&>button]:aria-pressed:after:h-[3px] [&>button]:aria-pressed:after:rounded-t-sm [&>button]:aria-pressed:after:bg-primary"
@@ -332,6 +340,18 @@ export default function Bills({
             setRemovingId(null);
           }}
           onClose={() => setRemovingId(null)}
+        />
+      )}
+      {importing && (
+        <InvoiceImportDialog
+          workspace={w}
+          run={run}
+          onClose={() => setImporting(false)}
+          onImported={(bill) => {
+            if (!bill) return;
+            setYear(bill.month.slice(0, 4));
+            setView("months");
+          }}
         />
       )}
       {editing && (

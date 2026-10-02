@@ -26,6 +26,7 @@ import {
   readSimulation,
   type ConsumptionSimulation,
 } from "@/lib/consumption-simulation";
+import InvoiceImportDialog from "./invoice-import-dialog";
 import ConsumptionSimulator from "./consumption-simulator";
 import { canAddTariff } from "@/lib/workspace-actions";
 import { tariffLimitMessage } from "@/lib/tariff-periods";
@@ -85,6 +86,7 @@ export default function ComparisonWorkspace({
   onMethod: () => void;
 }) {
   const [simulationOpen, setSimulationOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [simulation, setSimulation] = useState<ConsumptionSimulation | null>(
     null,
   );
@@ -285,13 +287,20 @@ export default function ComparisonWorkspace({
               title="Empecemos por tu tarifa actual."
               action={
                 <div className="grid justify-items-center gap-1">
-                  <Button onClick={onAdd}>Añadir mi tarifa actual</Button>
+                  <div className="flex flex-wrap justify-center gap-2.5">
+                    <Button onClick={() => setImporting(true)}>
+                      Importar mi factura
+                    </Button>
+                    <Button variant="outline" onClick={onAdd}>
+                      Añadir mi tarifa actual
+                    </Button>
+                  </div>
                   <CnmcLink />
                 </div>
               }
             >
-              Ten tu última factura a mano. Añade tus precios y después las
-              ofertas que quieras comparar.
+              Sube tu última factura y rellenamos tus precios y tu consumo, o
+              añádelos a mano. Después, añade las ofertas que quieras comparar.
             </Empty>
           </Card>
         ) : (
@@ -473,6 +482,14 @@ export default function ComparisonWorkspace({
           actions={actions}
           canDuplicate={tariffRoom}
           onClose={() => onDetails(null)}
+        />
+      )}
+      {importing && (
+        <InvoiceImportDialog
+          workspace={data}
+          run={run}
+          canRecordBills={!!onBill}
+          onClose={() => setImporting(false)}
         />
       )}
     </div>
