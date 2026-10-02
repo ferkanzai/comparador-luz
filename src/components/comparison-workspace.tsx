@@ -1,4 +1,5 @@
 "use client";
+import dynamic from "next/dynamic";
 
 import { useState } from "react";
 import {
@@ -26,7 +27,6 @@ import {
   readSimulation,
   type ConsumptionSimulation,
 } from "@/lib/consumption-simulation";
-import InvoiceImportDialog from "./invoice-import-dialog";
 import ConsumptionSimulator from "./consumption-simulator";
 import { canAddTariff } from "@/lib/workspace-actions";
 import { tariffLimitMessage } from "@/lib/tariff-periods";
@@ -64,6 +64,8 @@ const profileButton = "max-[600px]:ml-0";
 
 const quantity = (value: number) =>
   value.toLocaleString("es-ES", { maximumFractionDigits: 3 });
+
+const InvoiceImportDialog = dynamic(() => import("./invoice-import-dialog"));
 
 export default function ComparisonWorkspace({
   data,

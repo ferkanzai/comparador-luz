@@ -1,4 +1,5 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { FileUp, Plus, Receipt } from "lucide-react";
 import {
@@ -17,7 +18,6 @@ import {
 } from "@/lib/bill-data";
 import { Empty } from "./ui";
 import BillForm from "./bill-form";
-import InvoiceImportDialog from "./invoice-import-dialog";
 import ConfirmDialog from "./confirm-dialog";
 import BillsChart from "./bills-chart";
 import BillList from "./bill-list";
@@ -41,6 +41,8 @@ import {
   tableCaption,
   tableScroll,
 } from "./bill-styles";
+const InvoiceImportDialog = dynamic(() => import("./invoice-import-dialog"));
+
 export default function Bills({
   workspace: w,
   run,
