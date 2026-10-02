@@ -1,5 +1,6 @@
 import { expect, test } from "./strict-test";
 import { signUpVerified } from "./sign-up";
+import { openComparison } from "./comparison.fixture";
 
 test("a guest imports an invoice PDF into an empty comparison, without sending it anywhere or recording a bill they can't see", async ({
   page,
@@ -10,7 +11,7 @@ test("a guest imports an invoice PDF into an empty comparison, without sending i
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Importar mi factura", exact: true })
+    .getByRole("button", { name: "Sube tu factura", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Importar factura" });
   await expect(dialog).toContainText("no la guardamos ni la enviamos");
@@ -51,7 +52,7 @@ test("an image of the QR opens the review, and a picture without one explains wh
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Importar mi factura", exact: true })
+    .getByRole("button", { name: "Sube tu factura", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Importar factura" });
   const input = dialog.locator('input[type="file"]');
@@ -101,4 +102,16 @@ test("an account records the imported bill from the bills tab", async ({
   await expect(page.getByText("26,35 €").first()).toBeVisible();
   await page.reload();
   await expect(page.getByText("26,35 €").first()).toBeVisible();
+});
+
+test("with tariffs already entered, the comparison still offers the upload", async ({
+  page,
+}) => {
+  await openComparison(page);
+  await page
+    .getByRole("button", { name: "Sube tu factura", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Importar factura" }),
+  ).toBeVisible();
 });

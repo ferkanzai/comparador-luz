@@ -11,6 +11,7 @@ import {
   Zap,
   X,
   Columns3,
+  FileUp,
 } from "lucide-react";
 import { calculate } from "@/lib/calculator";
 import {
@@ -248,11 +249,12 @@ export default function ComparisonWorkspace({
         />
       )}
       <section aria-labelledby="comparison-heading">
-        <div className="mb-5 flex items-center justify-between gap-4 max-[600px]:items-end max-[600px]:gap-2">
+        {/* Above the row, so the buttons beside the heading don't make it wrap on a phone. */}
+        <span className="block text-3xs font-semibold tracking-[1.4px] text-muted-foreground">
+          TU CONSUMO, FRENTE A CADA OFERTA
+        </span>
+        <div className="mb-5 flex items-center justify-between gap-4 max-[600px]:gap-2">
           <div className="min-w-0">
-            <span className="text-3xs font-semibold tracking-[1.4px] text-muted-foreground">
-              TU CONSUMO, FRENTE A CADA OFERTA
-            </span>
             <h2
               id="comparison-heading"
               className="m-0 mt-1 flex items-center gap-3 font-heading text-3xl font-bold tracking-[-1px] max-[600px]:gap-2 max-[600px]:text-xl"
@@ -263,18 +265,29 @@ export default function ComparisonWorkspace({
               </span>
             </h2>
           </div>
-          {/* With no tariffs, the empty state's button is the one call to action. */}
+          {/* With no tariffs, the empty state's buttons are the calls to action. */}
           {data.tariffs.length > 0 && (
-            <Button
-              disabled={!tariffRoom}
-              aria-describedby={tariffRoom ? undefined : "tariff-limit"}
-              onClick={onAdd}
-              // Compact on a phone, so the heading keeps one line.
-              className="max-[600px]:h-10 max-[600px]:gap-1.5 max-[600px]:px-3 max-[600px]:text-sm-plus"
-            >
-              <Plus size={17} />
-              Añadir<span className="max-[600px]:sr-only"> tarifa</span>
-            </Button>
+            <div className="flex shrink-0 gap-2.5 max-[600px]:gap-1.5">
+              <Button
+                variant="outline"
+                onClick={() => setImporting(true)}
+                className="max-[600px]:h-10 max-[600px]:gap-1.5 max-[600px]:px-3 max-[600px]:text-sm-plus"
+              >
+                <FileUp size={17} />
+                <span className="max-[600px]:sr-only">Sube tu factura</span>
+              </Button>
+              <Button
+                disabled={!tariffRoom}
+                aria-describedby={tariffRoom ? undefined : "tariff-limit"}
+                onClick={onAdd}
+                // Compact on a phone, so the heading keeps one line.
+                className="max-[600px]:h-10 max-[600px]:gap-1.5 max-[600px]:px-3 max-[600px]:text-sm-plus max-[400px]:gap-0"
+              >
+                <Plus size={17} />
+                <span className="max-[400px]:sr-only">Añadir</span>
+                <span className="max-[600px]:sr-only"> tarifa</span>
+              </Button>
+            </div>
           )}
         </div>
         {!tariffRoom && (
@@ -291,7 +304,8 @@ export default function ComparisonWorkspace({
                 <div className="grid justify-items-center gap-1">
                   <div className="flex flex-wrap justify-center gap-2.5">
                     <Button onClick={() => setImporting(true)}>
-                      Importar mi factura
+                      <FileUp size={17} />
+                      Sube tu factura
                     </Button>
                     <Button variant="outline" onClick={onAdd}>
                       Añadir mi tarifa actual
