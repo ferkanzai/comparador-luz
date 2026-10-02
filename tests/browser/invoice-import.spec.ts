@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "./strict-test";
 import { signUpVerified } from "./sign-up";
 import { openComparison } from "./comparison.fixture";
@@ -114,4 +115,31 @@ test("with tariffs already entered, the comparison still offers the upload", asy
   await expect(
     page.getByRole("dialog", { name: "Importar factura" }),
   ).toBeVisible();
+});
+
+test("dropping the invoice PDF onto the dialog reads it", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Sube tu factura", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Importar factura" });
+  const zone = dialog.getByText("Elegir PDF o imagen");
+  await expect(dialog.getByText("o arrástralo aquí")).toBeVisible();
+  const pdf = readFileSync("tests/fixtures/invoice.pdf").toString("base64");
+  const drop = await page.evaluateHandle((data) => {
+    const transfer = new DataTransfer();
+    const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+    transfer.items.add(
+      new File([bytes], "factura.pdf", { type: "application/pdf" }),
+    );
+    return transfer;
+  }, pdf);
+  await zone.dispatchEvent("dragover", { dataTransfer: drop });
+  await expect(dialog.getByText("Suelta aquí tu factura")).toBeVisible();
+  await dialog
+    .getByText("Suelta aquí tu factura")
+    .dispatchEvent("drop", { dataTransfer: drop });
+  await expect(dialog.getByLabel("Comercializadora")).toHaveValue(
+    "Octopus Energy España",
+  );
 });

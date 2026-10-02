@@ -67,6 +67,7 @@ export default function InvoiceImportDialog({
 }) {
   const [plan, setPlan] = useState<InvoiceImport | null>(null);
   const [reading, setReading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
 
   async function read(file: File | undefined) {
@@ -122,12 +123,40 @@ export default function InvoiceImportDialog({
           <label
             className={cn(
               "flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border p-8 text-center has-focus-visible:ring-2 has-focus-visible:ring-ring",
+              dragging && "border-primary bg-accent",
               reading && "pointer-events-none opacity-70",
             )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={(e) => {
+              // Leaving for a child still counts as inside the drop zone.
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                setDragging(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              void read(e.dataTransfer.files[0]);
+            }}
           >
             <FileUp aria-hidden />
             <span className="font-semibold">
-              {reading ? "Leyendo la factura…" : "Elegir PDF o imagen"}
+              {reading
+                ? "Leyendo la factura…"
+                : dragging
+                  ? "Suelta aquí tu factura"
+                  : "Elegir PDF o imagen"}
+            </span>
+            {/* Hidden, not removed, so the drop zone keeps its size. */}
+            <span
+              className={cn(
+                "text-sm text-muted-foreground pointer-coarse:hidden",
+                (reading || dragging) && "invisible",
+              )}
+            >
+              o arrástralo aquí
             </span>
             <input
               type="file"
