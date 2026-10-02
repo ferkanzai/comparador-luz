@@ -13,7 +13,7 @@ import {
   type Tariff,
 } from "@/lib/domain";
 import { billLines, billReconciliation } from "@/lib/bill-data";
-import { Field, Modal } from "./ui";
+import { Field, Modal, MonthField } from "./ui";
 import EstimateNotice from "./estimate-notice";
 import BillConsumptionFields from "./bill-consumption-fields";
 import TariffForm, {
@@ -199,11 +199,9 @@ export default function BillForm({
                 antes de guardar.
               </p>
               <div className={cn(two, "mb-4")}>
-                <Field
+                <MonthField
                   label="Mes para el gráfico"
                   hint="Por defecto, el mes en que termina el período. Puedes cambiarlo."
-                  type="month"
-                  required
                   value={editing.month}
                   onChange={(v) => setEditing({ ...editing, month: v })}
                 />

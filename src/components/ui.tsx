@@ -16,6 +16,11 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { today } from "@/lib/domain";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -149,6 +154,76 @@ export function Field({
             : "Usa un número positivo, con coma o punto decimal."}
         </FieldError>
       )}
+      {hint && <FieldDescription id={`${id}-hint`}>{hint}</FieldDescription>}
+    </UiField>
+  );
+}
+const monthNames = Array.from({ length: 12 }, (_, index) => {
+  const name = new Intl.DateTimeFormat("es-ES", {
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(2000, index, 1)));
+  return name[0].toUpperCase() + name.slice(1);
+});
+/**
+ * A YYYY-MM month as two selects. Browsers draw `type="month"` in their own
+ * language, so an English browser would show "October".
+ */
+export function MonthField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+}) {
+  const id = useId();
+  const [year, month] = (value || today().slice(0, 7)).split("-");
+  const thisYear = Number(today().slice(0, 4));
+  const first = Math.min(2015, Number(year));
+  const years = Array.from(
+    { length: Math.max(thisYear + 1, Number(year)) - first + 1 },
+    (_, index) => String(Math.max(thisYear + 1, Number(year)) - index),
+  );
+  const select = "*:[select]:min-h-11";
+  return (
+    <UiField className="min-w-0">
+      <FieldLabel htmlFor={id} className="mb-1.5 text-muted-foreground">
+        {label}
+      </FieldLabel>
+      <div className="flex gap-2">
+        <NativeSelect
+          id={id}
+          className={cn("flex-1", select)}
+          value={month}
+          aria-describedby={hint ? `${id}-hint` : undefined}
+          onChange={(e) => onChange(`${year}-${e.target.value}`)}
+        >
+          {monthNames.map((name, index) => (
+            <NativeSelectOption
+              key={name}
+              value={String(index + 1).padStart(2, "0")}
+            >
+              {name}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+        <NativeSelect
+          aria-label={`${label}: año`}
+          className={cn("w-28", select)}
+          value={year}
+          onChange={(e) => onChange(`${e.target.value}-${month}`)}
+        >
+          {years.map((y) => (
+            <NativeSelectOption key={y} value={y}>
+              {y}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      </div>
       {hint && <FieldDescription id={`${id}-hint`}>{hint}</FieldDescription>}
     </UiField>
   );

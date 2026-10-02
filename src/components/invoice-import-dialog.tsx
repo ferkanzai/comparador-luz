@@ -25,7 +25,7 @@ import {
 } from "@/lib/workspace-actions";
 import { commands, type WorkspaceCommand } from "@/lib/workspace-commands";
 import { formatKwh } from "@/lib/bill-consumption";
-import { Field, Modal } from "./ui";
+import { Field, Modal, MonthField } from "./ui";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert } from "@/components/ui/alert";
@@ -292,12 +292,10 @@ function Review({
             required
           />
           {recordBill && (
-            <Field
+            <MonthField
               label="Mes de la factura"
-              type="month"
               value={month}
               onChange={setMonth}
-              required
             />
           )}
         </div>

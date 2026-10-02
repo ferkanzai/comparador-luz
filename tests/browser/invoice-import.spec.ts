@@ -96,11 +96,25 @@ test("an account records the imported bill from the bills tab", async ({
   await dialog
     .locator('input[type="file"]')
     .setInputFiles("tests/fixtures/invoice.pdf");
-  await expect(dialog.getByLabel("Mes de la factura")).toHaveValue("2026-09");
+  // Spanish month names, whatever the browser's language.
+  await expect(
+    dialog.getByLabel("Mes de la factura", { exact: true }),
+  ).toHaveValue("09");
+  await expect(
+    dialog
+      .getByLabel("Mes de la factura", { exact: true })
+      .locator("option:checked"),
+  ).toHaveText("Septiembre");
+  await expect(dialog.getByLabel("Mes de la factura: año")).toHaveValue("2026");
   await dialog.getByLabel("Desde cuándo tienes esta tarifa").fill("2026-02-27");
+  // The bill is the last of the import's saves.
+  const billSaved = page.waitForResponse(
+    (r) => r.request().method() === "PUT" && /\/api\/bills\//.test(r.url()),
+  );
   await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByText("26,35 €").first()).toBeVisible();
+  expect((await billSaved).ok()).toBe(true);
   await page.reload();
   await expect(page.getByText("26,35 €").first()).toBeVisible();
 });
